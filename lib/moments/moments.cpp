@@ -43,9 +43,9 @@
 // C interface
 
 void wavelengths_to_phases(
-    const float wavelengths[], 
-    float phases[],
-    size_t n_wavelengths)
+    const float wavelengths[],
+    size_t n_wavelengths,
+    float phases[])
 {
     float min_wl = wavelengths[0];
     float max_wl = wavelengths[n_wavelengths - 1];
@@ -57,37 +57,64 @@ void wavelengths_to_phases(
 
 
 void compute_moments(
-    const float phases[],
+    const float og_phases[],
     size_t n_phases,
-    const float signal[],
+    const float og_signal[],
     size_t n_moments, 
     float moments[])
 {
-    const float r = 1.f / (2.f * M_PI);
+    // TODO: double check, this looks a bit hacky
+    std::vector<float> phases(n_phases + 2);
+    std::vector<float> signal(n_phases + 2);
 
-    for (size_t k = 0; k < n_moments + 1; k++) {
-        moments[k] = 0;
+    memcpy(&phases[1], og_phases, n_phases * sizeof(float));
+    memcpy(&signal[1], og_signal, n_phases * sizeof(float));
 
-        for (size_t p = 0; p < n_phases - 1; p++) {
-            const float x_0 = phases[p + 0];
-            const float x_1 = phases[p + 1];
+    phases[0] = -M_PI;
+    signal[0] = og_signal[0];
+    
+    phases[n_phases] = 0;
+    signal[n_phases] = og_signal[n_phases - 1];
 
-            const std::complex<float> e_0 = std::polar(r, k * x_0);
-            const std::complex<float> e_1 = std::polar(r, k * x_1);
-            
-            const float s_0 = (e_0 * signal[p + 0]).real();
-            const float s_1 = (e_1 * signal[p + 1]).real();
+    std::vector<std::complex<float>> t_moments(n_moments + 1);
 
-            moments[k] += (x_1 - x_0) * (s_0 + s_1);
+    for (size_t i = 0; i < phases.size() - 1; i++) {
+        // Required by the previous TODO
+        if (phases[i] >= phases[i + 1]) {
+            continue;
         }
+ 
+        const float gradient = (signal[i + 1] - signal[i]) / (phases[i + 1] - phases[i]);
+        const float y_intercept = signal[i] - gradient * phases[i];
+
+        const std::complex<float> J = std::complex<float>(0., 1.);
+
+        for (size_t k = 1; k < n_moments + 1; k++) {
+            const std::complex<float> common_summands(
+                gradient / (float)(k*k), 
+                y_intercept / (float)k);
+
+            t_moments[k] += 
+                  (common_summands + gradient * J * (float)k * phases[i + 1] / (float)(k*k)) * std::exp(-J * (float)k * phases[i + 1])
+                - (common_summands + gradient * J * (float)k * phases[i    ] / (float)(k*k)) * std::exp(-J * (float)k * phases[i    ]);
+        }
+
+        t_moments[0] += 
+            (.5 * gradient * phases[i + 1] * phases[i + 1] + y_intercept * phases[i + 1])
+          - (.5 * gradient * phases[i    ] * phases[i    ] + y_intercept * phases[i    ]);
+     }
+
+    // Mirrored signal - we keep the real part and multiply by 2.
+    for (size_t k = 0; k < n_moments + 1; k++) {
+        moments[k] = 1.f / M_PI * t_moments[k].real();
     }
 }
 
 
 void solve_levinson(
     const float first_column[],
-    float solution[],
-    size_t size)
+    size_t size,
+    float solution[])
 {
     solution[0] = 1.f / first_column[0];
 
@@ -113,8 +140,8 @@ void solve_levinson(
 
 void dot_levinson(
     const float first_column[],
-    float dot_product[],
-    size_t size)
+    size_t size,
+    float dot_product[])
 {
     std::vector<float> solution(size);
     std::vector<float> temp_s(size);
@@ -141,8 +168,8 @@ void dot_levinson(
 
 void levinson_from_dot(
     const float dot_product[],
-    float first_column[],
-    size_t size)
+    size_t size,
+    float first_column[])
 {
     std::vector<float> solution(size);
     std::vector<float> temp_s(size);
@@ -208,7 +235,7 @@ void compress_moments(
     size_t n_moments,
     float compressed_moments[])
 {
-    dot_levinson(moments, compressed_moments, n_moments + 1);
+    dot_levinson(moments, n_moments + 1, compressed_moments);
     compressed_moments[0] = moments[0];
 }
 
@@ -218,7 +245,7 @@ void decompress_moments(
     size_t n_compressed_moments,
     float moments[])
 {
-    levinson_from_dot(compressed_moments, moments, n_compressed_moments + 1);
+    levinson_from_dot(compressed_moments, n_compressed_moments + 1, moments);
 }
 
 
@@ -229,7 +256,7 @@ void wavelengths_to_phases(
     std::vector<float>& phases) 
 {
     phases.resize(wavelengths.size());
-    wavelengths_to_phases(wavelengths.data(), phases.data(), wavelengths.size());
+    wavelengths_to_phases(wavelengths.data(), wavelengths.size(), phases.data());
 }
 
 
@@ -256,7 +283,7 @@ void solve_levinson(
     std::vector<float>& solution)
 {
     solution.resize(first_column.size());
-    solve_levinson(first_column.data(), solution.data(), first_column.size());
+    solve_levinson(first_column.data(), first_column.size(), solution.data());
 }
 
 
@@ -265,7 +292,7 @@ void dot_levinson(
     std::vector<float>& dot_product)
 {
     dot_product.resize(first_column.size());
-    dot_levinson(first_column.data(), dot_product.data(), first_column.size());
+    dot_levinson(first_column.data(), first_column.size(), dot_product.data());
 }
 
 
@@ -274,7 +301,7 @@ void levinson_from_dot(
     std::vector<float>& first_column)
 {
     first_column.resize(dot_product.size());
-    levinson_from_dot(dot_product.data(), first_column.data(), dot_product.size());
+    levinson_from_dot(dot_product.data(), dot_product.size(), first_column.data());
 }
 
 
