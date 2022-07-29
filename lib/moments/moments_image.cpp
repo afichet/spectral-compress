@@ -34,6 +34,9 @@
 #include "moments_image.h"
 #include "moments.h"
 
+/******************************************************************************
+ * C interface
+ *****************************************************************************/
 
 void compute_moments_image(
     const float phases[],
@@ -55,25 +58,6 @@ void compute_moments_image(
 }
 
 
-void compute_moments_image(
-    const std::vector<float>& phases,
-    const std::vector<float>& spectral_image,
-    size_t width, size_t height,
-    size_t n_moments,
-    std::vector<float>& moments_image)
-{
-    moments_image.resize(width * height * (n_moments + 1));
-
-    compute_moments_image(
-        phases.data(),
-        phases.size(),
-        spectral_image.data(),
-        width, height,
-        n_moments,
-        moments_image.data());
-}
-
-
 void compress_moments_image(
     const float moments_image[],
     size_t width, size_t height,
@@ -91,23 +75,6 @@ void compress_moments_image(
 }
 
 
-void compress_moments_image(
-    const std::vector<float>& moments_image,
-    size_t width, size_t height,
-    size_t n_moments,
-    std::vector<float>& compressed_moments_image)
-{
-    compressed_moments_image.resize(moments_image.size());
-
-    compress_moments_image(
-        moments_image.data(), 
-        width, height, 
-        n_moments, 
-        compressed_moments_image.data()
-    );
-}
-
-
 void decompress_moments_image(
     const float compressed_moments_image[],
     size_t width, size_t height,
@@ -122,23 +89,6 @@ void decompress_moments_image(
             &(moments_image[(n_moments + 1) * i])
         );
     }
-}
-
-
-void decompress_moments_image(
-    const std::vector<float>& compressed_moments_image,
-    size_t width, size_t height,
-    size_t n_moments,
-    std::vector<float>& moments_image)
-{
-    moments_image.resize(compressed_moments_image.size());
-
-    decompress_moments_image(
-        compressed_moments_image.data(),
-        width, height,
-        n_moments,
-        moments_image.data()
-    );
 }
 
 
@@ -163,6 +113,63 @@ void compute_density_image(
 }
 
 
+/******************************************************************************
+ * C++ interface
+ *****************************************************************************/
+
+void compute_moments_image(
+    const std::vector<float>& phases,
+    const std::vector<float>& spectral_image,
+    size_t width, size_t height,
+    size_t n_moments,
+    std::vector<float>& moments_image)
+{
+    moments_image.resize(width * height * (n_moments + 1));
+
+    compute_moments_image(
+        phases.data(),
+        phases.size(),
+        spectral_image.data(),
+        width, height,
+        n_moments,
+        moments_image.data());
+}
+
+
+void compress_moments_image(
+    const std::vector<float>& moments_image,
+    size_t width, size_t height,
+    size_t n_moments,
+    std::vector<float>& compressed_moments_image)
+{
+    compressed_moments_image.resize(moments_image.size());
+
+    compress_moments_image(
+        moments_image.data(), 
+        width, height, 
+        n_moments, 
+        compressed_moments_image.data()
+    );
+}
+
+
+void decompress_moments_image(
+    const std::vector<float>& compressed_moments_image,
+    size_t width, size_t height,
+    size_t n_moments,
+    std::vector<float>& moments_image)
+{
+    moments_image.resize(compressed_moments_image.size());
+
+    decompress_moments_image(
+        compressed_moments_image.data(),
+        width, height,
+        n_moments,
+        moments_image.data()
+    );
+}
+
+
 void compute_density_image(
     const std::vector<float>& phases,
     const std::vector<float>& moments_image,
@@ -181,4 +188,3 @@ void compute_density_image(
         density_image.data()
     );
 }
-
