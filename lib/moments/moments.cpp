@@ -40,7 +40,11 @@
 #include <vector>
 #include <complex>
 
-// C interface
+/******************************************************************************
+ * C interface
+ *****************************************************************************/
+
+extern "C" {
 
 void wavelengths_to_phases(
     const float wavelengths[],
@@ -248,8 +252,12 @@ void decompress_moments(
     levinson_from_dot(compressed_moments, n_compressed_moments + 1, moments);
 }
 
+} // extern "C"
 
-// C++ interface
+
+/******************************************************************************
+ * C++ interface
+ *****************************************************************************/
 
 void wavelengths_to_phases(
     const std::vector<float>& wavelengths, 

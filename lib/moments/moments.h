@@ -33,13 +33,13 @@
 
 #pragma once
 
-extern "C" {
-
-#include <stddef.h>
-
 /******************************************************************************
  * C interface
  *****************************************************************************/
+
+extern "C" {
+
+#include <stddef.h>
 
 /**
  * @brief Computes corresponding phases from given wavelengths
@@ -162,12 +162,14 @@ void decompress_moments(
 
 } // extern "C"
 
-#ifdef __cplusplus
-#include <vector>
 
 /******************************************************************************
  * C++ interface
  *****************************************************************************/
+
+#ifdef __cplusplus
+
+#include <vector>
 
 void wavelengths_to_phases(
     const std::vector<float>& wavelengths, 
