@@ -103,7 +103,7 @@ void dot_levinson(
 
 
 /**
- * @brief Compute the solution given the dot products
+ * @brief Computes the solution given the dot products
  * 
  * @param dot_product  Dot products.
  * @param size         Size of the dot products.
@@ -116,7 +116,7 @@ void levinson_from_dot(
 
 
 /**
- * @brief Compute a density matching the given trigonometric moments
+ * @brief Computes a density matching the given moments
  * 
  * @param phases    Phases where the density shall be computed.
  * @param n_phases  Size of phases array.
