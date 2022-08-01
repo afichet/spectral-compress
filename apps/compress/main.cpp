@@ -86,13 +86,44 @@ int main(int argc, char *argv[])
         memcpy(framebuffer.data(), og_framebuffer, width * height * n_bands * sizeof(float));
 
         // Ensure positive definite values
+        bool has_error = false;
         for (size_t i = 0; i < width * height * n_bands; i++) {
             const float v = framebuffer[i];
 
             if (std::isinf(v) || std::isnan(v) || v < 0) {
                 framebuffer[i] = std::numeric_limits<float>::epsilon();
+                has_error = true;
             }
         }
+
+        if (has_error) {
+            std::cerr << "[ERR] The image contains incorrect values - NaNs / Infty / < 0!" << std::endl;
+        }
+        
+
+        int n_null_spectra = 0;
+
+        for (size_t i = 0; i < width * height; i++) {
+            bool all_z = true;
+
+            for (size_t b = 0; b < n_bands; b++) {
+                if (framebuffer[n_bands * i + b] != 0) {
+                    all_z = false;
+                } /* TODO: remove */ else {
+                    framebuffer[n_bands * i + b] = std::numeric_limits<float>::epsilon();//-4f;
+                }
+            }
+
+            if (all_z) {
+                ++ n_null_spectra;
+            }
+        }
+
+        if (n_null_spectra > 0) {
+            std::cout << "There are " << n_null_spectra << " pixels with all null spectra" << std::endl;
+        }
+
+
 
         compute_moments_image(
             phases.data(), phases.size(),
@@ -101,7 +132,7 @@ int main(int argc, char *argv[])
             n_moments,
             moments_image.data()
         );
-
+        
         compress_moments_image(
             moments_image,
             width, height,
@@ -109,29 +140,100 @@ int main(int argc, char *argv[])
             compressed_moments_image
         );
 
+
+        // // Ensure positive definite values
+        // has_error = false;
+        // for (size_t i = 0; i < width * height * (n_moments + 1); i++) {
+        //     const float v = compressed_moments_image[i];
+
+        //     if (std::isinf(v) || std::isnan(v)) {
+        //         compressed_moments_image[i] = std::numeric_limits<float>::epsilon();
+        //         has_error = true;
+        //     }
+        // }
+
+        // if (has_error) {
+        //     std::cerr << "[ERR] The compressed moments contains incorrect values - NaNs / Infty / < 0!" << std::endl;
+        // }
+        
+
         // compressed_moments_image = moments_image;
 
 
         std::vector<float> dc_component(width * height);
-        // std::vector<std::vector<float>> rescaled_ac(n_moments);
-        std::vector<std::vector<uint8_t>> rescaled_ac(n_moments);
-
+        
         // DC component
         #pragma omp parallel for
         for (size_t i = 0; i < width * height; i++) {
             dc_component[i] = compressed_moments_image[(n_moments + 1) * i];
         }
 
+        // std::vector<std::vector<float>> rescaled_ac(n_moments);
+        
+        // // AC components
+        // for (size_t m = 0; m < n_moments; m++) {
+        //     // We need min and max of a given moment to later rescale in 0..1 for
+        //     // integer quantization
+        //     float min = compressed_moments_image[(n_moments + 1) + m + 1];
+        //     float max = compressed_moments_image[(n_moments + 1) + m + 1];
+
+        //     for (size_t i = 0; i < width * height; i++) {
+        //         const float v = compressed_moments_image[(n_moments + 1) * i + m + 1];
+        //         if (!std::isinf(v)) {
+        //             min = std::min(min, v);
+        //             max = std::max(max, v);
+        //         } else {
+        //             std::cout << "INVALID PIXEL !" << std::endl;
+        //         }
+        //     }
+
+        //     sgeg_box.moment_min[m] = min;
+        //     sgeg_box.moment_max[m] = max;
+
+        //     rescaled_ac[m].resize(width * height);
+
+        //     #pragma omp parallel for
+        //     for (size_t i = 0; i < width * height; i++) {
+        //         const float v = compressed_moments_image[(n_moments + 1) * i + m + 1];
+        //         //rescaled_ac[m][i] = v;
+        //         rescaled_ac[m][i] = v;
+        //     }
+        // }
+
+        std::vector<std::vector<uint8_t>> rescaled_ac(n_moments);
+
         // AC components
         for (size_t m = 0; m < n_moments; m++) {
             // We need min and max of a given moment to later rescale in 0..1 for
             // integer quantization
-            float min = compressed_moments_image[(n_moments + 1) + m + 1];
-            float max = compressed_moments_image[(n_moments + 1) + m + 1];
+            float min = 1.f;// compressed_moments_image[(n_moments + 1) + m + 1];
+            float max = -1.f;//compressed_moments_image[(n_moments + 1) + m + 1];
 
             for (size_t i = 0; i < width * height; i++) {
+                bool valid_sample = false;
+
+                for (size_t b = 0; b < n_bands; b++) {
+                    if (framebuffer[n_bands * i + b] != 0) {
+                        valid_sample = true;
+                    }
+                }
+
+                if (compressed_moments_image[(n_moments + 1) * i] < 1e-4f) {
+                    valid_sample = false;
+                }
+
                 const float v = compressed_moments_image[(n_moments + 1) * i + m + 1];
-                if (!std::isinf(v)) {
+                // if (!std::isinf(v) && moments_image[(n_moments + 1) * i] > 1e-6f) {
+                //     min = std::max(-1.f, std::min(min, v));
+                //     max = std::min( 1.f, std::max(max, v));
+
+                //     // min = std::min(min, v);
+                //     // max = std::max(max, v);
+                // }
+                if (valid_sample) {
+                    // min = std::max(-1.f, std::min(min, v));
+                    // max = std::min( 1.f, std::max(max, v));
+
                     min = std::min(min, v);
                     max = std::max(max, v);
                 }
@@ -146,7 +248,7 @@ int main(int argc, char *argv[])
             for (size_t i = 0; i < width * height; i++) {
                 const float v = (compressed_moments_image[(n_moments + 1) * i + m + 1] - min) / (max - min);
                 //rescaled_ac[m][i] = v;
-                rescaled_ac[m][i] = 255.f * v;
+                rescaled_ac[m][i] = 255.f * std::max(0.f, std::min(1.f, v));
             }
         }
 

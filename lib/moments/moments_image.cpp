@@ -34,6 +34,11 @@
 #include "moments_image.h"
 #include "moments.h"
 
+#define START(w, h) 0
+#define END(w, h) w * h
+
+#include <limits>
+
 /******************************************************************************
  * C interface
  *****************************************************************************/
@@ -47,7 +52,7 @@ void compute_moments_image(
     float moments_image[])
 {
     #pragma omp parallel for
-    for (size_t i = 0; i < width * height; i++) {
+    for (size_t i = START(width, height); i < END(width, height); i++) {
         compute_moments(
             phases, 
             n_phases, 
@@ -65,7 +70,7 @@ void compress_moments_image(
     float compressed_moments_image[])
 {
     #pragma omp parallel for
-    for (size_t i = 0; i < width * height; i++) {
+    for (size_t i = START(width, height); i < END(width, height); i++) {
         compress_moments(
             &(moments_image[(n_moments + 1) * i]),
             n_moments,
@@ -82,7 +87,7 @@ void decompress_moments_image(
     float moments_image[])
 {
     #pragma omp parallel for
-    for (size_t i = 0; i < width * height; i++) {
+    for (size_t i = START(width, height); i < END(width, height); i++) {
         decompress_moments(
             &(compressed_moments_image[(n_moments + 1) * i]),
             n_moments,
@@ -101,7 +106,7 @@ void compute_density_image(
     float density_image[])
 {
     #pragma omp parallel for
-    for (size_t i = 0; i < width * height; i++) {
+    for (size_t i = START(width, height); i < END(width, height); i++) {
         compute_density(
             phases,
             n_phases,

@@ -39,6 +39,7 @@
 #include <cstring>
 #include <vector>
 #include <complex>
+#include <limits>
 
 /******************************************************************************
  * C interface
@@ -71,8 +72,13 @@ void compute_moments(
     std::vector<float> phases(n_phases + 2);
     std::vector<float> signal(n_phases + 2);
 
-    memcpy(&phases[1], og_phases, n_phases * sizeof(float));
-    memcpy(&signal[1], og_signal, n_phases * sizeof(float));
+    // memcpy(&phases[1], og_phases, n_phases * sizeof(float));
+    // memcpy(&signal[1], og_signal, n_phases * sizeof(float));
+
+    for (size_t i = 0; i < n_phases; i++) {
+        phases[i + 1] = og_phases[i];
+        signal[i + 1] = og_signal[i];
+    }
 
     phases[0] = -M_PIf;
     signal[0] = og_signal[0];
@@ -150,12 +156,12 @@ void dot_levinson(
     std::vector<float> solution(size);
     std::vector<float> temp_s(size);
 
-    dot_product[0] = 0;
     solution[0]    = 1.f / first_column[0];
+    dot_product[0] = first_column[0];
 
     for (size_t i = 1; i < size; i++) {
-        dot_product[i] = 0;
         solution[i]    = 0;
+        dot_product[i] = 0;
 
         for (size_t k = 0; k < i; k++) {
             dot_product[i] += solution[k] * first_column[i - k];
@@ -165,12 +171,14 @@ void dot_levinson(
             temp_s[k] = (solution[k] - dot_product[i] * solution[i - k]) / (1.f - dot_product[i] * dot_product[i]);
         }
 
-        solution = temp_s;
+        // solution = temp_s;
+        memcpy(solution.data(), temp_s.data(), temp_s.size() * sizeof(float));
     }
 }
 
 
 void levinson_from_dot(
+    float diagonal_entry,
     const float dot_product[],
     size_t size,
     float first_column[])
@@ -178,11 +186,11 @@ void levinson_from_dot(
     std::vector<float> solution(size);
     std::vector<float> temp_s(size);
 
-    first_column[0] = dot_product[0];
-    solution[0]     = 1.f / dot_product[0];
+    solution[0]     = 1.f / diagonal_entry;
+    first_column[0] = diagonal_entry;
 
     for (size_t i = 1; i < size; i++) {
-        const float radius = 1.f / solution[0]; // real??
+        const float radius = 1.f / solution[0];
         float center = 0;
 
         for (size_t k = 1; k < i; k++) {
@@ -195,7 +203,8 @@ void levinson_from_dot(
             temp_s[k] = (solution[k] - dot_product[i] * solution[i - k]) / (1.f - dot_product[i] * dot_product[i]);
         }
 
-        solution = temp_s;
+        // solution = temp_s;
+        memcpy(solution.data(), temp_s.data(), temp_s.size() * sizeof(float));
     }
 }
 
@@ -280,8 +289,12 @@ void compress_moments(
     size_t n_moments,
     float compressed_moments[])
 {
-    dot_levinson(moments, n_moments + 1, compressed_moments);
-    compressed_moments[0] = moments[0];
+    // if (moments[0] <= 1e-4) {
+    //     memcpy(compressed_moments, moments, (n_moments + 1) * sizeof(float));
+    // } else {
+        dot_levinson(moments, n_moments + 1, compressed_moments);
+        compressed_moments[0] = moments[0];
+    // }
 }
 
 
@@ -290,7 +303,14 @@ void decompress_moments(
     size_t n_compressed_moments,
     float moments[])
 {
-    levinson_from_dot(compressed_moments, n_compressed_moments + 1, moments);
+    // if (compressed_moments[0] <= 1e-4) {
+    //     memcpy(moments, compressed_moments, (n_compressed_moments + 1) * sizeof(float));
+    // } else {
+        std::vector<float> dots(n_compressed_moments + 1);
+        dots[0] = 0;
+        memcpy(&dots[1], &compressed_moments[1], n_compressed_moments * sizeof(float));
+        levinson_from_dot(compressed_moments[0], dots.data(), n_compressed_moments + 1, moments);
+    // }
 }
 
 } // extern "C"
@@ -346,11 +366,12 @@ void dot_levinson(
 
 
 void levinson_from_dot(
+    float diagonal_entry,
     const std::vector<float>& dot_product,
     std::vector<float>& first_column)
 {
     first_column.resize(dot_product.size());
-    levinson_from_dot(dot_product.data(), dot_product.size(), first_column.data());
+    levinson_from_dot(diagonal_entry, dot_product.data(), dot_product.size(), first_column.data());
 }
 
 
@@ -382,5 +403,8 @@ void decompress_moments(
     const std::vector<float>& compressed_moments,
     std::vector<float>& moments)
 {
-    levinson_from_dot(compressed_moments, moments);
+    std::vector<float> dots = compressed_moments;
+    dots[0] = 0;
+
+    levinson_from_dot(compressed_moments[0], dots, moments);
 }

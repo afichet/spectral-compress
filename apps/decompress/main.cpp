@@ -40,17 +40,6 @@
 #include <moments_image.h>
 #include <moments.h>
 
-void linspace(float min, float max, size_t size, std::vector<float>& array)
-{
-    array.resize(size);
-
-    float delta = (max - min) / float(size - 1);
-
-    for (size_t i = 0; i < size; i++) {
-        array[i] = min + i * delta;
-    }
-}
-
 
 int main(int argc, char* argv[]) 
 {
@@ -65,21 +54,31 @@ int main(int argc, char* argv[])
     const char* filename_out = argv[2];
 
     const JXLImageReader jxl_image(filename_in);
-    jxl_image.print_basic_info();
-
     const SGEG_box sgeg_box = jxl_image.get_sgeg();
 
     // Debug
-    sgeg_box.print_info();
+    // jxl_image.print_basic_info();
+    // sgeg_box.print_info();
 
     const size_t width       = jxl_image.width();
     const size_t height      = jxl_image.height();
     const uint32_t n_moments = sgeg_box.n_moments;
 
     std::vector<float> dc_image(width * height);
+    jxl_image.getMainFramebuffer(dc_image);
+
     std::vector<std::vector<float>> ac_images(sgeg_box.n_moments);
 
-    jxl_image.getMainFramebuffer(dc_image);
+
+    // for (uint32_t m = 0; m < n_moments; m++) {
+    //     jxl_image.getSubFramebuffer(ac_images[m], m);
+
+    //     // Apply rescaling
+    //     for (size_t i = 0; i < width * height; i++) {
+    //         ac_images[m][i] = ac_images[m][i];
+    //     }
+    // }
+
 
     for (uint32_t m = 0; m < n_moments; m++) {
         jxl_image.getSubFramebuffer(ac_images[m], m);
@@ -111,7 +110,6 @@ int main(int argc, char* argv[])
     // moments_image = compressed_moments_image;
 
     std::vector<float> wavelengths_nm = sgeg_box.wavelengths;
-    // linspace(sgeg_box.wl_min_nm, sgeg_box.wl_max_nm, sgeg_box.n_wl_original, wavelengths_nm);
 
     std::vector<float> phases;
     wavelengths_to_phases(wavelengths_nm, phases);

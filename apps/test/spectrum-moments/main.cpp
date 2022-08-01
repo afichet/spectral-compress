@@ -176,7 +176,7 @@ int main(int argc, char* argv[])
         0.01058, 0.02523, 0.04864
     };
 
-    const int n_moments_reflectance = 150;
+    const int n_moments_reflectance = 16;
     const int n_moments_emission    = n_moments_reflectance;
 
     // ------------------------------------------------------------------------
@@ -195,6 +195,8 @@ int main(int argc, char* argv[])
     
     compute_moments(reflectance_phases, reflectance, n_moments_reflectance, reflectance_moments);
     compress_moments(reflectance_moments, reflectance_compressed);
+
+    print_array(reflectance_compressed);
 
     decompress_moments(reflectance_compressed, reflectance_inflated);
     compute_density(reflectance_phases, reflectance_inflated, reflectance_density);

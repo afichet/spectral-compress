@@ -105,11 +105,13 @@ void dot_levinson(
 /**
  * @brief Computes the solution given the dot products
  * 
+ * @param diagonal_entry
  * @param dot_product  Dot products.
  * @param size         Size of the dot products.
  * @param first_column Solution. Must be allocated with `size` elements.
  */
 void levinson_from_dot(
+    float diagonal_entry,
     const float dot_product[],
     size_t size,
     float first_column[]);
@@ -201,6 +203,7 @@ void dot_levinson(
 
 
 void levinson_from_dot(
+    float diagonal_entry,
     const std::vector<float>& dot_product,
     std::vector<float>& first_column);
 
