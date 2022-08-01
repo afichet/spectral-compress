@@ -32,6 +32,7 @@
  */
 
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <cstddef>
 
@@ -175,6 +176,9 @@ int main(int argc, char* argv[])
         0.01058, 0.02523, 0.04864
     };
 
+    const int n_moments_reflectance = 150;
+    const int n_moments_emission    = n_moments_reflectance;
+
     // ------------------------------------------------------------------------
     // Test with reflectance
     // ------------------------------------------------------------------------
@@ -189,22 +193,41 @@ int main(int argc, char* argv[])
 
     wavelengths_to_phases(reflectance_wavelength, reflectance_phases);
     
-    compute_moments(reflectance_phases, reflectance, 7, reflectance_moments);
+    compute_moments(reflectance_phases, reflectance, n_moments_reflectance, reflectance_moments);
     compress_moments(reflectance_moments, reflectance_compressed);
 
     decompress_moments(reflectance_compressed, reflectance_inflated);
     compute_density(reflectance_phases, reflectance_inflated, reflectance_density);
     
+    // for (size_t i = 0; i < reflectance_phases.size(); i++) {
+    //     std::cout << reflectance_phases[i] << std::endl;
+    // }
+
+    // for (size_t i = 0; i < reflectance_moments.size(); i++) {
+    //     std::cout << reflectance_moments[i] << std::endl;
+    // }
+
+    std::cout << "[";
+
+    for (size_t i = 0; i < reflectance_moments.size(); i++) {
+        std::cout << reflectance_moments[i] << ",";
+    }
+
+    std::cout << "]";
+
+    // 
     // print_array(reflectance_moments);
     // print_array(reflectance_compressed);
     // print_array(reflectance_inflated);
     // print_array(reflectance_density);
 
-    // for (size_t i = 0; i < reflectance_wavelength.size(); i++) {
-    //     std::cout << reflectance_wavelength[i] << " "
-    //               << reflectance[i] << " "
-    //               << reflectance_density[i] << std::endl;
-    // }
+    std::ofstream out_reflectance("reflectance.dat");
+
+    for (size_t i = 0; i < reflectance_wavelength.size(); i++) {
+        out_reflectance << reflectance_wavelength[i] << " "
+                        << reflectance[i] << " "
+                        << reflectance_density[i] << std::endl;
+    }
 
     // ------------------------------------------------------------------------
     // Test with emission
@@ -220,16 +243,19 @@ int main(int argc, char* argv[])
 
     wavelengths_to_phases(emission_wavelength, emission_phases);
 
-    compute_moments(emission_phases, emission, 60, emission_moments);
+    compute_moments(emission_phases, emission, n_moments_emission, emission_moments);
     compress_moments(emission_moments, emission_compressed);
 
     decompress_moments(emission_compressed, emission_inflated);
     compute_density(emission_phases, emission_inflated, emission_density);
 
+
+    std::ofstream out_emission("emission.dat");
+
     for (size_t i = 0; i < emission_wavelength.size(); i++) {
-        std::cout << emission_wavelength[i] << " "
-                  << emission[i] << " "
-                  << emission_density[i] << std::endl;
+        out_emission << emission_wavelength[i] << " "
+                     << emission[i] << " "
+                     << emission_density[i] << std::endl;
     }
 
 

@@ -37,11 +37,13 @@
 #include <cstdint>
 
 
-SGEG_box::SGEG_box(uint32_t sz)
+SGEG_box::SGEG_box(uint32_t _n_moments, uint32_t _n_wavelengths)
+    : n_moments(_n_moments)
+    , n_wavelengths(_n_wavelengths)
+    , moment_min(_n_moments)
+    , moment_max(_n_moments)
+    , wavelengths(_n_wavelengths)
 {
-    n_moments = sz;
-    moment_min.resize(n_moments);
-    moment_max.resize(n_moments);
 }
 
 
@@ -53,13 +55,25 @@ SGEG_box::SGEG_box(const std::vector<uint8_t> &data)
     // ------------------------------------------------------------------------
     // Number of moments
     // ------------------------------------------------------------------------
+    
     next_offset = sizeof(uint32_t);
 
-    memcpy(&n_moments, data.data(), next_offset);
+    memcpy(&n_moments, data.data() + offset, next_offset);
     offset += next_offset;
 
     moment_min.resize(n_moments);
     moment_max.resize(n_moments);
+
+    // ------------------------------------------------------------------------
+    // Original number of wavelengths
+    // ------------------------------------------------------------------------
+
+    next_offset = sizeof(uint32_t);
+
+    memcpy(&n_wavelengths, data.data() + offset, next_offset);
+    offset += next_offset;
+
+    wavelengths.resize(n_wavelengths);
 
     // ------------------------------------------------------------------------
     // Rescaling factor [min..max]
@@ -74,34 +88,22 @@ SGEG_box::SGEG_box(const std::vector<uint8_t> &data)
     offset += next_offset;
 
     // ------------------------------------------------------------------------
-    // Original spectral bounds [\lambda_min..\lambda_max]
+    // Original spectral vlues
     // ------------------------------------------------------------------------
 
-    next_offset = sizeof(float);
+    next_offset = n_wavelengths * sizeof(float);
 
-    memcpy(&wl_min_nm, data.data() + offset, next_offset);
+    memcpy(wavelengths.data(), data.data() + offset, next_offset);
     offset += next_offset;
-
-    memcpy(&wl_max_nm, data.data() + offset, next_offset);
-    offset += next_offset;
-
-    // ------------------------------------------------------------------------
-    // Original number of spectral samples
-    // ------------------------------------------------------------------------
-
-    next_offset = sizeof(uint32_t);
-
-    memcpy(&n_wl_original, data.data() + offset, next_offset);
 }
 
 
 SGEG_box::SGEG_box(const SGEG_box& other)
     : n_moments(other.n_moments)
+    , n_wavelengths(other.n_wavelengths)
     , moment_min(other.moment_min)
     , moment_max(other.moment_max)
-    , wl_min_nm(other.wl_min_nm)
-    , wl_max_nm(other.wl_max_nm)
-    , n_wl_original(other.n_wl_original)
+    , wavelengths(other.wavelengths)
 {
 }
 
@@ -123,6 +125,15 @@ void SGEG_box::getRaw(std::vector<uint8_t> &data) const
     offset += next_offset;
 
     // ------------------------------------------------------------------------
+    // Original number of wavelengths
+    // ------------------------------------------------------------------------
+
+    next_offset = sizeof(uint32_t);
+
+    memcpy(data.data() + offset, &n_wavelengths, next_offset);
+    offset += next_offset;
+
+    // ------------------------------------------------------------------------
     // Rescaling factor [min..max]
     // ------------------------------------------------------------------------
 
@@ -135,31 +146,40 @@ void SGEG_box::getRaw(std::vector<uint8_t> &data) const
     offset += next_offset;
 
     // ------------------------------------------------------------------------
-    // Original spectral bounds [\lambda_min..\lambda_max]
+    // Original spectral values
     // ------------------------------------------------------------------------
 
-    next_offset = sizeof(float);
+    next_offset = n_wavelengths * sizeof(float);
 
-    memcpy(data.data() + offset, &wl_min_nm, next_offset);
+    memcpy(data.data() + offset, wavelengths.data(), next_offset);
     offset += next_offset;
-
-    memcpy(data.data() + offset, &wl_max_nm, next_offset);
-    offset += next_offset;
-
-    // ------------------------------------------------------------------------
-    // Original number of spectral samples
-    // ------------------------------------------------------------------------
-
-    next_offset = sizeof(uint32_t);
-
-    memcpy(data.data() + offset, &n_wl_original, next_offset);
 }
 
 
 size_t SGEG_box::size() const
 {
-    return sizeof(uint32_t) +              // n_moments
-            n_moments * 2 * sizeof(float) + // [min..max]
-            2 * sizeof(float) +             // [\lambda_min..\lambda_max]
-            sizeof(uint32_t);               // n_spectral_samples
+    return
+        sizeof(uint32_t) +              // n_moments
+        sizeof(uint32_t) +              // n_wavelengths
+        2 * n_moments * sizeof(float) + // [min..max]
+        n_wavelengths * sizeof(float);  // [\lambda_min..\lambda_max]
+}
+
+
+#include <iostream>
+
+void SGEG_box::print_info() const
+{
+    std::cout << "    # moments: " << n_moments << std::endl;
+    std::cout << "# wavelengths: " << n_wavelengths << std::endl;
+    
+    for (uint32_t i = 0; i < n_moments; i++) {
+        std::cout << " + moment[" << i << "]"
+                  <<  " - min, max: [" << moment_min[i] << ", " << moment_max[i] << "]" << std::endl;
+    }
+    
+    for (uint32_t i = 0; i < n_wavelengths; i++) {
+        std::cout << " + wavelength[" << i << "]"
+                  << " - " << wavelengths[i] << " nm" << std::endl;
+    }
 }

@@ -141,7 +141,10 @@ void JXLImageWriter::addMainFramebuffer(
     status = JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_RESAMPLING, downsampling);
     CHECK_JXL_ENC_STATUS(status);
 
-    status = JxlEncoderSetFrameLossless(frame_settings, JXL_TRUE);
+    // status = JxlEncoderSetFrameLossless(frame_settings, JXL_TRUE);
+    // CHECK_JXL_ENC_STATUS(status);
+
+    status = JxlEncoderSetFrameDistance(frame_settings, 0.);
     CHECK_JXL_ENC_STATUS(status);
 
     const size_t data_size = _basic_info.xsize * _basic_info.ysize * el_size;
@@ -195,7 +198,9 @@ void JXLImageWriter::addSubFramebuffer(
 
     // Set compression quality
     // JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_EFFORT, 9);
-    JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_EXTRA_CHANNEL_RESAMPLING, downsampling);
+    // JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_EXTRA_CHANNEL_RESAMPLING, downsampling);
+    // status = JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_EXTRA_CHANNEL_RESAMPLING, 4);
+    // CHECK_JXL_ENC_STATUS(status);
 
     const size_t data_size = _basic_info.xsize * _basic_info.ysize * el_size;
 

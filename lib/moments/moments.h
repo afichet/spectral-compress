@@ -133,6 +133,13 @@ void compute_density(
     float density[]);
 
 
+void compute_density_bounded_lagrange(
+    const float phases[],
+    size_t n_phases,
+    const float moments[],
+    size_t n_moments,
+    float density[]);
+
 /**
  * @brief Compress a set of moment
  * 

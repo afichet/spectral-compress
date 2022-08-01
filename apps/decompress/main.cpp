@@ -65,12 +65,16 @@ int main(int argc, char* argv[])
     const char* filename_out = argv[2];
 
     const JXLImageReader jxl_image(filename_in);
+    jxl_image.print_basic_info();
 
     const SGEG_box sgeg_box = jxl_image.get_sgeg();
 
-    const size_t width = jxl_image.width();
-    const size_t height = jxl_image.height();
-    const size_t n_moments = sgeg_box.n_moments;
+    // Debug
+    sgeg_box.print_info();
+
+    const size_t width       = jxl_image.width();
+    const size_t height      = jxl_image.height();
+    const uint32_t n_moments = sgeg_box.n_moments;
 
     std::vector<float> dc_image(width * height);
     std::vector<std::vector<float>> ac_images(sgeg_box.n_moments);
@@ -104,9 +108,10 @@ int main(int argc, char* argv[])
         width, height, n_moments,
         moments_image
     );
+    // moments_image = compressed_moments_image;
 
-    std::vector<float> wavelengths_nm;
-    linspace(sgeg_box.wl_min_nm, sgeg_box.wl_max_nm, sgeg_box.n_wl_original, wavelengths_nm);
+    std::vector<float> wavelengths_nm = sgeg_box.wavelengths;
+    // linspace(sgeg_box.wl_min_nm, sgeg_box.wl_max_nm, sgeg_box.n_wl_original, wavelengths_nm);
 
     std::vector<float> phases;
     wavelengths_to_phases(wavelengths_nm, phases);
@@ -121,7 +126,6 @@ int main(int argc, char* argv[])
         n_moments,
         &image_out.emissive(0, 0, 0, 0)
     );
-
 
     image_out.save(filename_out);
 

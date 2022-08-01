@@ -38,6 +38,8 @@
 #include <JXLImage.h>
 #include <SGEG_box.h>
 
+#include <limits>
+
 #include <moments.h>
 #include <moments_image.h>
 
@@ -71,20 +73,30 @@ int main(int argc, char *argv[])
 
     wavelengths_to_phases(wavelengths, phases);
 
-    SGEG_box sgeg_box(n_moments);
-    sgeg_box.n_wl_original = n_bands;
-    sgeg_box.wl_min_nm = wavelengths.front();
-    sgeg_box.wl_max_nm = wavelengths.back();
+    SGEG_box sgeg_box(n_moments, n_bands);
+    sgeg_box.wavelengths = wavelengths;
 
     if (image_in.isEmissive()) {
         std::vector<float> moments_image(width * height * (n_moments + 1));
         std::vector<float> compressed_moments_image(width * height * (n_moments + 1));
         
-        const float* framebuffer = &image_in.emissive(0, 0, 0, 0);
-        
+        const float* og_framebuffer = &image_in.emissive(0, 0, 0, 0);
+        std::vector<float> framebuffer(width * height * n_bands);
+
+        memcpy(framebuffer.data(), og_framebuffer, width * height * n_bands * sizeof(float));
+
+        // Ensure positive definite values
+        for (size_t i = 0; i < width * height * n_bands; i++) {
+            const float v = framebuffer[i];
+
+            if (std::isinf(v) || std::isnan(v) || v < 0) {
+                framebuffer[i] = std::numeric_limits<float>::epsilon();
+            }
+        }
+
         compute_moments_image(
             phases.data(), phases.size(),
-            framebuffer,
+            framebuffer.data(),
             width, height,
             n_moments,
             moments_image.data()
@@ -97,6 +109,9 @@ int main(int argc, char *argv[])
             compressed_moments_image
         );
 
+        // compressed_moments_image = moments_image;
+
+
         std::vector<float> dc_component(width * height);
         // std::vector<std::vector<float>> rescaled_ac(n_moments);
         std::vector<std::vector<uint8_t>> rescaled_ac(n_moments);
@@ -107,17 +122,19 @@ int main(int argc, char *argv[])
             dc_component[i] = compressed_moments_image[(n_moments + 1) * i];
         }
 
-
         // AC components
         for (size_t m = 0; m < n_moments; m++) {
             // We need min and max of a given moment to later rescale in 0..1 for
             // integer quantization
-            float min = 1999, max = 0;
+            float min = compressed_moments_image[(n_moments + 1) + m + 1];
+            float max = compressed_moments_image[(n_moments + 1) + m + 1];
 
             for (size_t i = 0; i < width * height; i++) {
                 const float v = compressed_moments_image[(n_moments + 1) * i + m + 1];
-                min = std::min(min, v);
-                max = std::max(max, v);
+                if (!std::isinf(v)) {
+                    min = std::min(min, v);
+                    max = std::max(max, v);
+                }
             }
 
             sgeg_box.moment_min[m] = min;
@@ -132,6 +149,9 @@ int main(int argc, char *argv[])
                 rescaled_ac[m][i] = 255.f * v;
             }
         }
+
+        // Debug
+        sgeg_box.print_info();
 
         // Create the JXL
         JXLImageWriter jxl_image(width, height, sgeg_box, n_moments);

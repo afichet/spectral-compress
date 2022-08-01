@@ -43,19 +43,21 @@ class SGEG_box
 {
 public:
     uint32_t n_moments;
+    uint32_t n_wavelengths;
+
     std::vector<float> moment_min;
     std::vector<float> moment_max;
-    float wl_min_nm;
-    float wl_max_nm;
-    uint32_t n_wl_original;
+    std::vector<float> wavelengths;
 
-    SGEG_box(uint32_t sz = 0);
+    SGEG_box(uint32_t n_moments = 0, uint32_t n_wavelengths = 0);
 
     SGEG_box(const std::vector<uint8_t> &data);
 
     SGEG_box(const SGEG_box& other);
 
     void getRaw(std::vector<uint8_t> &data) const;
+
+    void print_info() const;
 
     size_t size() const;
 };

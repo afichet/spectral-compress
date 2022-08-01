@@ -55,7 +55,7 @@ void wavelengths_to_phases(
     float max_wl = wavelengths[n_wavelengths - 1];
 
     for (size_t i = 0; i < n_wavelengths; i++) {
-        phases[i] = M_PI * (wavelengths[i] - min_wl) / (max_wl - min_wl) - M_PI;
+        phases[i] = M_PIf * (wavelengths[i] - min_wl) / (max_wl - min_wl) - M_PIf;
     }
 }
 
@@ -74,7 +74,7 @@ void compute_moments(
     memcpy(&phases[1], og_phases, n_phases * sizeof(float));
     memcpy(&signal[1], og_signal, n_phases * sizeof(float));
 
-    phases[0] = -M_PI;
+    phases[0] = -M_PIf;
     signal[0] = og_signal[0];
     
     phases[n_phases] = 0;
@@ -110,7 +110,7 @@ void compute_moments(
 
     // Mirrored signal - we keep the real part and multiply by 2.
     for (size_t k = 0; k < n_moments + 1; k++) {
-        moments[k] = 1.f / M_PI * t_moments[k].real();
+        moments[k] = 1.f / M_PIf * t_moments[k].real();
     }
 }
 
@@ -210,7 +210,7 @@ void compute_density(
     std::vector<float> v(n_moments + 1);
     
     for (size_t i = 0; i < v.size(); i++) {
-        v[i] = moments[i] / (2.f * M_PI);
+        v[i] = moments[i] / (2.f * M_PIf);
     }
 
     std::vector<float> solution;
@@ -218,7 +218,7 @@ void compute_density(
 
     std::vector<std::complex<float>> denum(n_phases);
 
-    const float r = 1.f / (2.f * M_PI);
+    const float r = 1.f / (2.f * M_PIf);
 
     for (size_t p = 0; p < n_phases; p++) {
         std::complex<float> denum = 0;
@@ -230,6 +230,47 @@ void compute_density(
         denum = std::abs(denum);
 
         density[p] = r * solution[0] / (denum * denum).real();
+    }
+}
+
+void moments_to_exponential_moments(
+    const float moments[],
+    size_t n_moments,
+    std::vector<std::complex<float>>& exponential_moments)
+{
+    exponential_moments.resize(n_moments + 1);
+
+    const std::complex<float> J = std::complex<float>(0., 1.);
+
+    std::vector<std::complex<float>> e_moments(n_moments + 1);
+
+    exponential_moments[0] = 1.f / (4.f * M_PIf) * std::exp(J * M_PIf * (moments[0] - .5f));
+
+    for (size_t i = 1; i < n_moments; i++) {
+        for (size_t k = 0; k < i; k++) {
+            exponential_moments[i] += (float)(i - k) * exponential_moments[k] * moments[i - k];
+        }
+
+        exponential_moments[i] *= 2.f * M_PIf * J / (float)i;
+    }
+}
+
+
+void compute_density_bounded_lagrange(
+    const float phases[],
+    size_t n_phases,
+    const float moments[],
+    size_t n_moments,
+    float density[])
+{
+    std::vector<std::complex<float>> exponential_moments(n_moments + 1);
+    std::vector<std::complex<float>> toeplitz_column(n_moments + 1);
+
+    moments_to_exponential_moments(moments, n_moments, exponential_moments);
+
+
+    for (size_t i = 0; i < n_moments; i++) {
+        toeplitz_column[i] = exponential_moments[i] / (2.f * M_PIf);
     }
 }
 
