@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
         for (size_t i = 0; i < width * height * n_bands; i++) {
             const float v = framebuffer[i];
 
-            if (std::isinf(v) || std::isnan(v) || v < 0) {
+            if (std::isinf(v) || std::isnan(v) || v <= 0) {
                 framebuffer[i] = std::numeric_limits<float>::epsilon();
             }
         }
