@@ -82,6 +82,24 @@ void compress_moments_image(
 
 
 /**
+ * @brief Compress a moment image for bounded signals (reflectance)
+ * 
+ * @param moments_image     The moments image to be compressed.
+ * @param width             Width of the moments image.
+ * @param height            Height of the moments image.
+ * @param n_moments         Number of moments.
+ * @param compressed_moments_image Computed compressed moments image. Must be
+ *                          allocated with 
+ *                          `width` * `height` * (`n_moments` + 1) elements.
+ */
+void compress_bounded_moments_image(
+    const float moments_image[],
+    size_t width, size_t height,
+    size_t n_moments,
+    float compressed_moments_image[]);
+
+
+/**
  * @brief Decompress a compressed moment image
  * 
  * @param compressed_moments_image The compressed moment image to process.
@@ -101,6 +119,26 @@ void decompress_moments_image(
 
 
 /**
+ * @brief Decompress a compressed moment image for bounded signals 
+ * (reflectance)
+ * 
+ * @param compressed_moments_image The compressed moment image to process.
+ * @param width                    Width of the compressed moment image.
+ * @param height                   Height of the compressed moment image.
+ * @param n_moments                Number of moments in the compressed moments
+ *                                 image.
+ * @param moments_image            Computed moment image. Must be allocated
+ *                                 with `width` * `height` * (`n_moments` + 1)
+ *                                 elements.
+ */
+void decompress_bounded_moments_image(
+    const float compressed_moments_image[],
+    size_t width, size_t height,
+    size_t n_moments,
+    float moments_image[]);
+
+
+/**
  * @brief Computes a density image matching the given moments.
  * 
  * @param phases         Phases where the density shall be computed.
@@ -113,6 +151,27 @@ void decompress_moments_image(
  *                       `width` * `height` * (`n_moments` + 1) elements.
  */
 void compute_density_image(
+    const float phases[],
+    size_t n_phases,
+    const float moments_image[],
+    size_t width, size_t height,
+    size_t n_moments,
+    float density_image[]);
+
+
+/**
+ * @brief Computes a bounded density image matching the given moments.
+ * 
+ * @param phases         Phases where the density shall be computed.
+ * @param n_phases       Size of phases array.
+ * @param moments_image  Moments image to compute the density from.
+ * @param width          Width of the moments image.
+ * @param height         Height of the moments image.
+ * @param n_moments      Number of moments.
+ * @param density_image  Computed density image. Must be allocated with
+ *                       `width` * `height` * (`n_moments` + 1) elements.
+ */
+void compute_density_bounded_lagrange_image(
     const float phases[],
     size_t n_phases,
     const float moments_image[],
@@ -154,6 +213,14 @@ void decompress_moments_image(
 
 
 void compute_density_image(
+    const std::vector<float>& phases,
+    const std::vector<float>& moments_image,
+    size_t width, size_t height,
+    size_t n_moments,
+    std::vector<float>& density_image);
+
+
+void compute_density_bounded_lagrange_image(
     const std::vector<float>& phases,
     const std::vector<float>& moments_image,
     size_t width, size_t height,

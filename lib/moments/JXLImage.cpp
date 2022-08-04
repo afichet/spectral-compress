@@ -87,8 +87,12 @@ JXLImageWriter::JXLImageWriter(
     _basic_info.ysize                    = height;
     _basic_info.num_color_channels       = 1;
     _basic_info.num_extra_channels       = n_sub_framebuffers;
+    // Float
     _basic_info.bits_per_sample          = 32;
     _basic_info.exponent_bits_per_sample = 8;
+    // Half
+    // _basic_info.bits_per_sample          = 16;
+    // _basic_info.exponent_bits_per_sample = 5;
     _basic_info.uses_original_profile    = JXL_TRUE;
 
     status = JxlEncoderSetBasicInfo(_enc.get(), &_basic_info);
@@ -392,7 +396,7 @@ JXLImageReader::JXLImageReader(const char* filename)
 
                 break;
             case JXL_DEC_NEED_IMAGE_OUT_BUFFER:
-                std::cout << "JXL_DEC_NEED_IMAGE_OUT_BUFFER" << std::endl;
+                // std::cout << "JXL_DEC_NEED_IMAGE_OUT_BUFFER" << std::endl;
 
                 // status = JxlDecoderImageOutBufferSize(_dec.get(), &format, &buffer_size);
                 // CHECK_JXL_DEC_STATUS(status);
@@ -425,19 +429,19 @@ JXLImageReader::JXLImageReader(const char* filename)
                 break;
             case JXL_DEC_BOX:
                 status = JxlDecoderGetBoxType(_dec.get(), box_type, JXL_TRUE);
-                std::cout << "Box detected: " << box_type[0] << box_type[1] << box_type[2] << box_type[3] << std::endl;
+                // std::cout << "Box detected: " << box_type[0] << box_type[1] << box_type[2] << box_type[3] << std::endl;
 
                 if (box_type[0] == 's' && box_type[1] == 'g' && box_type[2] == 'e' && box_type[3] == 'g') {
                     uint64_t box_size;
                     status = JxlDecoderGetBoxSizeRaw(_dec.get(), &box_size);
                     box_raw_sgeg.resize(box_size);
-                    std::cout << "box_size r: " << box_raw_sgeg.size() << std::endl;
+                    // std::cout << "box_size r: " << box_raw_sgeg.size() << std::endl;
 
                     JxlDecoderSetBoxBuffer(_dec.get(), box_raw_sgeg.data(), box_raw_sgeg.size());
                 }
                 break;
             case JXL_DEC_NEED_MORE_INPUT:
-                std::cerr << "JXL_DEC_NEED_MORE_INPUT" << std::endl;
+                // std::cerr << "JXL_DEC_NEED_MORE_INPUT" << std::endl;
                 break;
             case JXL_DEC_ERROR:
                 std::cerr << "JXL_DEC_ERROR!" << std::endl;

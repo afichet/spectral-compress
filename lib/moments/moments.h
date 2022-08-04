@@ -74,6 +74,102 @@ void compute_moments(
 
 
 /**
+ * @brief Computes a density matching the given moments
+ * 
+ * @param phases    Phases where the density shall be computed.
+ * @param n_phases  Size of phases array.
+ * @param moments   Trigonometric moments.
+ * @param n_moments Number of trigonometric moments.
+ * @param density   Computed density. Must be allocated with `n_phases` 
+ *                  elements.
+ */
+void compute_density(
+    const float phases[],
+    size_t n_phases,
+    const float moments[],
+    size_t n_moments,
+    float density[]);
+
+
+/**
+ * @brief Computes a bounded density matching the given moments
+ * 
+ * @param phases    Phases where the density shall be computed.
+ * @param n_phases  Size of phases array.
+ * @param moments   Trigonometric moments.
+ * @param n_moments Number of trigonometric moments.
+ * @param density   Computed density. Must be allocated with `n_phases` 
+ *                  elements.
+ */
+void compute_density_bounded_lagrange(
+    const float phases[],
+    size_t n_phases,
+    const float moments[],
+    size_t n_moments,
+    float density[]);
+
+
+/**
+ * @brief Compress a set of moment
+ * 
+ * @param moments             Moments to compress.
+ * @param n_moments           Number of moments.
+ * @param compressed_moments  Computed compressed moments. Must be allocated
+ *                            with `n_compressed_moments` elements.
+ */
+void compress_moments(
+    const float moments[],
+    size_t n_moments,
+    float compressed_moments[]);
+
+
+/**
+ * @brief Compress a set of bounded moment
+ * 
+ * @param moments             Moments to compress.
+ * @param n_moments           Number of moments.
+ * @param compressed_moments  Computed compressed moments. Must be allocated
+ *                            with `n_compressed_moments` elements.
+ */
+void compress_bounded_moments(
+    const float moments[],
+    size_t n_moments,
+    float compressed_moments[]);
+
+
+/**
+ * @brief Decompress a set of compressed moments.
+ * 
+ * @param compressed_moments   Compressed moments.
+ * @param n_compressed_moments Number of compressed moments.
+ * @param moments              Computed moments. Must be allocated with 
+ *                             `n_compressed_moments` elements.
+ */
+void decompress_moments(
+    const float compressed_moments[],
+    size_t n_compressed_moments,
+    float moments[]);
+
+
+/**
+ * @brief Decompress a set of compressed bounded moments.
+ * 
+ * @param compressed_moments   Compressed moments.
+ * @param n_compressed_moments Number of compressed moments.
+ * @param moments              Computed moments. Must be allocated with 
+ *                             `n_compressed_moments` elements.
+ */
+void decompress_bounded_moments(
+    const float compressed_moments[],
+    size_t n_compressed_moments,
+    float moments[]);
+
+
+/* ----------------------------------------------------------------------------
+   Utility functions
+   ------------------------------------------------------------------------- */
+
+/**
  * @brief Use the Levinson algorithm to solve Toepliz matrix multiplied with
  * unit vector
  * 
@@ -114,59 +210,6 @@ void levinson_from_dot(
     size_t size,
     float first_column[]);
 
-
-/**
- * @brief Computes a density matching the given moments
- * 
- * @param phases    Phases where the density shall be computed.
- * @param n_phases  Size of phases array.
- * @param moments   Trigonometric moments.
- * @param n_moments Number of trigonometric moments.
- * @param density   Computed density. Must be allocated with `n_phases` 
- *                  elements.
- */
-void compute_density(
-    const float phases[],
-    size_t n_phases,
-    const float moments[],
-    size_t n_moments,
-    float density[]);
-
-
-void compute_density_bounded_lagrange(
-    const float phases[],
-    size_t n_phases,
-    const float moments[],
-    size_t n_moments,
-    float density[]);
-
-/**
- * @brief Compress a set of moment
- * 
- * @param moments             Moments to compress.
- * @param n_moments           Number of moments.
- * @param compressed_moments  Computed compressed moments. Must be allocated
- *                            with `n_compressed_moments` elements.
- */
-void compress_moments(
-    const float moments[],
-    size_t n_moments,
-    float compressed_moments[]);
-
-
-/**
- * @brief Decompress a set of compressed moments.
- * 
- * @param compressed_moments   Compressed moments.
- * @param n_compressed_moments Number of compressed moments.
- * @param moments              Computed moments. Must be allocated with 
- *                             `n_compressed_moments` elements.
- */
-void decompress_moments(
-    const float compressed_moments[],
-    size_t n_compressed_moments,
-    float moments[]);
-
 } // extern "C"
 
 
@@ -177,6 +220,8 @@ void decompress_moments(
 #ifdef __cplusplus
 
 #include <vector>
+#include <complex>
+
 
 void wavelengths_to_phases(
     const std::vector<float>& wavelengths, 
@@ -190,23 +235,14 @@ void compute_moments(
     std::vector<float>& moments);
 
 
-void solve_levinson(
-    const std::vector<float>& first_column,
-    std::vector<float>& solution);
-
-
-void dot_levinson(
-    const std::vector<float>& first_column,
-    std::vector<float>& dot_product);
-
-
-void levinson_from_dot(
-    const std::vector<float>& dot_product,
-    std::vector<float>& first_column);
-
-
 void compute_density(
     const std::vector<float>& phases, 
+    const std::vector<float>& moments,
+    std::vector<float>& density);
+
+
+void compute_density_bounded_lagrange(
+    const std::vector<float>& phases,
     const std::vector<float>& moments,
     std::vector<float>& density);
 
@@ -216,8 +252,90 @@ void compress_moments(
     std::vector<float>& compressed_moments);
 
 
+void compress_bounded_moments(
+    const std::vector<float>& moments,
+    std::vector<float>& compressed_moments);
+
+
 void decompress_moments(
     const std::vector<float>& compressed_moments,
     std::vector<float>& moments);
 
+
+void decompress_bounded_moments(
+    const std::vector<float>& compressed_moments,
+    std::vector<float>& moments);
+
+// void compress_bounded_moments(
+//     const std::vector<float>& moments,
+//     std::vector<float>&c compressed_moments);
+
+
+/* ----------------------------------------------------------------------------
+   Utility functions
+   ------------------------------------------------------------------------- */
+
+void solve_levinson(
+    const std::vector<float>& first_column,
+    std::vector<float>& solution);
+
+
+void solve_levinson(
+    const std::vector<std::complex<float>>& first_column,
+    std::vector<std::complex<float>>& solution);
+
+
+void dot_levinson(
+    const std::vector<float>& first_column,
+    std::vector<float>& dot_product);
+
+
+void dot_levinson(
+    const std::vector<std::complex<float>>& first_column,
+    std::vector<std::complex<float>>& dot_product);
+
+
+void levinson_from_dot(
+    const std::vector<float>& dot_product,
+    std::vector<float>& first_column);
+
+
+void levinson_from_dot(
+    const std::vector<std::complex<float>>& dot_product,
+    std::vector<std::complex<float>>& first_column);
+
+
+void moments_to_exponential_moments(
+    const float moments[],
+    size_t n_moments,
+    std::vector<std::complex<float>>& exponential_moments);
+
+
+void exponential_moments_to_moments(
+    const std::vector<std::complex<float>>& exponential_moments,
+    float moments[]);
+
+
+void compute_lagrange_multipliers(
+    const std::vector<std::complex<float>>& exponential_moments,
+    const std::vector<std::complex<float>>& evaluation_polynomial,
+    std::vector<std::complex<float>>& lagrange_multipliers);
+
+
+
+// void evaluate_herglotz_transform(
+//     const std::vector<std::complex<float>>& point_in_disk,
+//     const std::vector<std::complex<float>>& exponential_moments,
+//     std::vector<std::complex<float>>& evaluation_polynomial)
+// {
+//     std::vector<std::complex<float>> coefficients(exponential_moments.size());
+
+//     for (size_t i = exponential_moments.size() - 1; i >= 0; i--) {
+//         coefficients[i] = evaluation_polynomial[exponential_moments.size() - 1 - i]
+//             + coefficients[i + 1] / 
+//     }
+// }
+
 #endif // __cplusplus
+
+

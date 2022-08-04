@@ -38,6 +38,8 @@
  * C interface
  *****************************************************************************/
 
+extern "C" {
+
 void compute_moments_image(
     const float phases[],
     size_t n_phases,
@@ -75,6 +77,23 @@ void compress_moments_image(
 }
 
 
+void compress_bounded_moments_image(
+    const float moments_image[],
+    size_t width, size_t height,
+    size_t n_moments,
+    float compressed_moments_image[])
+{
+    #pragma omp parallel for
+    for (size_t i = 0; i < width * height; i++) {
+        compress_bounded_moments(
+            &(moments_image[(n_moments + 1) * i]),
+            n_moments,
+            &(compressed_moments_image[(n_moments + 1) * i])
+        );
+    }
+}
+
+
 void decompress_moments_image(
     const float compressed_moments_image[],
     size_t width, size_t height,
@@ -84,6 +103,23 @@ void decompress_moments_image(
     #pragma omp parallel for
     for (size_t i = 0; i < width * height; i++) {
         decompress_moments(
+            &(compressed_moments_image[(n_moments + 1) * i]),
+            n_moments,
+            &(moments_image[(n_moments + 1) * i])
+        );
+    }
+}
+
+
+void decompress_bounded_moments_image(
+    const float compressed_moments_image[],
+    size_t width, size_t height,
+    size_t n_moments,
+    float moments_image[])
+{
+    #pragma omp parallel for
+    for (size_t i = 0; i < width * height; i++) {
+        decompress_bounded_moments(
             &(compressed_moments_image[(n_moments + 1) * i]),
             n_moments,
             &(moments_image[(n_moments + 1) * i])
@@ -111,6 +147,29 @@ void compute_density_image(
         );
     }
 }
+
+
+void compute_density_bounded_lagrange_image(
+    const float phases[],
+    size_t n_phases,
+    const float moments_image[],
+    size_t width, size_t height,
+    size_t n_moments,
+    float density_image[])
+{
+    #pragma omp parallel for
+    for (size_t i = 0; i < width * height; i++) {
+        compute_density_bounded_lagrange(
+            phases,
+            n_phases,
+            &(moments_image[(n_moments + 1) * i]),
+            n_moments,
+            &(density_image[n_phases * i])
+        );
+    }
+}
+
+} // extern "C"
 
 
 /******************************************************************************
@@ -180,6 +239,26 @@ void compute_density_image(
     density_image.resize(phases.size() * width * height);
 
     compute_density_image(
+        phases.data(),
+        phases.size(),
+        moments_image.data(),
+        width, height,
+        n_moments,
+        density_image.data()
+    );
+}
+
+
+void compute_density_bounded_lagrange_image(
+    const std::vector<float>& phases,
+    const std::vector<float>& moments_image,
+    size_t width, size_t height,
+    size_t n_moments,
+    std::vector<float>& density_image)
+{
+    density_image.resize(phases.size() * width * height);
+
+    compute_density_bounded_lagrange_image(
         phases.data(),
         phases.size(),
         moments_image.data(),

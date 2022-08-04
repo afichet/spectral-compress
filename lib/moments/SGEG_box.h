@@ -37,6 +37,16 @@
 #include <cstddef>
 #include <cstdint>
 
+// class ImageMeta
+// {
+// public:
+//     uint32_t n_moments;
+//     SpectrumType spectrum_type;
+//     uint32_t len_channel_prefix;
+//     char* channel_prefix;
+// }
+
+
 // Spectral Gamma Extended Graphics
 
 class SGEG_box
