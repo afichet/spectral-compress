@@ -86,6 +86,9 @@ int main(int argc, char *argv[])
         memcpy(framebuffer.data(), og_framebuffer, width * height * n_bands * sizeof(float));
 
         // Ensure positive definite values
+        // We need to ensure as well that we do not have any spectrum with all
+        // null values, otherwise this would break later at the compression of
+        // moments.
         for (size_t i = 0; i < width * height * n_bands; i++) {
             const float v = framebuffer[i];
 
@@ -109,20 +112,19 @@ int main(int argc, char *argv[])
             compressed_moments_image
         );
 
-        // compressed_moments_image = moments_image;
-
-
         std::vector<float> dc_component(width * height);
-        // std::vector<std::vector<float>> rescaled_ac(n_moments);
         std::vector<std::vector<uint8_t>> rescaled_ac(n_moments);
 
-        // DC component
+        // DC component: it bascially contains all the HDR information so
+        // no further transformation is performed on this component.
         #pragma omp parallel for
         for (size_t i = 0; i < width * height; i++) {
             dc_component[i] = compressed_moments_image[(n_moments + 1) * i];
         }
 
-        // AC components
+        // AC components: those components are higher frequency and as such
+        // can be more aggressively compressed. We reacale each component
+        // to make use of the maximum range of an uint8.
         for (size_t m = 0; m < n_moments; m++) {
             // We need min and max of a given moment to later rescale in 0..1 for
             // integer quantization
@@ -145,13 +147,12 @@ int main(int argc, char *argv[])
             #pragma omp parallel for
             for (size_t i = 0; i < width * height; i++) {
                 const float v = (compressed_moments_image[(n_moments + 1) * i + m + 1] - min) / (max - min);
-                //rescaled_ac[m][i] = v;
                 rescaled_ac[m][i] = 255.f * v;
             }
         }
 
         // Debug
-        sgeg_box.print_info();
+        // sgeg_box.print_info();
 
         // Create the JXL
         JXLImageWriter jxl_image(width, height, sgeg_box, n_moments);
@@ -163,8 +164,6 @@ int main(int argc, char *argv[])
         }
 
         jxl_image.save(filename_out);
-    } else {
-        std::cerr << "Only emissive images are supported now." << std::endl;
     }
 
     if (image_in.isReflective()) {

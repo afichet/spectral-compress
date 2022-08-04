@@ -55,8 +55,6 @@ int main(int argc, char* argv[])
         max_v = std::max(max_v, main_fb[i]);
     }
 
-    std::cout << "min: " << min_v << " max: " << max_v << std::endl;
-
     for (uint32_t i = 0; i < main_fb.size(); i++) {
         main_fb[i] = 1000 * main_fb[i] * (max_v - min_v) + min_v;
     }

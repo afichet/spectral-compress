@@ -40,17 +40,6 @@
 #include <moments_image.h>
 #include <moments.h>
 
-void linspace(float min, float max, size_t size, std::vector<float>& array)
-{
-    array.resize(size);
-
-    float delta = (max - min) / float(size - 1);
-
-    for (size_t i = 0; i < size; i++) {
-        array[i] = min + i * delta;
-    }
-}
-
 
 int main(int argc, char* argv[]) 
 {
@@ -65,16 +54,14 @@ int main(int argc, char* argv[])
     const char* filename_out = argv[2];
 
     const JXLImageReader jxl_image(filename_in);
-    jxl_image.print_basic_info();
-
-    const SGEG_box sgeg_box = jxl_image.get_sgeg();
-
-    // Debug
-    sgeg_box.print_info();
-
+    const SGEG_box sgeg_box  = jxl_image.get_sgeg();
     const size_t width       = jxl_image.width();
     const size_t height      = jxl_image.height();
     const uint32_t n_moments = sgeg_box.n_moments;
+
+    // Debug
+    // jxl_image.print_basic_info();
+    // sgeg_box.print_info();
 
     std::vector<float> dc_image(width * height);
     std::vector<std::vector<float>> ac_images(sgeg_box.n_moments);
@@ -108,12 +95,10 @@ int main(int argc, char* argv[])
         width, height, n_moments,
         moments_image
     );
-    // moments_image = compressed_moments_image;
 
-    std::vector<float> wavelengths_nm = sgeg_box.wavelengths;
-    // linspace(sgeg_box.wl_min_nm, sgeg_box.wl_max_nm, sgeg_box.n_wl_original, wavelengths_nm);
-
+    const std::vector<float> wavelengths_nm = sgeg_box.wavelengths;
     std::vector<float> phases;
+
     wavelengths_to_phases(wavelengths_nm, phases);
 
     SEXR::EXRSpectralImage image_out(width, height, wavelengths_nm, SEXR::SpectrumType::EMISSIVE);
