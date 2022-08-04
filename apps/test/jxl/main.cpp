@@ -83,7 +83,7 @@ void to_sRGBA(
 {
     out_framebuffer.resize(in_framebuffer.size() * 4);
 
-    for (int i = 0; i < in_framebuffer.size(); i++) {
+    for (size_t i = 0; i < in_framebuffer.size(); i++) {
         for (int c = 0; c < 3; c++) {
             out_framebuffer[4 * i + c] = 255 * std::pow(in_framebuffer[i], 1.f/2.2f);
         }
@@ -95,6 +95,8 @@ void to_sRGBA(
 
 int main(int argc, char* argv[])
 {
+    (void)argc; (void)argv;
+    
     // write_foo_image("toto.jxl", 640, 480);
 
     // JXLImageReader r("toto.jxl");
@@ -113,7 +115,7 @@ int main(int argc, char* argv[])
 
     lodepng::encode("main.png", png_image.data(), r_width, r_height);
 
-    for (int i = 0; i < r.n_subframebuffers(); i++) {
+    for (size_t i = 0; i < r.n_subframebuffers(); i++) {
         std::stringstream ss;
         ss << "sub_" << i << ".png";
 
