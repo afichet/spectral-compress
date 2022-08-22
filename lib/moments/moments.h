@@ -55,6 +55,18 @@ void wavelengths_to_phases(
     float phases[]);
 
 
+void compute_basis_signal_to_moments(
+    const float phases[],
+    size_t n_phases,
+    float basis[]);
+
+
+void compute_basis_moments_to_signal(
+    const float phases[],
+    size_t n_phases,
+    float basis[]);
+
+
 /**
  * @brief Computes moments from a given signal
  * 
@@ -226,6 +238,16 @@ void levinson_from_dot(
 void wavelengths_to_phases(
     const std::vector<float>& wavelengths, 
     std::vector<float>& phases);
+
+
+void compute_basis_signal_to_moments(
+    const std::vector<float>& phases,
+    std::vector<float>& basis);
+
+
+void compute_basis_moments_to_signal(
+    const std::vector<float>& phases,
+    std::vector<float>& basis);
 
 
 void compute_moments(

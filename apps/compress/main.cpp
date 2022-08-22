@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
     const size_t width     = image_in.width();
     const size_t height    = image_in.height();
     const size_t n_bands   = image_in.nSpectralBands();
-    const size_t n_moments = n_bands;
+    const size_t n_moments = n_bands - 1;
 
     std::vector<float> phases;
     std::vector<float> wavelengths;

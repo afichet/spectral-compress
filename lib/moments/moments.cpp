@@ -39,6 +39,9 @@
 #include <cstring>
 #include <vector>
 
+#include <Eigen/Core>
+#include <Eigen/LU>
+
 #define MIN_FLT 1e-35
 
 /******************************************************************************
@@ -58,6 +61,37 @@ void wavelengths_to_phases(
     for (size_t i = 0; i < n_wavelengths; i++) {
         phases[i] = M_PIf * (wavelengths[i] - min_wl) / (max_wl - min_wl) - M_PIf;
     }
+}
+
+
+void compute_basis_signal_to_moments(
+    const float phases[],
+    size_t n_phases,
+    float basis[])
+{
+    // Eigen::Map<Eigen::MatrixXf> transform_mat(basis, n_phases, n_phases);
+    Eigen::MatrixXf signal(n_phases, n_phases);
+
+    signal.setIdentity();
+
+    for (size_t i = 0; i < n_phases; i++) {
+        compute_moments(
+            phases, n_phases,
+            signal.col(i).data(), n_phases - 1,
+            &basis[i * n_phases]
+        );
+    }
+}
+
+
+void compute_basis_moments_to_signal(
+    const float phases[],
+    size_t n_phases,
+    float basis[])
+{
+    compute_basis_signal_to_moments(phases, n_phases, basis);
+    Eigen::Map<Eigen::MatrixXf> transform(basis, n_phases, n_phases);
+    transform = transform.inverse();
 }
 
 
@@ -416,6 +450,32 @@ void wavelengths_to_phases(
 {
     phases.resize(wavelengths.size());
     wavelengths_to_phases(wavelengths.data(), wavelengths.size(), phases.data());
+}
+
+
+void compute_basis_signal_to_moments(
+    const std::vector<float>& phases,
+    std::vector<float>& basis)
+{
+    basis.resize(phases.size() * phases.size());
+
+    compute_basis_signal_to_moments(
+        phases.data(), phases.size(),
+        basis.data()
+    );
+}
+
+
+void compute_basis_moments_to_signal(
+    const std::vector<float>& phases,
+    std::vector<float>& basis)
+{
+    basis.resize(phases.size() * phases.size());
+
+    compute_basis_moments_to_signal(
+        phases.data(), phases.size(),
+        basis.data()
+    );
 }
 
 

@@ -34,6 +34,9 @@
 #include "moments_image.h"
 #include "moments.h"
 
+#include <cstring>
+#include <Eigen/Core>
+
 /******************************************************************************
  * C interface
  *****************************************************************************/
@@ -48,6 +51,25 @@ void compute_moments_image(
     size_t n_moments,
     float moments_image[])
 {
+    if (n_moments == n_phases - 1) {
+        std::vector<float> transform(n_phases * n_phases);
+        compute_basis_signal_to_moments(phases, n_phases, transform.data());
+
+        Eigen::Map<Eigen::MatrixXf> t_mat(transform.data(), n_phases, n_phases);
+
+        // Local copy for non const manipulation
+        std::vector<float> spec_image(width * height * n_phases);
+        std::memcpy(spec_image.data(), spectral_image, width * height * n_phases * sizeof(float));
+
+        #pragma omp parallel for
+        for (size_t i = 0; i < width * height; i++) {
+            const Eigen::Map<Eigen::VectorXf> signal(&(spec_image[n_phases * i]), n_phases);
+            Eigen::Map<Eigen::VectorXf> moments(&(moments_image[n_phases * i]), n_phases);
+
+            moments = t_mat * signal;
+        }
+    }
+    /*
     #pragma omp parallel for
     for (size_t i = 0; i < width * height; i++) {
         compute_moments(
@@ -56,7 +78,7 @@ void compute_moments_image(
             &(spectral_image[n_phases * i]),
             n_moments,
             &(moments_image[(n_moments + 1) * i]));
-    }
+    }*/
 }
 
 
@@ -136,16 +158,34 @@ void compute_density_image(
     size_t n_moments,
     float density_image[])
 {
-    #pragma omp parallel for
-    for (size_t i = 0; i < width * height; i++) {
-        compute_density(
-            phases,
-            n_phases,
-            &(moments_image[(n_moments + 1) * i]),
-            n_moments,
-            &(density_image[n_phases * i])
-        );
+    if (n_moments == n_phases - 1) {
+        std::vector<float> transform(n_phases * n_phases);
+        compute_basis_moments_to_signal(phases, n_phases, transform.data());
+
+        Eigen::Map<Eigen::MatrixXf> t_mat(transform.data(), n_phases, n_phases);
+
+        // Local copy for non const manipulation
+        std::vector<float> m_img(width * height * (n_moments + 1));
+        std::memcpy(m_img.data(), moments_image, width * height * (n_moments + 1) * sizeof(float));
+
+        #pragma omp parallel for
+        for (size_t i = 0; i < width * height; i++) {
+            const Eigen::Map<Eigen::VectorXf> moments(&(m_img[n_phases * i]), n_phases);
+            Eigen::Map<Eigen::VectorXf> signal(&(density_image[n_phases * i]), n_phases);
+
+            signal = t_mat * moments;
+        }
     }
+    // #pragma omp parallel for
+    // for (size_t i = 0; i < width * height; i++) {
+    //     compute_density(
+    //         phases,
+    //         n_phases,
+    //         &(moments_image[(n_moments + 1) * i]),
+    //         n_moments,
+    //         &(density_image[n_phases * i])
+    //     );
+    // }
 }
 
 

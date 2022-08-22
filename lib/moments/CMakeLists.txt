@@ -29,4 +29,4 @@ else()
 endif()
 
 
-target_link_libraries(moments PUBLIC jxl jxl_threads)
+target_link_libraries(moments PUBLIC jxl jxl_threads Eigen3::Eigen)
