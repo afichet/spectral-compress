@@ -100,18 +100,6 @@ JXLImageWriter::JXLImageWriter(
     CHECK_JXL_ENC_STATUS(status);
 
     // ------------------------------------------------------------------------
-
-    _color_encoding.color_space       = JXL_COLOR_SPACE_GRAY;
-    _color_encoding.white_point       = JXL_WHITE_POINT_D65;
-    _color_encoding.primaries         = JXL_PRIMARIES_SRGB;
-    _color_encoding.transfer_function = JXL_TRANSFER_FUNCTION_LINEAR;
-    _color_encoding.rendering_intent  = JXL_RENDERING_INTENT_PERCEPTUAL;
-
-    status = JxlEncoderSetColorEncoding(_enc.get(), &_color_encoding);
-
-    CHECK_JXL_ENC_STATUS(status);
-
-    // ------------------------------------------------------------------------
     
     status = JxlEncoderUseBoxes(_enc.get());
     
@@ -135,6 +123,16 @@ void JXLImageWriter::addMainFramebuffer(
     int32_t downsampling)
 {
     JxlEncoderStatus status;
+
+    _color_encoding.color_space       = JXL_COLOR_SPACE_GRAY;
+    _color_encoding.white_point       = JXL_WHITE_POINT_D65;
+    _color_encoding.primaries         = JXL_PRIMARIES_SRGB;
+    _color_encoding.transfer_function = JXL_TRANSFER_FUNCTION_LINEAR;
+    _color_encoding.rendering_intent  = JXL_RENDERING_INTENT_PERCEPTUAL;
+
+    status = JxlEncoderSetColorEncoding(_enc.get(), &_color_encoding);
+
+    CHECK_JXL_ENC_STATUS(status);
     
     // Deprecated
     // JxlEncoderOptions* frame_settings = JxlEncoderOptionsCreate(_enc.get(), nullptr);
@@ -182,6 +180,72 @@ void JXLImageWriter::addMainFramebuffer(uint16_t* framebuffer, int32_t downsampl
 {
     JxlPixelFormat format = {1, JXL_TYPE_UINT16, JXL_NATIVE_ENDIAN, 0};
     addMainFramebuffer(framebuffer, format, sizeof(uint16_t), downsampling);
+}
+
+
+void JXLImageWriter::addMainRGBFramebuffer(
+    void* framebuffer,
+    JxlPixelFormat pixel_format,
+    size_t el_size)
+{
+    JxlEncoderStatus status;
+
+    _color_encoding.color_space       = JXL_COLOR_SPACE_RGB;
+    _color_encoding.white_point       = JXL_WHITE_POINT_D65;
+    _color_encoding.primaries         = JXL_PRIMARIES_SRGB;
+    _color_encoding.transfer_function = JXL_TRANSFER_FUNCTION_LINEAR;
+    _color_encoding.rendering_intent  = JXL_RENDERING_INTENT_PERCEPTUAL;
+
+    status = JxlEncoderSetColorEncoding(_enc.get(), &_color_encoding);
+
+    CHECK_JXL_ENC_STATUS(status);
+    
+    // Deprecated
+    // JxlEncoderOptions* frame_settings = JxlEncoderOptionsCreate(_enc.get(), nullptr);
+    JxlEncoderFrameSettings* frame_settings = JxlEncoderFrameSettingsCreate(_enc.get(), nullptr);
+    
+    // Set compression quality
+    // JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_EFFORT, 9);
+    // status = JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_RESAMPLING, downsampling);
+    CHECK_JXL_ENC_STATUS(status);
+
+    // status = JxlEncoderSetFrameLossless(frame_settings, JXL_TRUE);
+    // CHECK_JXL_ENC_STATUS(status);
+
+    status = JxlEncoderSetFrameDistance(frame_settings, 0.);
+    CHECK_JXL_ENC_STATUS(status);
+
+    const size_t data_size = 3 * _basic_info.xsize * _basic_info.ysize * el_size;
+
+    status = JxlEncoderAddImageFrame(
+        frame_settings, 
+        &pixel_format,
+        framebuffer,
+        data_size
+    );
+
+    CHECK_JXL_ENC_STATUS(status);
+}
+
+
+void JXLImageWriter::addMainRGBFramebuffer(float* framebuffer)
+{
+    JxlPixelFormat format = {3, JXL_TYPE_FLOAT, JXL_NATIVE_ENDIAN, 0};
+    addMainRGBFramebuffer(framebuffer, format, sizeof(float));
+}
+
+
+void JXLImageWriter::addMainRGBFramebuffer(uint8_t* framebuffer)
+{
+    JxlPixelFormat format = {3, JXL_TYPE_UINT8, JXL_NATIVE_ENDIAN, 0};
+    addMainRGBFramebuffer(framebuffer, format, sizeof(uint8_t));
+}
+
+
+void JXLImageWriter::addMainRGBFramebuffer(uint16_t* framebuffer)
+{
+    JxlPixelFormat format = {3, JXL_TYPE_UINT16, JXL_NATIVE_ENDIAN, 0};
+    addMainRGBFramebuffer(framebuffer, format, sizeof(uint16_t));
 }
 
 
@@ -237,8 +301,11 @@ void JXLImageWriter::addSubFramebuffer(
 
     JxlExtraChannelInfo extra_info;
     JxlEncoderInitExtraChannelInfo(JXL_CHANNEL_OPTIONAL, &extra_info);
-    extra_info.bits_per_sample = 32;
-    extra_info.exponent_bits_per_sample = 8;
+    // extra_info.bits_per_sample = 32;
+    // extra_info.exponent_bits_per_sample = 8;
+    extra_info.bits_per_sample = 8;
+    extra_info.exponent_bits_per_sample = 0;
+
 
     addSubFramebuffer(framebuffer, format, extra_info, sizeof(float), index, downsampling, channel_name);
 }
@@ -273,6 +340,9 @@ void JXLImageWriter::addSubFramebuffer(
     JxlEncoderInitExtraChannelInfo(JXL_CHANNEL_OPTIONAL, &extra_info);
     extra_info.bits_per_sample = 16;
     extra_info.exponent_bits_per_sample = 0;
+    // extra_info.bits_per_sample = 8;
+    // extra_info.exponent_bits_per_sample = 0;
+
 
     addSubFramebuffer(framebuffer, format, extra_info, sizeof(uint16_t), index, downsampling, channel_name);
 }
@@ -354,7 +424,10 @@ JXLImageReader::JXLImageReader(const char* filename)
     
     CHECK_JXL_DEC_STATUS(status);
 
-    JxlPixelFormat format = {1, JXL_TYPE_FLOAT, JXL_NATIVE_ENDIAN, 0};
+    // JxlPixelFormat format_main = {3, JXL_TYPE_FLOAT, JXL_NATIVE_ENDIAN, 0};
+    JxlPixelFormat format_main = {1, JXL_TYPE_FLOAT, JXL_NATIVE_ENDIAN, 0};
+    JxlPixelFormat format_sub  = {1, JXL_TYPE_FLOAT, JXL_NATIVE_ENDIAN, 0};
+
     std::vector<uint8_t> box_raw_sgeg;
 
     JxlDecoderSetInput(_dec.get(), jxl_data.data(), jxl_data.size());
@@ -363,7 +436,8 @@ JXLImageReader::JXLImageReader(const char* filename)
         status_process != JXL_DEC_FULL_IMAGE; 
         status_process = JxlDecoderProcessInput(_dec.get())) 
     {
-        size_t pixel_buffer_sz = 0;
+        size_t main_pixel_buffer_sz = 0;
+        size_t sub_pixel_buffer_sz = 0;
         JxlBoxType box_type;
 
         switch(status_process) {
@@ -401,14 +475,15 @@ JXLImageReader::JXLImageReader(const char* filename)
                 // status = JxlDecoderImageOutBufferSize(_dec.get(), &format, &buffer_size);
                 // CHECK_JXL_DEC_STATUS(status);
 
-                _main_framebuffer.resize(_basic_info.xsize * _basic_info.ysize);
-                pixel_buffer_sz = _basic_info.xsize * _basic_info.ysize * sizeof(float);
+                _main_framebuffer.resize(format_main.num_channels * _basic_info.xsize * _basic_info.ysize);
+                main_pixel_buffer_sz = format_main.num_channels * _basic_info.xsize * _basic_info.ysize * sizeof(float);
+                sub_pixel_buffer_sz  = format_sub.num_channels * _basic_info.xsize * _basic_info.ysize * sizeof(float);
 
                 status = JxlDecoderSetImageOutBuffer(
                     _dec.get(), 
-                    &format, 
+                    &format_main, 
                     _main_framebuffer.data(),
-                    pixel_buffer_sz
+                    main_pixel_buffer_sz
                 );
 
                 CHECK_JXL_DEC_STATUS(status);
@@ -417,9 +492,9 @@ JXLImageReader::JXLImageReader(const char* filename)
                 for (uint32_t i = 0; i < _basic_info.num_extra_channels; i++) {
                     status = JxlDecoderSetExtraChannelBuffer(
                         _dec.get(),
-                        &format,
+                        &format_sub,
                         _sub_framebuffers[i].data(),
-                        pixel_buffer_sz,
+                        sub_pixel_buffer_sz,
                         i
                     );
 

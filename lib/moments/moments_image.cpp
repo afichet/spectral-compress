@@ -212,6 +212,23 @@ void compress_moments_image(
 }
 
 
+void compress_bounded_moments_image(
+    const std::vector<float>& moments_image,
+    size_t width, size_t height,
+    size_t n_moments,
+    std::vector<float>& compressed_moments_image)
+{
+    compressed_moments_image.resize(moments_image.size());
+
+    compress_bounded_moments_image(
+        moments_image.data(), 
+        width, height, 
+        n_moments, 
+        compressed_moments_image.data()
+    );
+}
+
+
 void decompress_moments_image(
     const std::vector<float>& compressed_moments_image,
     size_t width, size_t height,
@@ -221,6 +238,23 @@ void decompress_moments_image(
     moments_image.resize(compressed_moments_image.size());
 
     decompress_moments_image(
+        compressed_moments_image.data(),
+        width, height,
+        n_moments,
+        moments_image.data()
+    );
+}
+
+
+void decompress_bounded_moments_image(
+    const std::vector<float>& compressed_moments_image,
+    size_t width, size_t height,
+    size_t n_moments,
+    std::vector<float>& moments_image)
+{
+    moments_image.resize(compressed_moments_image.size());
+
+    decompress_bounded_moments_image(
         compressed_moments_image.data(),
         width, height,
         n_moments,

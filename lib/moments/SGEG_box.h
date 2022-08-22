@@ -59,6 +59,10 @@ public:
     std::vector<float> moment_max;
     std::vector<float> wavelengths;
 
+    std::vector<uint32_t> subimage_idx;
+
+    bool is_reflective;
+
     SGEG_box(uint32_t n_moments = 0, uint32_t n_wavelengths = 0);
 
     SGEG_box(const std::vector<uint8_t> &data);

@@ -67,6 +67,15 @@ public:
     void addMainFramebuffer(uint8_t *framebuffer, int32_t downsampling = 1);
     void addMainFramebuffer(uint16_t *framebuffer, int32_t downsampling = 1);
 
+    void addMainRGBFramebuffer(
+        void *framebuffer,
+        JxlPixelFormat pixel_format,
+        size_t el_size);
+
+    void addMainRGBFramebuffer(float *framebuffer);
+    void addMainRGBFramebuffer(uint8_t *framebuffer);
+    void addMainRGBFramebuffer(uint16_t *framebuffer);
+
     void addSubFramebuffer(
         void *framebuffer,
         JxlPixelFormat pixel_format,

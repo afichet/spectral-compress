@@ -43,6 +43,7 @@ SGEG_box::SGEG_box(uint32_t _n_moments, uint32_t _n_wavelengths)
     , moment_min(_n_moments)
     , moment_max(_n_moments)
     , wavelengths(_n_wavelengths)
+    , subimage_idx(n_moments)
 {
 }
 
@@ -63,6 +64,7 @@ SGEG_box::SGEG_box(const std::vector<uint8_t> &data)
 
     moment_min.resize(n_moments);
     moment_max.resize(n_moments);
+    subimage_idx.resize(n_moments);
 
     // ------------------------------------------------------------------------
     // Original number of wavelengths
@@ -95,6 +97,25 @@ SGEG_box::SGEG_box(const std::vector<uint8_t> &data)
 
     memcpy(wavelengths.data(), data.data() + offset, next_offset);
     offset += next_offset;
+
+    // ------------------------------------------------------------------------
+    // Subimages idx
+    // ------------------------------------------------------------------------
+
+    next_offset = n_moments * sizeof(uint32_t);
+    memcpy(subimage_idx.data(), data.data() + offset, next_offset);
+    
+    offset += next_offset;
+
+    // ------------------------------------------------------------------------
+    // Other metadata
+    // ------------------------------------------------------------------------
+
+    next_offset = sizeof(bool);
+    memcpy(&is_reflective, data.data() + offset, next_offset);
+
+    offset += next_offset;
+
 }
 
 
@@ -104,6 +125,8 @@ SGEG_box::SGEG_box(const SGEG_box& other)
     , moment_min(other.moment_min)
     , moment_max(other.moment_max)
     , wavelengths(other.wavelengths)
+    , subimage_idx(other.subimage_idx)
+    , is_reflective(other.is_reflective)
 {
 }
 
@@ -153,6 +176,24 @@ void SGEG_box::getRaw(std::vector<uint8_t> &data) const
 
     memcpy(data.data() + offset, wavelengths.data(), next_offset);
     offset += next_offset;
+
+    // ------------------------------------------------------------------------
+    // Subimages idx
+    // ------------------------------------------------------------------------
+
+    next_offset = n_moments * sizeof(uint32_t);
+    memcpy(data.data() + offset, subimage_idx.data(), next_offset);
+    
+    offset += next_offset;
+
+    // ------------------------------------------------------------------------
+    // Other metadata
+    // ------------------------------------------------------------------------
+
+    next_offset = sizeof(bool);
+    memcpy(data.data() + offset, &is_reflective, next_offset);
+
+    offset += next_offset;
 }
 
 
@@ -161,8 +202,10 @@ size_t SGEG_box::size() const
     return
         sizeof(uint32_t) +              // n_moments
         sizeof(uint32_t) +              // n_wavelengths
-        2 * n_moments * sizeof(float) + // [min..max]
-        n_wavelengths * sizeof(float);  // [\lambda_min..\lambda_max]
+        2 * n_moments * sizeof(float) + // [min..max], idx moments
+        n_wavelengths * sizeof(float) + // [\lambda_min..\lambda_max]
+        n_moments * sizeof(uint32_t) + 
+        sizeof(bool);                   // is_reflective
 }
 
 

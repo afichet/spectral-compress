@@ -54,10 +54,15 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
+    const bool saveRGB = false;
+
     const char* filename_in  = argv[1];
     const char* filename_out = argv[2];
 
     const SEXR::EXRSpectralImage image_in(filename_in);
+
+    std::vector<float> rgb_image;
+    image_in.getRGBImage(rgb_image);
 
     const size_t width     = image_in.width();
     const size_t height    = image_in.height();
@@ -77,6 +82,8 @@ int main(int argc, char *argv[])
     sgeg_box.wavelengths = wavelengths;
 
     if (image_in.isEmissive()) {
+        sgeg_box.is_reflective = false;
+
         std::vector<float> moments_image(width * height * (n_moments + 1));
         std::vector<float> compressed_moments_image(width * height * (n_moments + 1));
         
@@ -92,18 +99,32 @@ int main(int argc, char *argv[])
         for (size_t i = 0; i < width * height * n_bands; i++) {
             const float v = framebuffer[i];
 
-            if (std::isinf(v) || std::isnan(v) || v <= 0) {
-                framebuffer[i] = std::numeric_limits<float>::epsilon();
+            // if (std::isinf(v) || std::isnan(v) || v <= 0) {
+            //     framebuffer[i] = std::numeric_limits<float>::epsilon();
+            // }
+
+
+            if (std::isinf(v) || std::isnan(v) || v < 1e-30) {
+                framebuffer[i] = 1e-30;
             }
         }
 
         compute_moments_image(
-            phases.data(), phases.size(),
-            framebuffer.data(),
+            phases,
+            framebuffer,
             width, height,
             n_moments,
-            moments_image.data()
+            moments_image
         );
+
+        for (size_t i = 0; i < width * height; i++) {
+            for (size_t m = 0; m < n_moments + 1; m++) {
+                const float v = moments_image[(n_moments + 1) * i + m];
+                if (std::isinf(v) || std::isnan(v)) {
+                    std::cout << "Invalid moment value!" << std::endl;
+                }
+            }
+        }
 
         compress_moments_image(
             moments_image,
@@ -112,8 +133,20 @@ int main(int argc, char *argv[])
             compressed_moments_image
         );
 
+
+        for (size_t i = 0; i < width * height; i++) {
+            for (size_t m = 0; m < n_moments + 1; m++) {
+                const float v = compressed_moments_image[(n_moments + 1) * i + m];
+                if (std::isinf(v) || std::isnan(v)) {
+                    std::cout << "Invalid compressed moment value!" << std::endl;
+                }
+            }
+        }
+
+
         std::vector<float> dc_component(width * height);
-        std::vector<std::vector<uint8_t>> rescaled_ac(n_moments);
+        // std::vector<std::vector<uint8_t>> rescaled_ac(n_moments);
+        std::vector<std::vector<float>> rescaled_ac(n_moments);
 
         // DC component: it bascially contains all the HDR information so
         // no further transformation is performed on this component.
@@ -147,16 +180,113 @@ int main(int argc, char *argv[])
             #pragma omp parallel for
             for (size_t i = 0; i < width * height; i++) {
                 const float v = (compressed_moments_image[(n_moments + 1) * i + m + 1] - min) / (max - min);
-                rescaled_ac[m][i] = 255.f * v;
+                // rescaled_ac[m][i] = 255.f * v;
+                rescaled_ac[m][i] = v;
             }
         }
 
         // Debug
-        // sgeg_box.print_info();
+        sgeg_box.print_info();
 
         // Create the JXL
         JXLImageWriter jxl_image(width, height, sgeg_box, n_moments);
 
+        // if (saveRGB) {
+            // Convert to RGB 24 bits
+            // std::vector<uint8_t> rgb_image_ldr(width * height * 3);
+
+            // for (size_t i = 0; i < width * height; i++) {
+            //     for (size_t c = 0; c < 3; c++) {
+            //         rgb_image_ldr[3 * i + c] = 255.f * std::min(1.f, std::max(0.f, rgb_image[3 * i + c]));
+            //     }
+            // }
+
+            // jxl_image.addMainRGBFramebuffer(rgb_image_ldr.data());
+
+            // jxl_image.addSubFramebuffer(dc_component.data(), 0);
+
+            // for (size_t m = 0; m < n_moments; m++) {
+            //     jxl_image.addSubFramebuffer(rescaled_ac[m].data(), m + 1);
+            // }
+        // } else {
+            jxl_image.addMainFramebuffer(dc_component.data());
+
+            for (size_t m = 0; m < n_moments; m++) {
+                jxl_image.addSubFramebuffer(rescaled_ac[m].data(), m);
+            }
+
+        // }
+
+        jxl_image.save(filename_out);
+    } else {
+        sgeg_box.is_reflective = true;
+
+        std::vector<float> reflective_fb(width * height * n_bands);
+        std::vector<float> moments_image(width * height * (n_moments + 1));
+        std::vector<float> compressed_bounded_moments_image(width * height * (n_moments + 1));
+
+        memcpy(reflective_fb.data(), &image_in.reflective(0, 0, 0), reflective_fb.size() * sizeof(float));
+
+        for (size_t i = 0; i < width * height * n_bands; i++) {
+            const float v = reflective_fb[i];
+
+            if (std::isinf(v) || std::isnan(v) || v < 0) {
+                reflective_fb[i] = 0;
+            }
+        }
+
+        compute_moments_image(
+            phases,
+            reflective_fb,
+            width, height,
+            n_moments,
+            moments_image
+        );
+
+        compress_bounded_moments_image(
+            moments_image,
+            width, height,
+            n_moments,
+            compressed_bounded_moments_image
+        );
+
+        std::vector<float> dc_component(width * height);
+        // std::vector<std::vector<uint8_t>> rescaled_ac(n_moments);
+        std::vector<std::vector<float>> rescaled_ac(n_moments);
+
+        #pragma omp parallel for
+        for (size_t i = 0; i < width * height; i++) {
+            dc_component[i] = compressed_bounded_moments_image[(n_moments + 1) * i];
+        }
+
+
+        for (size_t m = 0; m < n_moments; m++) {
+            float min = 1.;
+            float max = -1.;
+
+
+            for (size_t i = 0; i < width * height; i++) {
+                const float v = compressed_bounded_moments_image[(n_moments + 1) * i + m + 1];
+                if (!std::isinf(v)) {
+                    min = std::min(min, v);
+                    max = std::max(max, v);
+                }
+            }
+
+            sgeg_box.moment_min[m] = min;
+            sgeg_box.moment_max[m] = max;
+
+            rescaled_ac[m].resize(width * height);
+
+            #pragma omp parallel for
+            for (size_t i = 0; i < width * height; i++) {
+                const float v = (compressed_bounded_moments_image[(n_moments + 1) * i + m + 1] - min) / (max - min);
+                // rescaled_ac[m][i] = 255.f * v;
+                rescaled_ac[m][i] = v;
+            }
+        }
+
+        JXLImageWriter jxl_image(width, height, sgeg_box, n_moments);
         jxl_image.addMainFramebuffer(dc_component.data());
 
         for (size_t m = 0; m < n_moments; m++) {
@@ -166,9 +296,6 @@ int main(int argc, char *argv[])
         jxl_image.save(filename_out);
     }
 
-    if (image_in.isReflective()) {
-        std::cout << "[WARN] Reflective layers will be ignored." << std::endl;
-    }
 
     if (image_in.isBispectral()) {
         std::cout << "[WARN] Bispectral layers will be ignored." << std::endl;

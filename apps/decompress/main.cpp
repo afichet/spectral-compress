@@ -66,6 +66,17 @@ int main(int argc, char* argv[])
     std::vector<float> dc_image(width * height);
     std::vector<std::vector<float>> ac_images(sgeg_box.n_moments);
 
+    // jxl_image.getSubFramebuffer(dc_image, 0);
+
+    // for (uint32_t m = 0; m < n_moments; m++) {
+    //     jxl_image.getSubFramebuffer(ac_images[m], m + 1);
+
+    //     // Apply rescaling
+    //     for (size_t i = 0; i < width * height; i++) {
+    //         ac_images[m][i] = ac_images[m][i] * (sgeg_box.moment_max[m] - sgeg_box.moment_min[m]) + sgeg_box.moment_min[m];
+    //     }
+    // }
+
     jxl_image.getMainFramebuffer(dc_image);
 
     for (uint32_t m = 0; m < n_moments; m++) {
@@ -90,29 +101,55 @@ int main(int argc, char* argv[])
         }
     }
 
-    decompress_moments_image(
-        compressed_moments_image,
-        width, height, n_moments,
-        moments_image
-    );
+    if (sgeg_box.is_reflective) {
+        decompress_bounded_moments_image(
+            compressed_moments_image,
+            width, height, n_moments,
+            moments_image
+        );
 
-    const std::vector<float> wavelengths_nm = sgeg_box.wavelengths;
-    std::vector<float> phases;
+        const std::vector<float> wavelengths_nm = sgeg_box.wavelengths;
+        std::vector<float> phases;
 
-    wavelengths_to_phases(wavelengths_nm, phases);
+        wavelengths_to_phases(wavelengths_nm, phases);
 
-    SEXR::EXRSpectralImage image_out(width, height, wavelengths_nm, SEXR::SpectrumType::EMISSIVE);
+        SEXR::EXRSpectralImage image_out(width, height, wavelengths_nm, SEXR::SpectrumType::REFLECTIVE);
 
-    compute_density_image(
-        phases.data(), phases.size(),
-        moments_image.data(),
-        width,
-        height,
-        n_moments,
-        &image_out.emissive(0, 0, 0, 0)
-    );
+        compute_density_bounded_lagrange_image(
+            phases.data(), phases.size(),
+            moments_image.data(),
+            width,
+            height,
+            n_moments,
+            &image_out.reflective(0, 0, 0)
+        );
 
-    image_out.save(filename_out);
+        image_out.save(filename_out);
+    } else {
+        decompress_moments_image(
+            compressed_moments_image,
+            width, height, n_moments,
+            moments_image
+        );
+
+        const std::vector<float> wavelengths_nm = sgeg_box.wavelengths;
+        std::vector<float> phases;
+
+        wavelengths_to_phases(wavelengths_nm, phases);
+
+        SEXR::EXRSpectralImage image_out(width, height, wavelengths_nm, SEXR::SpectrumType::EMISSIVE);
+
+        compute_density_image(
+            phases.data(), phases.size(),
+            moments_image.data(),
+            width,
+            height,
+            n_moments,
+            &image_out.emissive(0, 0, 0, 0)
+        );
+
+        image_out.save(filename_out);
+    }
 
     return 0;
 }
