@@ -1,2 +1,13 @@
+# Disable JXL features we do not need
+set(BUILD_TESTING           false CACHE BOOL "")
+set(JPEGXL_ENABLE_DEVTOOLS  false CACHE BOOL "")
+set(JPEGXL_ENABLE_TOOLS     false CACHE BOOL "")
+set(JPEGXL_ENABLE_DOXYGEN   false CACHE BOOL "")
+set(JPEGXL_ENABLE_MANPAGES  false CACHE BOOL "")
+set(JPEGXL_ENABLE_BENCHMARK false CACHE BOOL "")
+set(JPEGXL_ENABLE_EXAMPLES  false CACHE BOOL "")
+set(JPEGXL_ENABLE_VIEWERS   false CACHE BOOL "")
+
 add_subdirectory(libjxl)
 add_subdirectory(spectral-exr)
+add_subdirectory(eigen)

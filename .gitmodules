@@ -4,3 +4,6 @@
 [submodule "3rdparty/libjxl"]
 	path = 3rdparty/libjxl
 	url = https://github.com/libjxl/libjxl.git
+[submodule "3rdparty/eigen"]
+	path = 3rdparty/eigen
+	url = https://gitlab.com/libeigen/eigen.git
