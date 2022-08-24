@@ -1,3 +1,3 @@
 add_executable(decompress main.cpp)
 
-target_link_libraries(decompress PRIVATE EXRSpectralImage moments)
+target_link_libraries(decompress PRIVATE EXRSpectralImage common)

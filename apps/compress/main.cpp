@@ -92,6 +92,8 @@ int main(int argc, char *argv[])
 
         memcpy(framebuffer.data(), og_framebuffer, width * height * n_bands * sizeof(float));
 
+
+        std::cout << "Conditioning framebuffers...\t";
         // Ensure positive definite values
         // We need to ensure as well that we do not have any spectrum with all
         // null values, otherwise this would break later at the compression of
@@ -104,10 +106,15 @@ int main(int argc, char *argv[])
             // }
 
 
-            if (std::isinf(v) || std::isnan(v) || v < 1e-30) {
-                framebuffer[i] = 1e-30;
+            if (std::isinf(v) || std::isnan(v) || v < 1e-8) {
+                framebuffer[i] = 1e-8;
             }
         }
+
+        std::cout << "[DONE]" << std::endl;
+
+
+        std::cout << "Computing moments...\t\t";
 
         compute_moments_image(
             phases,
@@ -143,9 +150,12 @@ int main(int argc, char *argv[])
             }
         }
 
+        std::cout << "[DONE]" << std::endl;
+
+        std::cout << "Rescaling moments...\t\t";
+
 
         std::vector<float> dc_component(width * height);
-        // std::vector<std::vector<uint8_t>> rescaled_ac(n_moments);
         std::vector<std::vector<float>> rescaled_ac(n_moments);
 
         // DC component: it bascially contains all the HDR information so
@@ -172,52 +182,74 @@ int main(int argc, char *argv[])
                 }
             }
 
-            sgeg_box.moment_min[m] = min;
-            sgeg_box.moment_max[m] = max;
+            // TODO: FIX THE CLAMPING
+            sgeg_box.moment_min[m] = std::max(-1.f, min);
+            sgeg_box.moment_max[m] = std::min(1.f, max);
 
             rescaled_ac[m].resize(width * height);
 
             #pragma omp parallel for
             for (size_t i = 0; i < width * height; i++) {
                 const float v = (compressed_moments_image[(n_moments + 1) * i + m + 1] - min) / (max - min);
-                // rescaled_ac[m][i] = 255.f * v;
-                rescaled_ac[m][i] = v;
+
+                // TODO: FIX THE CLAMPING
+                rescaled_ac[m][i] = std::max(0.f, std::min(1.f, v));
             }
         }
+
+        std::cout << "[DONE]" << std::endl;
+
+        std::cout << "Adding framebuffers to JXL...\t";
 
         // Debug
         sgeg_box.print_info();
 
         // Create the JXL
-        JXLImageWriter jxl_image(width, height, sgeg_box, n_moments);
+        JXLImageWriter jxl_image(width, height, sgeg_box, saveRGB ? n_moments + 1 : n_moments);
 
-        // if (saveRGB) {
+        if (saveRGB) {
             // Convert to RGB 24 bits
-            // std::vector<uint8_t> rgb_image_ldr(width * height * 3);
+            std::vector<uint8_t> rgb_image_ldr(width * height * 3);
 
-            // for (size_t i = 0; i < width * height; i++) {
-            //     for (size_t c = 0; c < 3; c++) {
-            //         rgb_image_ldr[3 * i + c] = 255.f * std::min(1.f, std::max(0.f, rgb_image[3 * i + c]));
-            //     }
-            // }
+            for (size_t i = 0; i < width * height; i++) {
+                for (size_t c = 0; c < 3; c++) {
+                    rgb_image_ldr[3 * i + c] = 255.f * std::min(1.f, std::max(0.f, rgb_image[3 * i + c]));
+                }
+            }
 
-            // jxl_image.addMainRGBFramebuffer(rgb_image_ldr.data());
+            jxl_image.addMainRGBFramebuffer(rgb_image_ldr.data());
 
-            // jxl_image.addSubFramebuffer(dc_component.data(), 0);
+            jxl_image.addSubFramebuffer(dc_component.data(), 0, 1, true);
 
-            // for (size_t m = 0; m < n_moments; m++) {
-            //     jxl_image.addSubFramebuffer(rescaled_ac[m].data(), m + 1);
-            // }
-        // } else {
+            for (size_t m = 0; m < n_moments; m++) {
+                uint32_t bits_per_pixel = 8;
+
+                if (m >= 4) bits_per_pixel = 6;
+                if (m >= 6) bits_per_pixel = 4;
+
+                jxl_image.addSubFramebuffer(rescaled_ac[m].data(), m + 1, 1, false, bits_per_pixel);
+            }
+        } else {
             jxl_image.addMainFramebuffer(dc_component.data());
 
             for (size_t m = 0; m < n_moments; m++) {
-                jxl_image.addSubFramebuffer(rescaled_ac[m].data(), m);
-            }
+                uint32_t bits_per_pixel = 8;
 
-        // }
+                if (m >= 4) bits_per_pixel = 6;
+                if (m >= 6) bits_per_pixel = 4;
+
+                jxl_image.addSubFramebuffer(rescaled_ac[m].data(), m, 1, false, bits_per_pixel);
+            }
+        }
+
+        std::cout << "[DONE]" << std::endl;
+
+        std::cout << "Saving file...\t\t\t";
 
         jxl_image.save(filename_out);
+
+        std::cout << "[DONE]" << std::endl;
+
     } else {
         sgeg_box.is_reflective = true;
 

@@ -71,7 +71,7 @@ void write_foo_image(const char* filename, size_t width, size_t height)
     JXLImageWriter w(width, height, sgeg, 1);
 
     w.addMainFramebuffer(main_framebuffer.data());
-    w.addSubFramebuffer(sub_framebuffer.data(), 0, 1, "Bonjour!");
+    w.addSubFramebuffer(sub_framebuffer.data(), 0, 1, 8, "Bonjour!");
 
     w.save(filename);
 }

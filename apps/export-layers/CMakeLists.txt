@@ -3,4 +3,4 @@ add_executable(export-layers
     lodepng.cpp
     )
 
-target_link_libraries(export-layers PRIVATE EXRSpectralImage moments)
+target_link_libraries(export-layers PRIVATE EXRSpectralImage common)
