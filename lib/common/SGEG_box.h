@@ -73,5 +73,23 @@ public:
 
     void print_info() const;
 
+    SGEG_box& operator=(const SGEG_box& other)
+    {
+        if (this != &other) {
+            n_moments     = other.n_moments;
+            n_wavelengths = other.n_wavelengths;
+            
+            moment_min    = other.moment_min;
+            moment_max    = other.moment_max;
+            wavelengths   = other.wavelengths;
+            
+            subimage_idx  = other.subimage_idx;
+
+            is_reflective = other.is_reflective;
+        }
+
+        return *this;
+    }
+
     size_t size() const;
 };

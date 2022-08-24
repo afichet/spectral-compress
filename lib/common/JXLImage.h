@@ -48,86 +48,99 @@
 
 #include <SGEG_box.h>
 
-class JXLImageWriter
+
+class JXLFramebuffer
 {
 public:
-    JXLImageWriter(
-        size_t width,
-        size_t height,
-        SGEG_box sgeg_box,
-        size_t n_sub_framebuffers = 0);
+    JXLFramebuffer(
+        uint32_t width, uint32_t height,
+        uint32_t n_color_channels = 1,
+        uint32_t n_bits_per_sample = 32, 
+        uint32_t n_exponent_bits_per_sample = 8,
+        uint32_t downsampling_factor = 1,
+        const char* name = nullptr);
 
-    void addMainFramebuffer(
-        void *framebuffer,
-        JxlPixelFormat pixel_format,
-        size_t el_size,
-        int32_t downsampling = 1);
+    JXLFramebuffer(
+        const std::vector<float>& framebuffer,
+        uint32_t n_color_channels = 1,
+        uint32_t n_bits_per_sample = 32, 
+        uint32_t n_exponent_bits_per_sample = 8,
+        uint32_t downsampling_factor = 1,
+        const char* name = nullptr);
 
-    void addMainFramebuffer(float *framebuffer, int32_t downsampling = 1);
-    void addMainFramebuffer(uint8_t *framebuffer, int32_t downsampling = 1);
-    void addMainFramebuffer(uint16_t *framebuffer, int32_t downsampling = 1);
+    virtual ~JXLFramebuffer();
 
-    void addMainRGBFramebuffer(
-        void *framebuffer,
-        JxlPixelFormat pixel_format,
-        size_t el_size);
+    uint32_t getNColorChannels() const { return _pixel_format.num_channels; }
+    uint32_t getBitsPerSample()  const { return _n_bits_per_sample; }
+    uint32_t getExponentBitsPerSample() const { return _n_exponent_bits_per_sample; }
+    uint32_t getDownsamplingFactor() const { return _downsampling_factor; }
 
-    void addMainRGBFramebuffer(float *framebuffer);
-    void addMainRGBFramebuffer(uint8_t *framebuffer);
-    void addMainRGBFramebuffer(uint16_t *framebuffer);
+    JxlPixelFormat getPixelFormat() const { return _pixel_format; }
 
-    void addSubFramebuffer(
-        void *framebuffer,
-        JxlPixelFormat pixel_format,
-        JxlExtraChannelInfo extra_info,
-        size_t el_size,
-        size_t index,
-        int32_t downsampling = 1,
-        const char *channel_name = nullptr);
+    const char* getName() const { return _name; }
 
-    void addSubFramebuffer(float    *framebuffer, size_t index, int32_t downsampling = 1, bool isHDR = true, uint32_t bits_per_pixel = 32, const char *channel_name = nullptr);
-    void addSubFramebuffer(uint8_t  *framebuffer, size_t index, int32_t downsampling = 1, uint32_t bits_per_pixel = 8, const char *channel_name = nullptr);
-    void addSubFramebuffer(uint16_t *framebuffer, size_t index, int32_t downsampling = 1, uint32_t bits_per_pixel = 16, const char *channel_name = nullptr);
+    void setName(const char* name);
 
-    void save(const char *filename);
+    size_t getSizeBytes() const {
+        return _pixel_data.size() * sizeof(float);
+    }
 
-private:
-    JxlEncoderPtr              _enc;
-    JxlThreadParallelRunnerPtr _runner;
-    JxlBasicInfo               _basic_info;
-    JxlColorEncoding           _color_encoding;
-    SGEG_box                   _sgeg_box;
+protected:
+    char* _name;
 
-    uint32_t _width;
-    uint32_t _height;
-    uint32_t _n_sub_framebuffers;
+    uint32_t _n_bits_per_sample;
+    uint32_t _n_exponent_bits_per_sample;
+    uint32_t _downsampling_factor; // Not possible with the current state of the API
+
+    JxlPixelFormat _pixel_format;
+
+public:
+    std::vector<float> _pixel_data;
 };
 
 
-class JXLImageReader
+
+class JXLImage
 {
 public:
-    JXLImageReader(const char *filename);
-    virtual ~JXLImageReader();
+    JXLImage(uint32_t width, uint32_t height);
+    JXLImage(const char* filename);
 
-    uint32_t width() const;
-    uint32_t height() const;
-    uint32_t n_subframebuffers() const;
+    virtual ~JXLImage();
 
-    SGEG_box get_sgeg() const;
+    void appendFramebuffer(
+        const std::vector<float>& framebuffer,
+        uint32_t n_channels,
+        uint32_t enc_bits_per_sample = 32,
+        uint32_t enc_exponent_bits_per_sample = 8,
+        uint32_t enc_downsampling_factor = 1,
+        const char* name = nullptr);
 
-    void getMainFramebuffer(std::vector<float> &framebuffer) const;
-    void getSubFramebuffer(std::vector<float> &framebuffer, size_t index) const;
+    void write(const char* filename) const;
 
-    void print_basic_info() const;
+    void setBox(const SGEG_box& box);
+    SGEG_box getBox() const { return _sgeg_box; }
 
-private:
-    JxlDecoderPtr              _dec;
-    JxlThreadParallelRunnerPtr _runner;
-    JxlBasicInfo               _basic_info;
-    SGEG_box                   _sgeg_box;
+    uint32_t width()  const { return _width; }
+    uint32_t height() const { return _height; }
 
-    std::vector<float>              _main_framebuffer;
-    std::vector<std::vector<float>> _sub_framebuffers;
-    std::vector<std::string>        _sub_framebuffers_names;
+    size_t n_framebuffers() const { return _framebuffers.size(); }
+    
+    std::vector<float>& getFramebufferData(size_t index) const
+    {
+        return _framebuffers[index]->_pixel_data;
+    }
+
+    JXLFramebuffer* getFramebuffer(size_t index) const
+    {
+        return _framebuffers[index];
+    }
+
+protected:
+    uint32_t _width;
+    uint32_t _height;
+
+    SGEG_box _sgeg_box;
+
+    std::vector<JXLFramebuffer*> _framebuffers;
 };

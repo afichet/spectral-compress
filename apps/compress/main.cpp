@@ -43,6 +43,15 @@
 #include <moments.h>
 #include <moments_image.h>
 
+void check_for_invalid_vals(const std::vector<float>& buffer) {
+    for (size_t i = 0; i < buffer.size(); i++) {
+        const float v = buffer[i];
+        if (std::isinf(v) || std::isnan(v)) {
+            std::cout << "Invalid moment value!" << std::endl;
+        }
+    }
+}
+
 
 int main(int argc, char *argv[]) 
 {
@@ -81,6 +90,8 @@ int main(int argc, char *argv[])
     SGEG_box sgeg_box(n_moments, n_bands);
     sgeg_box.wavelengths = wavelengths;
 
+    JXLImage image_out(width, height);
+
     if (image_in.isEmissive()) {
         sgeg_box.is_reflective = false;
 
@@ -90,10 +101,12 @@ int main(int argc, char *argv[])
         const float* og_framebuffer = &image_in.emissive(0, 0, 0, 0);
         std::vector<float> framebuffer(width * height * n_bands);
 
-        memcpy(framebuffer.data(), og_framebuffer, width * height * n_bands * sizeof(float));
+        std::memcpy(
+            framebuffer.data(), 
+            og_framebuffer, 
+            width * height * n_bands * sizeof(float)
+        );
 
-
-        std::cout << "Conditioning framebuffers...\t";
         // Ensure positive definite values
         // We need to ensure as well that we do not have any spectrum with all
         // null values, otherwise this would break later at the compression of
@@ -101,20 +114,10 @@ int main(int argc, char *argv[])
         for (size_t i = 0; i < width * height * n_bands; i++) {
             const float v = framebuffer[i];
 
-            // if (std::isinf(v) || std::isnan(v) || v <= 0) {
-            //     framebuffer[i] = std::numeric_limits<float>::epsilon();
-            // }
-
-
             if (std::isinf(v) || std::isnan(v) || v < 1e-8) {
                 framebuffer[i] = 1e-8;
             }
         }
-
-        std::cout << "[DONE]" << std::endl;
-
-
-        std::cout << "Computing moments...\t\t";
 
         compute_moments_image(
             phases,
@@ -124,14 +127,7 @@ int main(int argc, char *argv[])
             moments_image
         );
 
-        for (size_t i = 0; i < width * height; i++) {
-            for (size_t m = 0; m < n_moments + 1; m++) {
-                const float v = moments_image[(n_moments + 1) * i + m];
-                if (std::isinf(v) || std::isnan(v)) {
-                    std::cout << "Invalid moment value!" << std::endl;
-                }
-            }
-        }
+        check_for_invalid_vals(moments_image);
 
         compress_moments_image(
             moments_image,
@@ -140,20 +136,7 @@ int main(int argc, char *argv[])
             compressed_moments_image
         );
 
-
-        for (size_t i = 0; i < width * height; i++) {
-            for (size_t m = 0; m < n_moments + 1; m++) {
-                const float v = compressed_moments_image[(n_moments + 1) * i + m];
-                if (std::isinf(v) || std::isnan(v)) {
-                    std::cout << "Invalid compressed moment value!" << std::endl;
-                }
-            }
-        }
-
-        std::cout << "[DONE]" << std::endl;
-
-        std::cout << "Rescaling moments...\t\t";
-
+        check_for_invalid_vals(compressed_moments_image);
 
         std::vector<float> dc_component(width * height);
         std::vector<std::vector<float>> rescaled_ac(n_moments);
@@ -197,59 +180,22 @@ int main(int argc, char *argv[])
             }
         }
 
-        std::cout << "[DONE]" << std::endl;
-
-        std::cout << "Adding framebuffers to JXL...\t";
-
         // Debug
-        sgeg_box.print_info();
+        // sgeg_box.print_info();
+        image_out.setBox(sgeg_box);
 
-        // Create the JXL
-        JXLImageWriter jxl_image(width, height, sgeg_box, saveRGB ? n_moments + 1 : n_moments);
-
+        // Save the image
         if (saveRGB) {
-            // Convert to RGB 24 bits
-            std::vector<uint8_t> rgb_image_ldr(width * height * 3);
-
-            for (size_t i = 0; i < width * height; i++) {
-                for (size_t c = 0; c < 3; c++) {
-                    rgb_image_ldr[3 * i + c] = 255.f * std::min(1.f, std::max(0.f, rgb_image[3 * i + c]));
-                }
-            }
-
-            jxl_image.addMainRGBFramebuffer(rgb_image_ldr.data());
-
-            jxl_image.addSubFramebuffer(dc_component.data(), 0, 1, true);
-
-            for (size_t m = 0; m < n_moments; m++) {
-                uint32_t bits_per_pixel = 8;
-
-                if (m >= 4) bits_per_pixel = 6;
-                if (m >= 6) bits_per_pixel = 4;
-
-                jxl_image.addSubFramebuffer(rescaled_ac[m].data(), m + 1, 1, false, bits_per_pixel);
-            }
-        } else {
-            jxl_image.addMainFramebuffer(dc_component.data());
-
-            for (size_t m = 0; m < n_moments; m++) {
-                uint32_t bits_per_pixel = 8;
-
-                if (m >= 4) bits_per_pixel = 6;
-                if (m >= 6) bits_per_pixel = 4;
-
-                jxl_image.addSubFramebuffer(rescaled_ac[m].data(), m, 1, false, bits_per_pixel);
-            }
+            image_out.appendFramebuffer(rgb_image, 3, 8, 0, 1);
         }
 
-        std::cout << "[DONE]" << std::endl;
+        image_out.appendFramebuffer(dc_component, 1);
 
-        std::cout << "Saving file...\t\t\t";
+        for (size_t m = 0; m < n_moments; m++) {
+            image_out.appendFramebuffer(rescaled_ac[m], 1, 8, 0, 1);
+        }
 
-        jxl_image.save(filename_out);
-
-        std::cout << "[DONE]" << std::endl;
-
+        image_out.write(filename_out);
     } else {
         sgeg_box.is_reflective = true;
 
@@ -318,14 +264,15 @@ int main(int argc, char *argv[])
             }
         }
 
-        JXLImageWriter jxl_image(width, height, sgeg_box, n_moments);
-        jxl_image.addMainFramebuffer(dc_component.data());
+        // JXLImageWriter jxl_image(width, height, sgeg_box, n_moments);
+        // jxl_image.addMainFramebuffer(dc_component.data());
 
-        for (size_t m = 0; m < n_moments; m++) {
-            jxl_image.addSubFramebuffer(rescaled_ac[m].data(), m);
-        }
+        // for (size_t m = 0; m < n_moments; m++) {
+        //     jxl_image.addSubFramebuffer(rescaled_ac[m].data(), m);
+        // }
 
-        jxl_image.save(filename_out);
+        // jxl_image.save(filename_out);
+        // TODO!
     }
 
 

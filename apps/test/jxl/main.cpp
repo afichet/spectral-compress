@@ -51,8 +51,8 @@
 void write_foo_image(const char* filename, size_t width, size_t height)
 {
     // Generate an image
-    std::vector<float> main_framebuffer(width * height);
-    std::vector<uint8_t> sub_framebuffer(width * height);
+    std::vector<float> main_framebuffer(3 * width * height);
+    std::vector<float> sub_framebuffer(width * height);
 
     for (size_t y = 0; y < height; y++) {
         const float v = float(y) / float(height - 1);
@@ -60,35 +60,54 @@ void write_foo_image(const char* filename, size_t width, size_t height)
         for (size_t x = 0; x < width; x++) {
             const float u = float(x) / float(width - 1);
 
-            main_framebuffer[y * width + x] = u;
-            sub_framebuffer [y * width + x] = 255 * v;
+            main_framebuffer[3 * (y * width + x) + 0] = u;
+            main_framebuffer[3 * (y * width + x) + 1] = u*v;
+            main_framebuffer[3 * (y * width + x) + 2] = 0;
+
+            sub_framebuffer [y * width + x] = v;
         }
     }
 
     SGEG_box sgeg(2);
 
     // Output to JXL
-    JXLImageWriter w(width, height, sgeg, 1);
+    JXLImage image_out(width, height);
 
-    w.addMainFramebuffer(main_framebuffer.data());
-    w.addSubFramebuffer(sub_framebuffer.data(), 0, 1, 8, "Bonjour!");
+    image_out.appendFramebuffer(main_framebuffer, 3);
+    image_out.appendFramebuffer(sub_framebuffer, 1, 8, 0, 1, "Bonjour!");
 
-    w.save(filename);
+    image_out.write(filename);
 }
 
 
 void to_sRGBA(
     const std::vector<float>& in_framebuffer,
+    uint32_t n_color_channels,
     std::vector<uint8_t>& out_framebuffer)
 {
     out_framebuffer.resize(in_framebuffer.size() * 4);
 
-    for (size_t i = 0; i < in_framebuffer.size(); i++) {
-        for (int c = 0; c < 3; c++) {
-            out_framebuffer[4 * i + c] = 255 * std::pow(in_framebuffer[i], 1.f/2.2f);
-        }
+    switch (n_color_channels) {
+        case 1:
+            for (size_t i = 0; i < in_framebuffer.size(); i++) {
+                for (int c = 0; c < 3; c++) {
+                    out_framebuffer[4 * i + c] = 255 * std::pow(in_framebuffer[i], 1.f/2.2f);
+                }
 
-        out_framebuffer[4 * i + 3] = 255;
+                out_framebuffer[4 * i + 3] = 255;
+            }
+            break;
+        case 3:
+            for (size_t i = 0; i < in_framebuffer.size(); i++) {
+                for (int c = 0; c < 3; c++) {
+                    out_framebuffer[4 * i + c] = 255 * std::pow(in_framebuffer[3 * i + c], 1.f/2.2f);
+                }
+
+                out_framebuffer[4 * i + 3] = 255;
+            }
+            break;
+        default:
+            break;
     }
 }
 
@@ -97,35 +116,24 @@ int main(int argc, char* argv[])
 {
     (void)argc; (void)argv;
     
-    // write_foo_image("toto.jxl", 640, 480);
+    write_foo_image("Hello.jxl", 640, 480);
 
-    // JXLImageReader r("toto.jxl");
-    JXLImageReader r("Hello.jxl");
+    JXLImage jxl_image("Hello.jxl");
 
-    size_t r_width = r.width();
-    size_t r_height = r.height();
+    const uint32_t width = jxl_image.width();
+    const uint32_t height = jxl_image.height();
 
-    r.print_basic_info();
-
-    std::vector<float> main_image;
-    r.getMainFramebuffer(main_image);
-
-    std::vector<uint8_t> png_image;
-    to_sRGBA(main_image, png_image);
-
-    lodepng::encode("main.png", png_image.data(), r_width, r_height);
-
-    for (size_t i = 0; i < r.n_subframebuffers(); i++) {
+    for (size_t i = 0; i < jxl_image.n_framebuffers(); i++) {
         std::stringstream ss;
         ss << "sub_" << i << ".png";
 
-        std::vector<float> fb;
-        r.getSubFramebuffer(fb, i);
+        const std::vector<float>& fb = jxl_image.getFramebufferData(i);
+        const uint32_t n_color_channels = jxl_image.getFramebuffer(i)->getNColorChannels();
 
         std::vector<uint8_t> png;
-        to_sRGBA(fb, png);
+        to_sRGBA(fb, n_color_channels, png);
 
-        lodepng::encode(ss.str().c_str(), png.data(), r_width, r_height);
+        lodepng::encode(ss.str().c_str(), png.data(), width, height);
     }
 
     return 0;

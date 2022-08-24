@@ -37,17 +37,16 @@ int main(int argc, char* argv[])
         exit(0);
     }
 
-    JXLImageReader image_in(argv[1]);
+    JXLImage image_in(argv[1]);
 
     const uint32_t width  = image_in.width();
     const uint32_t height = image_in.height();
 
     // Export the main framebuffer
     std::vector<float> main_fb(width * height);
+    std::memcpy(main_fb.data(), image_in.getFramebufferData(0).data(), width * height * sizeof(float));
 
     float min_v = main_fb[0], max_v = main_fb[0];
-
-    image_in.getMainFramebuffer(main_fb);
 
     // Rescaling
     for (uint32_t i = 0; i < main_fb.size(); i++) {
@@ -65,16 +64,14 @@ int main(int argc, char* argv[])
     export_float_gray_to_png(main_fb, width, height, ss.str().c_str());
 
 
-    for (uint32_t layer = 0; layer < image_in.n_subframebuffers(); layer++) {
-        std::vector<float> sub_fb(width * height);
-        image_in.getSubFramebuffer(sub_fb, layer);
-
+    for (uint32_t layer = 1; layer < image_in.n_framebuffers(); layer++) {
         std::stringstream ss;
-        ss << argv[1] << "_" << layer + 1 << ".png";
+        ss << argv[1] << "_" << layer << ".png";
 
-        // Todo: add name
-
-        export_float_gray_to_png(sub_fb, width, height, ss.str().c_str());
+        export_float_gray_to_png(
+            image_in.getFramebufferData(layer), 
+            width, height, 
+            ss.str().c_str());
     }
 
     return 0;

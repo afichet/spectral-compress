@@ -53,34 +53,22 @@ int main(int argc, char* argv[])
     const char* filename_in  = argv[1];
     const char* filename_out = argv[2];
 
-    const JXLImageReader jxl_image(filename_in);
-    const SGEG_box sgeg_box  = jxl_image.get_sgeg();
+    const JXLImage jxl_image(filename_in);
+
+    const SGEG_box sgeg_box  = jxl_image.getBox();
     const size_t width       = jxl_image.width();
     const size_t height      = jxl_image.height();
     const uint32_t n_moments = sgeg_box.n_moments;
 
-    // Debug
-    // jxl_image.print_basic_info();
-    // sgeg_box.print_info();
-
-    std::vector<float> dc_image(width * height);
+    std::vector<float>& dc_image = jxl_image.getFramebufferData(0);
     std::vector<std::vector<float>> ac_images(sgeg_box.n_moments);
 
-    // jxl_image.getSubFramebuffer(dc_image, 0);
-
-    // for (uint32_t m = 0; m < n_moments; m++) {
-    //     jxl_image.getSubFramebuffer(ac_images[m], m + 1);
-
-    //     // Apply rescaling
-    //     for (size_t i = 0; i < width * height; i++) {
-    //         ac_images[m][i] = ac_images[m][i] * (sgeg_box.moment_max[m] - sgeg_box.moment_min[m]) + sgeg_box.moment_min[m];
-    //     }
-    // }
-
-    jxl_image.getMainFramebuffer(dc_image);
-
     for (uint32_t m = 0; m < n_moments; m++) {
-        jxl_image.getSubFramebuffer(ac_images[m], m);
+        const JXLFramebuffer* fb = jxl_image.getFramebuffer(m + 1);
+        
+        ac_images[m].resize(width * height);
+
+        std::memcpy(ac_images[m].data(), fb->_pixel_data.data(), width * height * sizeof(float));
 
         // Apply rescaling
         for (size_t i = 0; i < width * height; i++) {
