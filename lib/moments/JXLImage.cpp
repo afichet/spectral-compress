@@ -60,6 +60,9 @@ JXLImageWriter::JXLImageWriter(
     size_t n_sub_framebuffers)
     : _enc(JxlEncoderMake(nullptr))
     , _sgeg_box(sgeg_box)
+    , _width(width)
+    , _height(height)
+    , _n_sub_framebuffers(n_sub_framebuffers)
 {
     JxlEncoderStatus status;
 
@@ -79,27 +82,7 @@ JXLImageWriter::JXLImageWriter(
 
     CHECK_JXL_ENC_STATUS(status);
 
-    // ------------------------------------------------------------------------
 
-    JxlEncoderInitBasicInfo(&_basic_info);
-
-    _basic_info.xsize                    = width;
-    _basic_info.ysize                    = height;
-    _basic_info.num_color_channels       = 1;
-    _basic_info.num_extra_channels       = n_sub_framebuffers;
-    // Float
-    _basic_info.bits_per_sample          = 32;
-    _basic_info.exponent_bits_per_sample = 8;
-    // Half
-    // _basic_info.bits_per_sample          = 16;
-    // _basic_info.exponent_bits_per_sample = 5;
-    _basic_info.uses_original_profile    = JXL_TRUE;
-
-    status = JxlEncoderSetBasicInfo(_enc.get(), &_basic_info);
-
-    CHECK_JXL_ENC_STATUS(status);
-
-    // ------------------------------------------------------------------------
     
     status = JxlEncoderUseBoxes(_enc.get());
     
@@ -124,6 +107,29 @@ void JXLImageWriter::addMainFramebuffer(
 {
     JxlEncoderStatus status;
 
+    // TODO: This is hardcoded for now, shall be better exposed
+    // ------------------------------------------------------------------------
+
+    JxlEncoderInitBasicInfo(&_basic_info);
+
+    _basic_info.xsize                    = _width;
+    _basic_info.ysize                    = _height;
+    _basic_info.num_color_channels       = 1;
+    _basic_info.num_extra_channels       = _n_sub_framebuffers;
+    // Float
+    _basic_info.bits_per_sample          = 32;
+    _basic_info.exponent_bits_per_sample = 8;
+    // Half
+    // _basic_info.bits_per_sample          = 16;
+    // _basic_info.exponent_bits_per_sample = 5;
+    _basic_info.uses_original_profile    = JXL_TRUE;
+
+    status = JxlEncoderSetBasicInfo(_enc.get(), &_basic_info);
+
+    CHECK_JXL_ENC_STATUS(status);
+
+    // ------------------------------------------------------------------------
+
     _color_encoding.color_space       = JXL_COLOR_SPACE_GRAY;
     _color_encoding.white_point       = JXL_WHITE_POINT_D65;
     _color_encoding.primaries         = JXL_PRIMARIES_SRGB;
@@ -139,6 +145,12 @@ void JXLImageWriter::addMainFramebuffer(
     JxlEncoderFrameSettings* frame_settings = JxlEncoderFrameSettingsCreate(_enc.get(), nullptr);
     
     // Set compression quality
+    // status = JxlEncoderSetFrameDistance(frame_settings, .1);
+    // CHECK_JXL_ENC_STATUS(status);
+
+    // status = JxlEncoderSetFrameLossless(frame_settings, JXL_TRUE);
+    // CHECK_JXL_DEC_STATUS(status);
+
     // JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_EFFORT, 9);
     status = JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_RESAMPLING, downsampling);
     CHECK_JXL_ENC_STATUS(status);
@@ -189,6 +201,27 @@ void JXLImageWriter::addMainRGBFramebuffer(
     size_t el_size)
 {
     JxlEncoderStatus status;
+
+
+    // TODO: This is hardcoded for now, shall be better exposed
+    // ------------------------------------------------------------------------
+
+    JxlEncoderInitBasicInfo(&_basic_info);
+
+    _basic_info.xsize                    = _width;
+    _basic_info.ysize                    = _height;
+    _basic_info.num_color_channels       = 3;
+    _basic_info.num_extra_channels       = _n_sub_framebuffers;
+    // Integer
+    _basic_info.bits_per_sample          = 8;
+    _basic_info.exponent_bits_per_sample = 0;
+    _basic_info.uses_original_profile    = JXL_TRUE;
+
+    status = JxlEncoderSetBasicInfo(_enc.get(), &_basic_info);
+
+    CHECK_JXL_ENC_STATUS(status);
+
+    // ------------------------------------------------------------------------
 
     _color_encoding.color_space       = JXL_COLOR_SPACE_RGB;
     _color_encoding.white_point       = JXL_WHITE_POINT_D65;
@@ -295,17 +328,22 @@ void JXLImageWriter::addSubFramebuffer(
     float* framebuffer,
     size_t index,
     int32_t downsampling,
+    bool isHDR,
+    uint32_t bits_per_pixel,
     const char* channel_name)
 {
     JxlPixelFormat format = {1, JXL_TYPE_FLOAT, JXL_NATIVE_ENDIAN, 0};
 
     JxlExtraChannelInfo extra_info;
     JxlEncoderInitExtraChannelInfo(JXL_CHANNEL_OPTIONAL, &extra_info);
-    // extra_info.bits_per_sample = 32;
-    // extra_info.exponent_bits_per_sample = 8;
-    extra_info.bits_per_sample = 8;
-    extra_info.exponent_bits_per_sample = 0;
 
+    if (isHDR) {
+        extra_info.bits_per_sample = 32;
+        extra_info.exponent_bits_per_sample = 8;
+    } else {
+        extra_info.bits_per_sample = bits_per_pixel;
+        extra_info.exponent_bits_per_sample = 0;
+    }
 
     addSubFramebuffer(framebuffer, format, extra_info, sizeof(float), index, downsampling, channel_name);
 }
@@ -315,13 +353,15 @@ void JXLImageWriter::addSubFramebuffer(
     uint8_t* framebuffer,
     size_t index,
     int32_t downsampling,
+    uint32_t bits_per_pixel,
     const char* channel_name)
 {
     JxlPixelFormat format = {1, JXL_TYPE_UINT8, JXL_NATIVE_ENDIAN, 0};
 
     JxlExtraChannelInfo extra_info;
     JxlEncoderInitExtraChannelInfo(JXL_CHANNEL_OPTIONAL, &extra_info);
-    extra_info.bits_per_sample = 8;
+
+    extra_info.bits_per_sample = bits_per_pixel;
     extra_info.exponent_bits_per_sample = 0;
 
     addSubFramebuffer(framebuffer, format, extra_info, sizeof(uint8_t), index, downsampling, channel_name);
@@ -332,17 +372,16 @@ void JXLImageWriter::addSubFramebuffer(
     uint16_t* framebuffer,
     size_t index,
     int32_t downsampling,
+    uint32_t bits_per_pixel,
     const char* channel_name)
 {
     JxlPixelFormat format = {1, JXL_TYPE_UINT16, JXL_NATIVE_ENDIAN, 0};
 
     JxlExtraChannelInfo extra_info;
     JxlEncoderInitExtraChannelInfo(JXL_CHANNEL_OPTIONAL, &extra_info);
-    extra_info.bits_per_sample = 16;
-    extra_info.exponent_bits_per_sample = 0;
-    // extra_info.bits_per_sample = 8;
-    // extra_info.exponent_bits_per_sample = 0;
 
+    extra_info.bits_per_sample = bits_per_pixel;
+    extra_info.exponent_bits_per_sample = 0;
 
     addSubFramebuffer(framebuffer, format, extra_info, sizeof(uint16_t), index, downsampling, channel_name);
 }

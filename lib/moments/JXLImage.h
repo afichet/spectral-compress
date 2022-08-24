@@ -85,9 +85,9 @@ public:
         int32_t downsampling = 1,
         const char *channel_name = nullptr);
 
-    void addSubFramebuffer(float *framebuffer, size_t index, int32_t downsampling = 1, const char *channel_name = nullptr);
-    void addSubFramebuffer(uint8_t *framebuffer, size_t index, int32_t downsampling = 1, const char *channel_name = nullptr);
-    void addSubFramebuffer(uint16_t *framebuffer, size_t index, int32_t downsampling = 1, const char *channel_name = nullptr);
+    void addSubFramebuffer(float    *framebuffer, size_t index, int32_t downsampling = 1, bool isHDR = true, uint32_t bits_per_pixel = 32, const char *channel_name = nullptr);
+    void addSubFramebuffer(uint8_t  *framebuffer, size_t index, int32_t downsampling = 1, uint32_t bits_per_pixel = 8, const char *channel_name = nullptr);
+    void addSubFramebuffer(uint16_t *framebuffer, size_t index, int32_t downsampling = 1, uint32_t bits_per_pixel = 16, const char *channel_name = nullptr);
 
     void save(const char *filename);
 
@@ -97,6 +97,10 @@ private:
     JxlBasicInfo               _basic_info;
     JxlColorEncoding           _color_encoding;
     SGEG_box                   _sgeg_box;
+
+    uint32_t _width;
+    uint32_t _height;
+    uint32_t _n_sub_framebuffers;
 };
 
 
