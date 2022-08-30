@@ -59,30 +59,30 @@ void decompress_spectral_framebuffer(
     std::vector<float> phases;
     std::vector<float> moments_image;
 
-    const size_t n_moments = compressed_moments.size() - 1;
+    const size_t n_moments = compressed_moments.size();
     const size_t n_pixels = compressed_moments[0].size();
     
     wavelengths_to_phases(wavelengths, phases);
 
-    std::vector<float> compressed_moments_rescaled((n_moments + 1) * n_pixels);
+    std::vector<float> compressed_moments_rescaled(n_moments * n_pixels);
 
     for (size_t i = 0; i < n_pixels; i++) {
-        compressed_moments_rescaled[(n_moments + 1) * i] = compressed_moments[0][i];
+        compressed_moments_rescaled[n_moments * i] = compressed_moments[0][i];
     }
 
-    for (size_t m = 1; m < n_moments + 1; m++) {
+    for (size_t m = 1; m < n_moments; m++) {
         const float v_min = mins[m - 1];
         const float v_max = maxs[m - 1];
 
         for (size_t i = 0; i < n_pixels; i++) {
             const float v = compressed_moments[m][i];
 
-            compressed_moments_rescaled[(n_moments + 1) * i + m] = (v_max - v_min) * v + v_min;
+            compressed_moments_rescaled[n_moments * i + m] = (v_max - v_min) * v + v_min;
         }
     }
 
-    decompress_moments_image(compressed_moments_rescaled, n_pixels, 1, phases.size() - 1, moments_image);
-    compute_density_image(phases, moments_image, n_pixels, 1, phases.size() - 1, spectral_framebuffer);
+    decompress_moments_image(compressed_moments_rescaled, n_pixels, 1, n_moments, moments_image);
+    compute_density_image(phases, moments_image, n_pixels, 1, n_moments, spectral_framebuffer);
 }
 
 int main(int argc, char* argv[]) 

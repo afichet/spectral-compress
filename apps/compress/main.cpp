@@ -258,7 +258,7 @@ void compress_spectral_framebuffer(
     std::vector<float> moments_image;
     std::vector<float> compressed_moments_image;
     
-    const uint32_t n_moments = framebuffer->wavelengths_nm.size() - 1;
+    const uint32_t n_moments = framebuffer->wavelengths_nm.size();
     const uint32_t n_pixels = framebuffer->image_data.size() / framebuffer->wavelengths_nm.size();
 
     // TODO:
@@ -287,7 +287,7 @@ void compress_spectral_framebuffer(
         compressed_moments_image
     );
 
-    compressed_moments.resize(n_moments + 1);
+    compressed_moments.resize(n_moments);
 
     for (size_t m = 0; m < compressed_moments.size(); m++) {
         compressed_moments[m].resize(n_pixels);
@@ -295,18 +295,18 @@ void compress_spectral_framebuffer(
 
     // DC component does not need further modification
     for (size_t i = 0; i < n_pixels; i++) {
-        compressed_moments[0][i] = compressed_moments_image[(n_moments + 1) * i];
+        compressed_moments[0][i] = compressed_moments_image[n_moments * i];
     }
 
     // Rescale AC components in [0..1]
-    for (size_t m = 1; m < n_moments + 1; m++) {
+    for (size_t m = 1; m < n_moments; m++) {
         // Get min / max
         float v_min = compressed_moments_image[m];
         float v_max = compressed_moments_image[m];
 
         for (size_t i = 0; i < n_pixels; i++) {
-            v_min = std::min(v_min, compressed_moments_image[(n_moments + 1) * i + m]);
-            v_max = std::max(v_max, compressed_moments_image[(n_moments + 1) * i + m]);
+            v_min = std::min(v_min, compressed_moments_image[n_moments * i + m]);
+            v_max = std::max(v_max, compressed_moments_image[n_moments * i + m]);
         }
 
         mins.push_back(v_min);
@@ -314,7 +314,7 @@ void compress_spectral_framebuffer(
 
         // Now rescale moments
         for (size_t i = 0; i < n_pixels; i++) {
-            const float v = compressed_moments_image[(n_moments + 1) * i + m];
+            const float v = compressed_moments_image[n_moments * i + m];
 
             compressed_moments[m][i] = (v - v_min) / (v_max - v_min);
         }

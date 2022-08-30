@@ -51,7 +51,7 @@ void compute_moments_image(
     size_t n_moments,
     float moments_image[])
 {
-    if (n_moments == n_phases - 1) {
+    if (n_moments == n_phases) {
         std::vector<float> transform(n_phases * n_phases);
         compute_basis_signal_to_moments(phases, n_phases, transform.data());
 
@@ -91,9 +91,9 @@ void compress_moments_image(
     #pragma omp parallel for
     for (size_t i = 0; i < width * height; i++) {
         compress_moments(
-            &(moments_image[(n_moments + 1) * i]),
+            &(moments_image[n_moments * i]),
             n_moments,
-            &(compressed_moments_image[(n_moments + 1) * i])
+            &(compressed_moments_image[n_moments * i])
         );
     }
 }
@@ -108,9 +108,9 @@ void compress_bounded_moments_image(
     #pragma omp parallel for
     for (size_t i = 0; i < width * height; i++) {
         compress_bounded_moments(
-            &(moments_image[(n_moments + 1) * i]),
+            &(moments_image[n_moments * i]),
             n_moments,
-            &(compressed_moments_image[(n_moments + 1) * i])
+            &(compressed_moments_image[n_moments * i])
         );
     }
 }
@@ -125,9 +125,9 @@ void decompress_moments_image(
     #pragma omp parallel for
     for (size_t i = 0; i < width * height; i++) {
         decompress_moments(
-            &(compressed_moments_image[(n_moments + 1) * i]),
+            &(compressed_moments_image[n_moments * i]),
             n_moments,
-            &(moments_image[(n_moments + 1) * i])
+            &(moments_image[n_moments * i])
         );
     }
 }
@@ -142,9 +142,9 @@ void decompress_bounded_moments_image(
     #pragma omp parallel for
     for (size_t i = 0; i < width * height; i++) {
         decompress_bounded_moments(
-            &(compressed_moments_image[(n_moments + 1) * i]),
+            &(compressed_moments_image[n_moments * i]),
             n_moments,
-            &(moments_image[(n_moments + 1) * i])
+            &(moments_image[n_moments * i])
         );
     }
 }
@@ -158,15 +158,15 @@ void compute_density_image(
     size_t n_moments,
     float density_image[])
 {
-    if (n_moments == n_phases - 1) {
+    if (n_moments == n_phases) {
         std::vector<float> transform(n_phases * n_phases);
         compute_basis_moments_to_signal(phases, n_phases, transform.data());
 
         Eigen::Map<Eigen::MatrixXf> t_mat(transform.data(), n_phases, n_phases);
 
         // Local copy for non const manipulation
-        std::vector<float> m_img(width * height * (n_moments + 1));
-        std::memcpy(m_img.data(), moments_image, width * height * (n_moments + 1) * sizeof(float));
+        std::vector<float> m_img(width * height * n_moments);
+        std::memcpy(m_img.data(), moments_image, width * height * n_moments * sizeof(float));
 
         #pragma omp parallel for
         for (size_t i = 0; i < width * height; i++) {
@@ -181,7 +181,7 @@ void compute_density_image(
     //     compute_density(
     //         phases,
     //         n_phases,
-    //         &(moments_image[(n_moments + 1) * i]),
+    //         &(moments_image[n_moments * i]),
     //         n_moments,
     //         &(density_image[n_phases * i])
     //     );
@@ -202,7 +202,7 @@ void compute_density_bounded_lagrange_image(
         compute_density_bounded_lagrange(
             phases,
             n_phases,
-            &(moments_image[(n_moments + 1) * i]),
+            &(moments_image[n_moments * i]),
             n_moments,
             &(density_image[n_phases * i])
         );
@@ -223,7 +223,7 @@ void compute_moments_image(
     size_t n_moments,
     std::vector<float>& moments_image)
 {
-    moments_image.resize(width * height * (n_moments + 1));
+    moments_image.resize(width * height * n_moments);
 
     compute_moments_image(
         phases.data(),

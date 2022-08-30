@@ -77,7 +77,8 @@ void compute_basis_signal_to_moments(
     for (size_t i = 0; i < n_phases; i++) {
         compute_moments(
             phases, n_phases,
-            signal.col(i).data(), n_phases - 1,
+            signal.col(i).data(), 
+            n_phases,
             &basis[i * n_phases]
         );
     }
@@ -121,7 +122,7 @@ void compute_moments(
     signal[0]        = og_signal[0];
     signal[n_phases] = og_signal[n_phases - 1];
 
-    std::vector<std::complex<float>> t_moments(n_moments + 1);
+    std::vector<std::complex<float>> t_moments(n_moments);
     const std::complex<float> J = std::complex<float>(0., 1.);
 
     for (size_t i = 0; i < phases.size() - 1; i++) {
@@ -133,7 +134,7 @@ void compute_moments(
         const float gradient    = (signal[i + 1] - signal[i]) / (phases[i + 1] - phases[i]);
         const float y_intercept = signal[i] - gradient * phases[i];
 
-        for (size_t k = 1; k < n_moments + 1; k++) {
+        for (size_t k = 1; k < n_moments; k++) {
             const std::complex<float> common_summands(
                 gradient / (float)(k*k), 
                 y_intercept / (float)k);
@@ -149,7 +150,7 @@ void compute_moments(
      }
 
     // Mirrored signal
-    for (size_t k = 0; k < n_moments + 1; k++) {
+    for (size_t k = 0; k < n_moments; k++) {
         moments[k] = t_moments[k].real() / M_PIf;
     }
 }
@@ -163,7 +164,7 @@ void compute_density(
     float density[])
 {
     if (moments[0] > 0) {
-        std::vector<float> v(n_moments + 1);
+        std::vector<float> v(n_moments);
     
         for (size_t i = 0; i < v.size(); i++) {
             v[i] = moments[i] / (2.f * M_PIf);
@@ -179,7 +180,7 @@ void compute_density(
         for (size_t p = 0; p < n_phases; p++) {
             std::complex<float> denum = 0;
 
-            for (size_t k = 0; k < n_moments + 1; k++) {
+            for (size_t k = 0; k < n_moments; k++) {
                 denum += solution[k] * std::polar(r, k * phases[p]);
             }
 
@@ -203,12 +204,12 @@ void compute_density_bounded_lagrange(
     float density[])
 {
     if (moments[0] > MIN_FLT) {
-        std::vector<std::complex<float>> exponential_moments(n_moments + 1);
-        std::vector<std::complex<float>> toeplitz_column(n_moments + 1);
+        std::vector<std::complex<float>> exponential_moments(n_moments);
+        std::vector<std::complex<float>> toeplitz_column(n_moments);
 
         moments_to_exponential_moments(moments, n_moments, exponential_moments);
 
-        for (size_t i = 1; i < n_moments + 1; i++) {
+        for (size_t i = 1; i < n_moments; i++) {
             toeplitz_column[i] = exponential_moments[i] / (2.f * M_PIf);
         }
 
@@ -223,7 +224,7 @@ void compute_density_bounded_lagrange(
         // Evaluate the Fourier series
         std::vector<float> fourier_series(n_phases);
 
-        for (size_t i = 1; i < n_moments + 1; i++) {
+        for (size_t i = 1; i < n_moments; i++) {
             for (size_t p = 0; p < n_phases; p++) {
                 fourier_series[p] += (
                     lagrange_multipliers[i] * std::exp(std::complex<float>(0.f, (float)i * phases[p]))
@@ -249,10 +250,10 @@ void compress_moments(
     float compressed_moments[])
 {
     if (moments[0] > MIN_FLT) {
-        dot_levinson(moments, n_moments + 1, compressed_moments);
+        dot_levinson(moments, n_moments, compressed_moments);
         compressed_moments[0] = moments[0];
     } else {
-        for (size_t m = 0; m < n_moments + 1; m++) {
+        for (size_t m = 0; m < n_moments; m++) {
             compressed_moments[m] = 0;
         }
     }
@@ -265,17 +266,17 @@ void compress_bounded_moments(
     float compressed_moments[])
 {
     if (moments[0] > MIN_FLT) {
-        std::vector<std::complex<float>> exponential_moments(n_moments + 1);
+        std::vector<std::complex<float>> exponential_moments(n_moments);
 
         moments_to_exponential_moments(
             moments,
-            n_moments + 1,
+            n_moments,
             exponential_moments
         );
 
-        std::vector<std::complex<float>> toeplitz_first_column(n_moments + 1);
+        std::vector<std::complex<float>> toeplitz_first_column(n_moments);
 
-        for (size_t i = 0; i < n_moments + 1; i++) {
+        for (size_t i = 0; i < n_moments; i++) {
             toeplitz_first_column[i] = exponential_moments[i] / (2.f * M_PIf);
         }
 
@@ -286,13 +287,13 @@ void compress_bounded_moments(
 
         const std::complex<float> m = std::abs(exponential_moments[0]) / (std::complex<float>(0.f, 1.f) * exponential_moments[0]);
 
-        for (size_t i = 1; i < n_moments + 1; i++) {
+        for (size_t i = 1; i < n_moments; i++) {
             compressed_moments[i] = (dots[i] * m).real();
         }
 
         compressed_moments[0] = moments[0];
     } else {
-        for (size_t m = 0; m < n_moments + 1; m++) {
+        for (size_t m = 0; m < n_moments; m++) {
             compressed_moments[m] = 0;
         }
     }
@@ -305,9 +306,9 @@ void decompress_moments(
     float moments[])
 {
     if (compressed_moments[0] > MIN_FLT) {
-        levinson_from_dot(compressed_moments, n_compressed_moments + 1, moments);
+        levinson_from_dot(compressed_moments, n_compressed_moments, moments);
     } else {
-        for (size_t m = 0; m < n_compressed_moments + 1; m++) {
+        for (size_t m = 0; m < n_compressed_moments; m++) {
             moments[m] = 0;
         }
     }
@@ -323,9 +324,9 @@ void decompress_bounded_moments(
         const std::complex<float> J(0.f, 1.f);
         const std::complex<float> exp_0 = std::exp(J * M_PIf * (compressed_moments[0] - .5f)) / (4.f * M_PIf);
 
-        std::vector<std::complex<float>> dots(n_compressed_moments + 1);
+        std::vector<std::complex<float>> dots(n_compressed_moments);
 
-        for (size_t i = 1; i < n_compressed_moments + 1; i++) {
+        for (size_t i = 1; i < n_compressed_moments; i++) {
             dots[i] = compressed_moments[i] * J * exp_0 / std::abs(exp_0);
         }
 
@@ -334,7 +335,7 @@ void decompress_bounded_moments(
         std::vector<std::complex<float>> exponential_moments;
         levinson_from_dot(dots, exponential_moments);
 
-        for (size_t i = 1; i < n_compressed_moments + 1; i++) {
+        for (size_t i = 1; i < n_compressed_moments; i++) {
             exponential_moments[i] *= 2.f * M_PIf;
         }
 
@@ -342,7 +343,7 @@ void decompress_bounded_moments(
 
         exponential_moments_to_moments(exponential_moments, moments);
     } else {
-        for (size_t m = 0; m < n_compressed_moments + 1; m++) {
+        for (size_t m = 0; m < n_compressed_moments; m++) {
             moments[m] = 0;
         }
     }
@@ -487,7 +488,8 @@ void compute_moments(
 {
     assert(phases.size() == signal.size());
 
-    moments.resize(n_moments + 1);
+    moments.resize(n_moments);
+
     compute_moments(
         phases.data(),
         phases.size(),
@@ -503,11 +505,12 @@ void compute_density(
     std::vector<float>& density)
 {
     density.resize(phases.size());
+
     compute_density(
         phases.data(), 
         phases.size(), 
         moments.data(), 
-        moments.size() - 1, 
+        moments.size(), 
         density.data());
 }
 
@@ -518,11 +521,12 @@ void compute_density_bounded_lagrange(
     std::vector<float>& density)
 {
     density.resize(phases.size());
+
     compute_density_bounded_lagrange(
         phases.data(),
         phases.size(),
         moments.data(),
-        moments.size() - 1,
+        moments.size(),
         density.data()
     );
 }
@@ -544,7 +548,7 @@ void compress_bounded_moments(
     compressed_moments.resize(moments.size());
     compress_bounded_moments(
         moments.data(),
-        moments.size() - 1,
+        moments.size(),
         compressed_moments.data()
     );
 }
@@ -565,7 +569,7 @@ void decompress_bounded_moments(
     moments.resize(compressed_moments.size());
     decompress_bounded_moments(
         compressed_moments.data(),
-        compressed_moments.size() - 1,
+        compressed_moments.size(),
         moments.data()
     );
 }
@@ -694,11 +698,11 @@ void moments_to_exponential_moments(
     size_t n_moments,
     std::vector<std::complex<float>>& exponential_moments)
 {
-    exponential_moments.resize(n_moments + 1);
+    exponential_moments.resize(n_moments);
 
     exponential_moments[0] = std::exp(std::complex<float>(0.f, M_PIf * (moments[0] - .5f))) / (4.f * M_PIf);
 
-    for (size_t i = 1; i < n_moments + 1; i++) {
+    for (size_t i = 1; i < n_moments; i++) {
         for (size_t k = 0; k < i; k++) {
             exponential_moments[i] += (float)(i - k) * exponential_moments[k] * moments[i - k];
         }
