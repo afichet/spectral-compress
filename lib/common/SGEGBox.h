@@ -36,60 +36,55 @@
 #include <vector>
 #include <cstddef>
 #include <cstdint>
-
-// class ImageMeta
-// {
-// public:
-//     uint32_t n_moments;
-//     SpectrumType spectrum_type;
-//     uint32_t len_channel_prefix;
-//     char* channel_prefix;
-// }
+#include <string>
 
 
-// Spectral Gamma Extended Graphics
+struct SGEGSpectralGroup
+{
+    std::vector<char> root_name;
+    std::vector<uint32_t> layer_indices;
+    std::vector<float> wavelengths;
+    std::vector<float> mins;
+    std::vector<float> maxs;
 
-class SGEG_box
+    size_t size() const;
+};
+
+
+struct SGEGGrayGroup
+{
+    std::vector<char> layer_name;
+    uint32_t layer_index;
+
+    size_t size() const;
+
+};
+
+
+// Spectral Graphics Extended Group
+
+class SGEGBox
 {
 public:
-    uint32_t n_moments;
-    uint32_t n_wavelengths;
+    uint32_t revision;
 
-    std::vector<float> moment_min;
-    std::vector<float> moment_max;
-    std::vector<float> wavelengths;
+    std::vector<SGEGSpectralGroup> spectral_groups;
+    std::vector<SGEGGrayGroup> gray_groups;
 
-    std::vector<uint32_t> subimage_idx;
+public:
+    SGEGBox();
 
-    bool is_reflective;
+    SGEGBox(const std::vector<uint8_t> &data);
 
-    SGEG_box(uint32_t n_moments = 0, uint32_t n_wavelengths = 0);
+    SGEGBox(const SGEGBox& other);
 
-    SGEG_box(const std::vector<uint8_t> &data);
-
-    SGEG_box(const SGEG_box& other);
+    virtual ~SGEGBox();
 
     void getRaw(std::vector<uint8_t> &data) const;
 
-    void print_info() const;
-
-    SGEG_box& operator=(const SGEG_box& other)
-    {
-        if (this != &other) {
-            n_moments     = other.n_moments;
-            n_wavelengths = other.n_wavelengths;
-            
-            moment_min    = other.moment_min;
-            moment_max    = other.moment_max;
-            wavelengths   = other.wavelengths;
-            
-            subimage_idx  = other.subimage_idx;
-
-            is_reflective = other.is_reflective;
-        }
-
-        return *this;
-    }
-
     size_t size() const;
+
+    SGEGBox& operator=(const SGEGBox& other);
+
+    void print() const;
 };

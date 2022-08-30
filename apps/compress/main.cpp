@@ -33,15 +33,24 @@
 
 #include <iostream>
 #include <sstream>
-
-#include <EXRSpectralImage.h>
-#include <JXLImage.h>
-#include <SGEG_box.h>
-
 #include <limits>
+#include <regex>
+#include <string>
+#include <map>
+#include <set>
+#include <algorithm>
+
+#include <OpenEXR/ImfInputFile.h>
+#include <OpenEXR/ImfChannelList.h>
+#include <OpenEXR/ImfStringAttribute.h>
+#include <OpenEXR/ImfFrameBuffer.h>
+#include <OpenEXR/ImfHeader.h>
+
+#include <JXLImage.h>
 
 #include <moments.h>
 #include <moments_image.h>
+
 
 void check_for_invalid_vals(const std::vector<float>& buffer) {
     for (size_t i = 0; i < buffer.size(); i++) {
@@ -53,8 +62,270 @@ void check_for_invalid_vals(const std::vector<float>& buffer) {
 }
 
 
+double to_nm(
+    const std::string& value,
+    const std::string& prefix,
+    const std::string& units) 
+{
+    std::string centralValueStr(value);
+    std::replace(
+        centralValueStr.begin(),
+        centralValueStr.end(),
+        ',',
+        '.');
+
+    const double v = std::stod(centralValueStr);
+
+    if (prefix == "n" && units == "m") return v;
+
+    double wavelength_nm = v;
+
+    const std::map<std::string, double> unit_prefix = {
+        {"Y", 1e24},
+        {"Z", 1e21},
+        {"E", 1e18},
+        {"P", 1e15},
+        {"T", 1e12},
+        {"G", 1e9},
+        {"M", 1e6},
+        {"k", 1e3},
+        {"h", 1e2},
+        {"da", 1e1},
+        {"d", 1e-1},
+        {"c", 1e-2},
+        {"m", 1e-3},
+        {"u", 1e-6},
+        {"n", 1e-9},
+        {"p", 1e-12}};
+
+    // Apply multiplier
+    if (prefix.size() > 0) {
+        wavelength_nm *= unit_prefix.at(prefix);
+    }
+
+    // Apply units
+    if (units == "Hz") {
+        wavelength_nm = 299792458. / wavelength_nm * 1e9;
+    } else if (units == "m") {
+        wavelength_nm = wavelength_nm * 1e9;
+    } else {
+        // Unknown unit
+        // Something went wrong with the parsing. This shall not occur.
+        throw std::out_of_range("Unknown unit");
+    }
+
+    return wavelength_nm;
+}
+
+
+struct SpectralFramebuffer 
+{
+    std::string root_name;
+    std::vector<float> wavelengths_nm;
+    std::vector<float> image_data;
+};
+
+
+struct GreyFramebuffer
+{
+    std::string layer_name;
+    std::vector<float> image_data;
+};
+
+
+void get_buffers_from_exr(
+    Imf::InputFile& exr_in,
+    std::vector<SpectralFramebuffer*>& spectral_framebuffers,
+    std::vector<GreyFramebuffer*>& extra_framebuffers)
+{
+    const Imf::Header&  exr_header       = exr_in.header();
+    const Imath::Box2i& exr_datawindow   = exr_header.dataWindow();
+    const Imf::ChannelList &exr_channels = exr_header.channels();
+
+    const uint32_t width  = exr_datawindow.max.x - exr_datawindow.min.x + 1;
+    const uint32_t height = exr_datawindow.max.y - exr_datawindow.min.y + 1;
+
+    std::map<std::string, std::vector<std::pair<std::string, float>>> spectral_channels;
+    std::set<std::string> extra_channels;
+    std::set<std::string> ignored_channels;
+
+    Imf::FrameBuffer exr_framebuffer;
+
+    // ------------------------------------------------------------------------
+    // Determine channels' position
+    // ------------------------------------------------------------------------
+
+    const std::regex expr(
+        "^(.*)((S([0-3]))|T)\\.(\\d*,?\\d*([Ee][+-]?\\d+)?)(Y|Z|E|P|T|G|M|k|h|"
+        "da|d|c|m|u|n|p)?(m|Hz)$");
+
+    for (Imf::ChannelList::ConstIterator channel = exr_channels.begin();
+            channel != exr_channels.end();
+            channel++) {
+        std::smatch matches;
+        const std::string name = channel.name();
+        const bool matched = std::regex_search(name, matches, expr);
+
+        if (matched) {
+            const std::string root   = matches[1].str();
+            const std::string prefix = root + matches[2].str();
+            
+            if (spectral_channels[prefix].size() == 0) {
+                ignored_channels.insert(root + "R");
+                ignored_channels.insert(root + "G");
+                ignored_channels.insert(root + "B");                
+            }
+
+            const double value_nm = to_nm(
+                matches[5].str(),
+                matches[7].str(),
+                matches[8].str()
+            );
+
+            spectral_channels[prefix].push_back(std::make_pair(channel.name(), value_nm));
+        } else {
+            extra_channels.insert(channel.name());
+        }
+    }
+
+    // Filter out ignored channels
+    for (const std::string& s: ignored_channels) {
+        extra_channels.erase(s);
+    }
+
+    // ------------------------------------------------------------------------
+    // Read framebuffers
+    // ------------------------------------------------------------------------
+
+    for (const auto& n: spectral_channels) {
+        const std::string& root_name = n.first;
+        const std::vector<std::pair<std::string, float>>& wavelengths = n.second;
+
+        SpectralFramebuffer* fb = new SpectralFramebuffer;
+        fb->root_name = root_name;
+        fb->image_data.resize(width * height * wavelengths.size());
+        fb->wavelengths_nm.reserve(wavelengths.size());
+
+        const size_t x_stride = sizeof(float) * wavelengths.size();
+        const size_t y_stride = x_stride * width;
+
+        for (size_t wl_idx = 0; wl_idx < wavelengths.size(); wl_idx++) {
+            const std::string& layer_name    = n.second[wl_idx].first;
+            const float        wavelength_nm = n.second[wl_idx].second;
+
+            Imf::Slice slice = Imf::Slice::Make(
+                Imf::FLOAT,
+                &(fb->image_data[wl_idx]),
+                exr_header.dataWindow(),
+                x_stride, y_stride);
+            
+            exr_framebuffer.insert(layer_name, slice);
+
+            fb->wavelengths_nm.push_back(wavelength_nm);
+        }
+
+        spectral_framebuffers.push_back(fb);
+    }
+
+    for (const auto& name: extra_channels) {
+        GreyFramebuffer* fb = new GreyFramebuffer;
+        
+        fb->layer_name = name;
+        fb->image_data.resize(width * height);
+
+        Imf::Slice slice = Imf::Slice::Make(
+            Imf::FLOAT,
+            fb->image_data.data(),
+            exr_header.dataWindow());
+            
+        exr_framebuffer.insert(name, slice);
+
+        extra_framebuffers.push_back(fb);
+    }
+
+    exr_in.setFrameBuffer(exr_framebuffer);
+    exr_in.readPixels(exr_datawindow.min.y, exr_datawindow.max.y);
+}
+
+
+void compress_spectral_framebuffer(
+    const SpectralFramebuffer* framebuffer,
+    std::vector<std::vector<float>>& compressed_moments,
+    std::vector<float>& mins,
+    std::vector<float>& maxs)
+{
+    std::vector<float> phases;
+    std::vector<float> moments_image;
+    std::vector<float> compressed_moments_image;
+    
+    const uint32_t n_moments = framebuffer->wavelengths_nm.size() - 1;
+    const uint32_t n_pixels = framebuffer->image_data.size() / framebuffer->wavelengths_nm.size();
+
+    // TODO:
+    // for (size_t i = 0; i < width * height * n_bands; i++) {
+    //     const float v = framebuffer[i];
+
+    //     if (std::isinf(v) || std::isnan(v) || v < 1e-8) {
+    //         framebuffer[i] = 1e-8;
+    //     }
+    // }
+
+    wavelengths_to_phases(framebuffer->wavelengths_nm, phases);
+    
+    compute_moments_image(
+        phases, 
+        framebuffer->image_data, 
+        n_pixels, 1, 
+        n_moments, 
+        moments_image
+    );
+
+    compress_moments_image(
+        moments_image,
+        n_pixels, 1,
+        n_moments,
+        compressed_moments_image
+    );
+
+    compressed_moments.resize(n_moments + 1);
+
+    for (size_t m = 0; m < compressed_moments.size(); m++) {
+        compressed_moments[m].resize(n_pixels);
+    }
+
+    // DC component does not need further modification
+    for (size_t i = 0; i < n_pixels; i++) {
+        compressed_moments[0][i] = compressed_moments_image[(n_moments + 1) * i];
+    }
+
+    // Rescale AC components in [0..1]
+    for (size_t m = 1; m < n_moments + 1; m++) {
+        // Get min / max
+        float v_min = compressed_moments_image[m];
+        float v_max = compressed_moments_image[m];
+
+        for (size_t i = 0; i < n_pixels; i++) {
+            v_min = std::min(v_min, compressed_moments_image[(n_moments + 1) * i + m]);
+            v_max = std::max(v_max, compressed_moments_image[(n_moments + 1) * i + m]);
+        }
+
+        mins.push_back(v_min);
+        maxs.push_back(v_max);
+
+        // Now rescale moments
+        for (size_t i = 0; i < n_pixels; i++) {
+            const float v = compressed_moments_image[(n_moments + 1) * i + m];
+
+            compressed_moments[m][i] = (v - v_min) / (v_max - v_min);
+        }
+    }
+}
+
+
 int main(int argc, char *argv[]) 
 {
+    // TODO: generate a default output name and check if exists,
+    // this will allow drag and drop of an EXR over the executable
     if (argc < 3) {
         std::cout << "Usage:" << std::endl
                   << "------" << std::endl
@@ -68,220 +339,83 @@ int main(int argc, char *argv[])
     const char* filename_in  = argv[1];
     const char* filename_out = argv[2];
 
-    const SEXR::EXRSpectralImage image_in(filename_in);
+    Imf::InputFile exr_in(filename_in);
 
-    std::vector<float> rgb_image;
-    image_in.getRGBImage(rgb_image);
+    const Imath::Box2i& dw = exr_in.header().dataWindow();
+    const uint32_t width   = dw.max.x - dw.min.x + 1;
+    const uint32_t height  = dw.max.y - dw.min.y + 1;
 
-    const size_t width     = image_in.width();
-    const size_t height    = image_in.height();
-    const size_t n_bands   = image_in.nSpectralBands();
-    const size_t n_moments = n_bands - 1;
+    std::vector<SpectralFramebuffer*> spectral_framebuffers;
+    std::vector<GreyFramebuffer*> extra_framebuffers;
 
-    std::vector<float> phases;
-    std::vector<float> wavelengths;
+    get_buffers_from_exr(exr_in, spectral_framebuffers, extra_framebuffers);
+
+    // TODO: missing SGEG Box
+    JXLImage jxl_out(width, height);
+    SGEGBox box;
     
-    for (size_t i = 0; i < n_bands; i++) {
-        wavelengths.push_back(image_in.wavelength_nm(i));
+    for (const SpectralFramebuffer* fb: spectral_framebuffers) {
+        SGEGSpectralGroup sg;
+
+        sg.root_name.resize(fb->root_name.size() + 1);
+        std::memcpy(sg.root_name.data(), fb->root_name.c_str(), sg.root_name.size() * sizeof(char));
+        sg.wavelengths = fb->wavelengths_nm;
+
+        std::vector<std::vector<float>> compressed_moments;
+
+        compress_spectral_framebuffer(fb, compressed_moments, sg.mins, sg.maxs);
+
+        // Now we can save to JPEG XL
+
+        for (size_t m = 0; m < compressed_moments.size(); m++) {
+            float n_bits;
+            float n_exponent_bits;
+
+            if (m == 0) {
+                n_bits = 32;
+                n_exponent_bits = 8;
+            } else {
+                n_bits = 8;
+                n_exponent_bits = 0;
+            }
+
+            const size_t idx = jxl_out.appendFramebuffer(
+                compressed_moments[m], 
+                1, 
+                n_bits, 
+                n_exponent_bits, 
+                1, 
+                fb->root_name.c_str());            
+            
+            sg.layer_indices.push_back(idx);
+        }
+
+        box.spectral_groups.push_back(sg);
     }
 
-    wavelengths_to_phases(wavelengths, phases);
-
-    SGEG_box sgeg_box(n_moments, n_bands);
-    sgeg_box.wavelengths = wavelengths;
-
-    JXLImage image_out(width, height);
-
-    if (image_in.isEmissive()) {
-        sgeg_box.is_reflective = false;
-
-        std::vector<float> moments_image(width * height * (n_moments + 1));
-        std::vector<float> compressed_moments_image(width * height * (n_moments + 1));
+    for (const GreyFramebuffer* fb: extra_framebuffers) {
+        SGEGGrayGroup gg;
         
-        const float* og_framebuffer = &image_in.emissive(0, 0, 0, 0);
-        std::vector<float> framebuffer(width * height * n_bands);
+        gg.layer_name.resize(fb->layer_name.size() + 1);
+        std::memcpy(gg.layer_name.data(), fb->layer_name.c_str(), gg.layer_name.size() * sizeof(char));
 
-        std::memcpy(
-            framebuffer.data(), 
-            og_framebuffer, 
-            width * height * n_bands * sizeof(float)
-        );
+        // TODO get the original data type from the EXR file
+        gg.layer_index = jxl_out.appendFramebuffer(fb->image_data, 1, 32, 8, 1, fb->layer_name.c_str());
 
-        // Ensure positive definite values
-        // We need to ensure as well that we do not have any spectrum with all
-        // null values, otherwise this would break later at the compression of
-        // moments.
-        for (size_t i = 0; i < width * height * n_bands; i++) {
-            const float v = framebuffer[i];
-
-            if (std::isinf(v) || std::isnan(v) || v < 1e-8) {
-                framebuffer[i] = 1e-8;
-            }
-        }
-
-        compute_moments_image(
-            phases,
-            framebuffer,
-            width, height,
-            n_moments,
-            moments_image
-        );
-
-        check_for_invalid_vals(moments_image);
-
-        compress_moments_image(
-            moments_image,
-            width, height,
-            n_moments,
-            compressed_moments_image
-        );
-
-        check_for_invalid_vals(compressed_moments_image);
-
-        std::vector<float> dc_component(width * height);
-        std::vector<std::vector<float>> rescaled_ac(n_moments);
-
-        // DC component: it bascially contains all the HDR information so
-        // no further transformation is performed on this component.
-        #pragma omp parallel for
-        for (size_t i = 0; i < width * height; i++) {
-            dc_component[i] = compressed_moments_image[(n_moments + 1) * i];
-        }
-
-        // AC components: those components are higher frequency and as such
-        // can be more aggressively compressed. We reacale each component
-        // to make use of the maximum range of an uint8.
-        for (size_t m = 0; m < n_moments; m++) {
-            // We need min and max of a given moment to later rescale in 0..1 for
-            // integer quantization
-            float min = compressed_moments_image[(n_moments + 1) + m + 1];
-            float max = compressed_moments_image[(n_moments + 1) + m + 1];
-
-            for (size_t i = 0; i < width * height; i++) {
-                const float v = compressed_moments_image[(n_moments + 1) * i + m + 1];
-                if (!std::isinf(v)) {
-                    min = std::min(min, v);
-                    max = std::max(max, v);
-                }
-            }
-
-            // TODO: FIX THE CLAMPING
-            sgeg_box.moment_min[m] = std::max(-1.f, min);
-            sgeg_box.moment_max[m] = std::min(1.f, max);
-
-            rescaled_ac[m].resize(width * height);
-
-            #pragma omp parallel for
-            for (size_t i = 0; i < width * height; i++) {
-                const float v = (compressed_moments_image[(n_moments + 1) * i + m + 1] - min) / (max - min);
-
-                // TODO: FIX THE CLAMPING
-                rescaled_ac[m][i] = std::max(0.f, std::min(1.f, v));
-            }
-        }
-
-        // Debug
-        // sgeg_box.print_info();
-        image_out.setBox(sgeg_box);
-
-        // Save the image
-        if (saveRGB) {
-            image_out.appendFramebuffer(rgb_image, 3, 8, 0, 1);
-        }
-
-        image_out.appendFramebuffer(dc_component, 1);
-
-        for (size_t m = 0; m < n_moments; m++) {
-            image_out.appendFramebuffer(rescaled_ac[m], 1, 8, 0, 1);
-        }
-
-        image_out.write(filename_out);
-    } else {
-        sgeg_box.is_reflective = true;
-
-        std::vector<float> reflective_fb(width * height * n_bands);
-        std::vector<float> moments_image(width * height * (n_moments + 1));
-        std::vector<float> compressed_bounded_moments_image(width * height * (n_moments + 1));
-
-        memcpy(reflective_fb.data(), &image_in.reflective(0, 0, 0), reflective_fb.size() * sizeof(float));
-
-        for (size_t i = 0; i < width * height * n_bands; i++) {
-            const float v = reflective_fb[i];
-
-            if (std::isinf(v) || std::isnan(v) || v < 0) {
-                reflective_fb[i] = 0;
-            }
-        }
-
-        compute_moments_image(
-            phases,
-            reflective_fb,
-            width, height,
-            n_moments,
-            moments_image
-        );
-
-        compress_bounded_moments_image(
-            moments_image,
-            width, height,
-            n_moments,
-            compressed_bounded_moments_image
-        );
-
-        std::vector<float> dc_component(width * height);
-        // std::vector<std::vector<uint8_t>> rescaled_ac(n_moments);
-        std::vector<std::vector<float>> rescaled_ac(n_moments);
-
-        #pragma omp parallel for
-        for (size_t i = 0; i < width * height; i++) {
-            dc_component[i] = compressed_bounded_moments_image[(n_moments + 1) * i];
-        }
-
-
-        for (size_t m = 0; m < n_moments; m++) {
-            float min = 1.;
-            float max = -1.;
-
-
-            for (size_t i = 0; i < width * height; i++) {
-                const float v = compressed_bounded_moments_image[(n_moments + 1) * i + m + 1];
-                if (!std::isinf(v)) {
-                    min = std::min(min, v);
-                    max = std::max(max, v);
-                }
-            }
-
-            sgeg_box.moment_min[m] = min;
-            sgeg_box.moment_max[m] = max;
-
-            rescaled_ac[m].resize(width * height);
-
-            #pragma omp parallel for
-            for (size_t i = 0; i < width * height; i++) {
-                const float v = (compressed_bounded_moments_image[(n_moments + 1) * i + m + 1] - min) / (max - min);
-                // rescaled_ac[m][i] = 255.f * v;
-                rescaled_ac[m][i] = v;
-            }
-        }
-
-        // JXLImageWriter jxl_image(width, height, sgeg_box, n_moments);
-        // jxl_image.addMainFramebuffer(dc_component.data());
-
-        // for (size_t m = 0; m < n_moments; m++) {
-        //     jxl_image.addSubFramebuffer(rescaled_ac[m].data(), m);
-        // }
-
-        // jxl_image.save(filename_out);
-        // TODO!
+        box.gray_groups.push_back(gg);
     }
 
+    // box.print();
 
-    if (image_in.isBispectral()) {
-        std::cout << "[WARN] Bispectral layers will be ignored." << std::endl;
+    jxl_out.setBox(box);
+    jxl_out.write(filename_out);
+
+    for (SpectralFramebuffer* fb: spectral_framebuffers) {
+        delete fb;
     }
-    
-    if (image_in.isPolarised()) {
-        std::cout << "[WARN] The polarised layers will be ignored." << std::endl;
+
+    for (GreyFramebuffer* fb: extra_framebuffers) {
+        delete fb;
     }
 
     return 0;

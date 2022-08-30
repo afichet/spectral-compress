@@ -126,6 +126,8 @@ void JXLFramebuffer::setName(const char* name) {
 
 // ===========================================================================
 
+// TODO: remove
+#include <iostream>
 
 JXLImage::JXLImage(uint32_t width, uint32_t height)
     : _width(width)
@@ -233,7 +235,7 @@ JXLImage::JXLImage(const char* filename)
                     status = JxlDecoderSetImageOutBuffer(
                         dec.get(), 
                         &format,
-                        _framebuffers[0]->_pixel_data.data(),
+                        _framebuffers[0]->getPixelData().data(),
                         _framebuffers[0]->getSizeBytes()
                     );
                     CHECK_JXL_DEC_STATUS(status);
@@ -244,7 +246,7 @@ JXLImage::JXLImage(const char* filename)
                         status = JxlDecoderSetExtraChannelBuffer(
                             dec.get(),
                             &format,
-                            _framebuffers[i]->_pixel_data.data(),
+                            _framebuffers[i]->getPixelData().data(),
                             _framebuffers[i]->getSizeBytes(),
                             i - 1
                         );
@@ -286,7 +288,7 @@ JXLImage::JXLImage(const char* filename)
 
     JxlDecoderReleaseInput(dec.get());
     
-    _sgeg_box = SGEG_box(box_raw_sgeg);
+    _sgeg_box = SGEGBox(box_raw_sgeg);
 
     CHECK_JXL_DEC_STATUS(status);
 }
@@ -299,13 +301,13 @@ JXLImage::~JXLImage()
 }
 
 
-void JXLImage::setBox(const SGEG_box& box)
+void JXLImage::setBox(const SGEGBox& box)
 {
     _sgeg_box = box;
 }
 
 
-void JXLImage::appendFramebuffer(
+size_t JXLImage::appendFramebuffer(
     const std::vector<float>& framebuffer,
     uint32_t n_channels,
     uint32_t enc_bits_per_sample,
@@ -325,12 +327,13 @@ void JXLImage::appendFramebuffer(
     );
 
     _framebuffers.push_back(fb);
+
+    return _framebuffers.size() - 1;
 }
 
 
 void JXLImage::write(const char* filename) const {
     // TODO: Check if _framebuffers.size() > 0
-
     JxlEncoderStatus           status;
     JxlEncoderPtr              enc;
     JxlThreadParallelRunnerPtr runner;
@@ -366,6 +369,8 @@ void JXLImage::write(const char* filename) const {
     status = JxlEncoderAddBox(enc.get(), tp, raw_box.data(), raw_box.size(), JXL_FALSE);
     
     CHECK_JXL_ENC_STATUS(status);
+
+    JxlEncoderCloseBoxes(enc.get());
 
     // ====================================================================
     // Main framebuffer
@@ -439,7 +444,7 @@ void JXLImage::write(const char* filename) const {
     status = JxlEncoderAddImageFrame(
         frame_settings, 
         &format,
-        _framebuffers[0]->_pixel_data.data(),
+        _framebuffers[0]->getPixelData().data(),
         data_size
     );
 
@@ -490,7 +495,7 @@ void JXLImage::write(const char* filename) const {
         status = JxlEncoderSetExtraChannelBuffer(
             frame_settings, 
             &format, 
-            fb->_pixel_data.data(),
+            fb->getPixelDataConst().data(),
             data_size,
             i - 1);
 

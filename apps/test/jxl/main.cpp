@@ -38,13 +38,6 @@
 
 #include <JXLImage.h>
 
-
-#include <jxl/encode.h>
-#include <jxl/encode_cxx.h>
-
-#include <jxl/thread_parallel_runner.h>
-#include <jxl/thread_parallel_runner_cxx.h>
-
 #include "lodepng.h"
 
 
@@ -67,8 +60,6 @@ void write_foo_image(const char* filename, size_t width, size_t height)
             sub_framebuffer [y * width + x] = v;
         }
     }
-
-    SGEG_box sgeg(2);
 
     // Output to JXL
     JXLImage image_out(width, height);

@@ -46,7 +46,7 @@
 #include <jxl/thread_parallel_runner.h>
 #include <jxl/thread_parallel_runner_cxx.h>
 
-#include <SGEG_box.h>
+#include <SGEGBox.h>
 
 
 class JXLFramebuffer
@@ -77,6 +77,9 @@ public:
 
     JxlPixelFormat getPixelFormat() const { return _pixel_format; }
 
+    std::vector<float>& getPixelData() { return _pixel_data; }
+    const std::vector<float>& getPixelDataConst() const { return _pixel_data; }
+
     const char* getName() const { return _name; }
 
     void setName(const char* name);
@@ -94,7 +97,6 @@ protected:
 
     JxlPixelFormat _pixel_format;
 
-public:
     std::vector<float> _pixel_data;
 };
 
@@ -108,7 +110,7 @@ public:
 
     virtual ~JXLImage();
 
-    void appendFramebuffer(
+    size_t appendFramebuffer(
         const std::vector<float>& framebuffer,
         uint32_t n_channels,
         uint32_t enc_bits_per_sample = 32,
@@ -118,17 +120,22 @@ public:
 
     void write(const char* filename) const;
 
-    void setBox(const SGEG_box& box);
-    SGEG_box getBox() const { return _sgeg_box; }
+    void setBox(const SGEGBox& box);
+    const SGEGBox& getBox() const { return _sgeg_box; }
 
     uint32_t width()  const { return _width; }
     uint32_t height() const { return _height; }
 
     size_t n_framebuffers() const { return _framebuffers.size(); }
     
+    const std::vector<float>& getFramebufferDataConst(size_t index) const
+    {
+        return _framebuffers[index]->getPixelDataConst();
+    }
+
     std::vector<float>& getFramebufferData(size_t index) const
     {
-        return _framebuffers[index]->_pixel_data;
+        return _framebuffers[index]->getPixelData();
     }
 
     JXLFramebuffer* getFramebuffer(size_t index) const
@@ -136,11 +143,19 @@ public:
         return _framebuffers[index];
     }
 
+    std::vector<JXLFramebuffer*>& getFramebuffers() {
+        return _framebuffers;
+    }
+
+    const std::vector<JXLFramebuffer*>& getFramebuffersConst() const {
+        return _framebuffers;
+    }
+
 protected:
     uint32_t _width;
     uint32_t _height;
 
-    SGEG_box _sgeg_box;
+    SGEGBox _sgeg_box;
 
     std::vector<JXLFramebuffer*> _framebuffers;
 };

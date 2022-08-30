@@ -1,3 +1,6 @@
 add_subdirectory(spectrum-moments)
 add_subdirectory(jxl)
 add_subdirectory(lossless)
+add_subdirectory(exr-layers)
+add_subdirectory(stupid-compress)
+add_subdirectory(stupid-decompress)
