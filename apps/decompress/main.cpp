@@ -122,7 +122,7 @@ int main(int argc, char* argv[])
 
         const size_t n_moments = sg.maxs.size();
 
-        for (size_t m = 0; m < moments.size(); m++) {
+        for (size_t m = 0; m < n_moments; m++) {
             moments[m] = jxl_image.getFramebufferDataConst(sg.layer_indices[m]);
         }
 
@@ -163,7 +163,7 @@ int main(int argc, char* argv[])
 
     }
 
-    for (const SGEGGrayGroup gg: box.gray_groups) {
+    for (const SGEGGrayGroup& gg: box.gray_groups) {
         exr_out.appendFramebuffer(
             jxl_image.getFramebufferDataConst(gg.layer_index), 
             gg.layer_name.data());
