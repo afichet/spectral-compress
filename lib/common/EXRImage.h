@@ -37,6 +37,37 @@
 #include <cstddef>
 #include <vector>
 
+#include <OpenEXR/ImfIO.h>
+
+
+class EXRArrayStream : public Imf::OStream, public Imf::IStream {
+public:
+    EXRArrayStream();
+
+    EXRArrayStream(const std::vector<uint8_t> data);
+
+    virtual void write(const char c[/*n*/], int n);
+
+    virtual bool read(char c[/*n*/], int n);
+
+    virtual uint64_t tellp();
+    
+    virtual uint64_t tellg();
+
+    virtual void seekp(uint64_t pos);
+
+    virtual void seekg(uint64_t pos);
+
+    const std::vector<uint8_t>& data() const;
+
+    size_t size() const;
+
+private:
+    std::vector<uint8_t> _data;
+    uint64_t _pos;
+};
+
+
 class EXRFramebuffer
 {
 public:
@@ -58,7 +89,6 @@ protected:
     std::vector<float> _pixel_data;
     char* _name;
 };
-
 
 
 class EXRImage
@@ -88,8 +118,13 @@ public:
     const std::vector<EXRFramebuffer*>& getFramebuffersConst() const {
         return _framebuffers;
     }
+    
+    void setAttributesData(const std::vector<uint8_t>& data) { _attributes_data = data; }
+
+    const std::vector<uint8_t>& getAttributesData() const { return _attributes_data; }
 
 protected:
     uint32_t _width, _height;
     std::vector<EXRFramebuffer*> _framebuffers;
+    std::vector<uint8_t> _attributes_data;
 };

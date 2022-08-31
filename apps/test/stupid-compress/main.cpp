@@ -55,6 +55,8 @@ int main(int argc, char* argv[])
     JXLImage jxl_out(exr_in.width(), exr_in.height());
     SGEGBox box;
 
+    box.exr_attributes = exr_in.getAttributesData();
+
     const std::vector<EXRFramebuffer*>& framebuffers = exr_in.getFramebuffersConst();
 
     for (const EXRFramebuffer* fb: framebuffers) {
@@ -70,6 +72,8 @@ int main(int argc, char* argv[])
     }
 
     jxl_out.setBox(box);
+
+    std::cout << "Len ATTR: " << box.exr_attributes.size() << std::endl;
 
     jxl_out.write(filename_out);
 

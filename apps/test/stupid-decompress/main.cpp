@@ -62,9 +62,11 @@ int main(int argc, char* argv[])
             jxl_in.getFramebufferDataConst(gg.layer_index),
             gg.layer_name.data()
         );
-
-        std::cout << gg.layer_name.data() << std::endl;
     }
+
+    exr_out.setAttributesData(box.exr_attributes);
+
+    std::cout << "Len ATTR: " << box.exr_attributes.size() << std::endl;
 
     exr_out.write(filename_out);
 

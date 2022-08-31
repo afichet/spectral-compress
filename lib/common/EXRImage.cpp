@@ -43,6 +43,81 @@
 #include <OpenEXR/ImfFrameBuffer.h>
 #include <OpenEXR/ImfHeader.h>
 
+// ----------------------------------------------------------------------------
+
+EXRArrayStream::EXRArrayStream()
+: Imf::OStream("mem")
+, Imf::IStream("mem")
+, _pos(0)
+{}
+
+
+EXRArrayStream::EXRArrayStream(const std::vector<uint8_t> data)
+: Imf::OStream("mem")
+, Imf::IStream("mem")
+, _data(data)
+, _pos(0)
+{}
+
+
+void EXRArrayStream::write(const char c[/*n*/], int n) {
+    const uint64_t remaining_bytes = _data.size() - _pos;
+
+    if (remaining_bytes < n) {
+        _data.resize(_data.size() + n - remaining_bytes);
+    }
+
+    std::memcpy(&_data[_pos], c, n);
+
+    _pos += n;
+}
+
+
+bool EXRArrayStream::read(char c[/*n*/], int n) {
+    const uint64_t remaining_bytes = _data.size() - _pos;
+
+    if (remaining_bytes < n) {
+        throw std::exception();
+    }
+
+    std::memcpy(c, &_data[_pos], n);
+
+    _pos += n;
+
+    return _pos == _data.size();
+}
+
+
+uint64_t EXRArrayStream::tellp() {
+    return _pos;
+}
+
+
+uint64_t EXRArrayStream::tellg() {
+    return _pos;
+}
+
+
+void EXRArrayStream::seekp(uint64_t pos) {
+    _pos = pos;
+}
+
+
+void EXRArrayStream::seekg(uint64_t pos) {
+    _pos = pos;
+}
+
+
+const std::vector<uint8_t>& EXRArrayStream::data() const {
+    return _data;
+}
+
+
+size_t EXRArrayStream::size() const {
+    return _data.size();
+}
+
+// ----------------------------------------------------------------------------
 
 EXRFramebuffer::EXRFramebuffer(
     uint32_t width, uint32_t height,
@@ -71,6 +146,7 @@ EXRFramebuffer::~EXRFramebuffer()
     delete[] _name;
 }
 
+// ----------------------------------------------------------------------------
 
 EXRImage::EXRImage(const char* filename)
 {
@@ -83,6 +159,25 @@ EXRImage::EXRImage(const char* filename)
     _width  = exr_datawindow.max.x - exr_datawindow.min.x + 1;
     _height = exr_datawindow.max.y - exr_datawindow.min.y + 1;
 
+    // Read attributes
+    EXRArrayStream attr_stream;
+
+    for (Imf::Header::ConstIterator it = exr_header.begin(); it != exr_header.end(); it++) {
+        const char* attribute_name = it.name();
+        const char* attribute_type = it.attribute().typeName();
+
+        if (std::strcmp(attribute_name, "channels") != 0 
+         && std::strcmp(attribute_name, "compression") != 0) {
+            attr_stream.write(attribute_name, std::strlen(attribute_name) + 1);
+            attr_stream.write(attribute_type, std::strlen(attribute_type) + 1);
+            
+            it.attribute().writeValueTo(attr_stream, 1);
+        }
+    }
+
+    _attributes_data = attr_stream.data();
+
+    // Read framebuffers
     Imf::FrameBuffer exr_framebuffer;
 
     const size_t x_stride = sizeof(float);
@@ -142,6 +237,40 @@ void EXRImage::write(const char* filename) const
     Imf::ChannelList &exr_channels = exr_header.channels();
     Imf::FrameBuffer  exr_framebuffer;
 
+    // Write attributes if any
+    if (_attributes_data.size() > 0) {
+        EXRArrayStream attr_stream(_attributes_data);
+
+        do {
+            char c;
+            std::stringstream attribute_name_stream;
+            std::stringstream attribute_type_stream;
+
+            do {
+                attr_stream.read(&c, 1);
+                attribute_name_stream << c;
+            } while(c != 0);
+
+            do {
+                attr_stream.read(&c, 1);
+                attribute_type_stream << c;
+            } while (c != 0);
+            
+            const std::string attribute_name = attribute_name_stream.str();
+            const std::string attribute_type = attribute_type_stream.str();
+
+            Imf::Attribute* attr = Imf::Attribute::newAttribute(attribute_type.c_str());
+            attr->readValueFrom(attr_stream, attr_stream.size() - attr_stream.tellg(), 1);
+
+            if (std::strcmp(attribute_name.c_str(), "channels") != 0) {
+                exr_header.insert(attribute_name, *attr);
+            }
+
+            delete attr;
+        } while (!(attr_stream.tellg() == attr_stream.size()));
+    }
+
+    // Write framebuffers
     const size_t x_stride = sizeof(float);
     const size_t y_stride = x_stride * _width;
 

@@ -85,6 +85,7 @@ void decompress_spectral_framebuffer(
     compute_density_image(phases, moments_image, n_pixels, 1, n_moments, spectral_framebuffer);
 }
 
+
 int main(int argc, char* argv[]) 
 {
     if (argc < 3) {
@@ -103,24 +104,19 @@ int main(int argc, char* argv[])
     const size_t width  = jxl_image.width();
     const size_t height = jxl_image.height();
 
-    // box.print();
-
-    // Imf::Header       exr_header(width, height);
-    // Imf::ChannelList& exr_channels = exr_header.channels();
-    // Imf::FrameBuffer  exr_framebuffer;
-
     EXRImage exr_out(width, height);
+
+    exr_out.setAttributesData(box.exr_attributes);
 
     for (const SGEGSpectralGroup& sg: box.spectral_groups) {
         std::string root_name = sg.root_name.data();
+        const size_t n_moments = sg.layer_indices.size();
 
         assert(sg.layer_indices.size() == (sg.mins.size() + 1));
         assert(sg.mins.size() == sg.maxs.size());
 
-        std::vector<std::vector<float>> moments(sg.layer_indices.size());
+        std::vector<std::vector<float>> moments(n_moments);
         std::vector<float> spectral_framebuffer;
-
-        const size_t n_moments = sg.maxs.size();
 
         for (size_t m = 0; m < n_moments; m++) {
             moments[m] = jxl_image.getFramebufferDataConst(sg.layer_indices[m]);
@@ -131,9 +127,6 @@ int main(int argc, char* argv[])
             moments, 
             sg.mins, sg.maxs, 
             spectral_framebuffer);
-
-        // const size_t x_stride = sg.wavelengths.size() * sizeof(float);
-        // const size_t y_stride = x_stride * width;
 
         std::vector<std::vector<float>> s_fb(sg.wavelengths.size());
 
@@ -149,18 +142,7 @@ int main(int argc, char* argv[])
             const std::string layer_name = root_name + "." + wl; 
 
             exr_out.appendFramebuffer(framebuffer, layer_name.c_str());
-            // exr_channels.insert(layer_name, Imf::Channel(Imf::FLOAT));
-
-            // exr_framebuffer.insert(
-            //     layer_name,
-            //     Imf::Slice(
-            //         Imf::FLOAT, 
-            //         (char*)&spectral_framebuffer[i], 
-            //         x_stride, y_stride)
-            // );
         }
-
-
     }
 
     for (const SGEGGrayGroup& gg: box.gray_groups) {
@@ -170,10 +152,6 @@ int main(int argc, char* argv[])
     }
 
     exr_out.write(filename_out);
-
-    // Imf::OutputFile exr_out(filename_out, exr_header);
-    // exr_out.setFrameBuffer(exr_framebuffer);
-    // exr_out.writePixels(height);
 
     return 0;
 }

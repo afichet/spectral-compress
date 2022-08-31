@@ -45,9 +45,13 @@ struct SGEGSpectralGroup
     std::vector<uint32_t> layer_indices;
     std::vector<float> wavelengths;
     std::vector<float> mins;
-    std::vector<float> maxs;
+    std::vector<float> maxs;    
+
+    size_t getRaw(uint8_t data[]) const;
+    size_t fromRaw(const uint8_t data[]);
 
     size_t size() const;
+    SGEGSpectralGroup& operator=(const SGEGSpectralGroup& other);
 };
 
 
@@ -56,22 +60,25 @@ struct SGEGGrayGroup
     std::vector<char> layer_name;
     uint32_t layer_index;
 
-    size_t size() const;
+    size_t getRaw(uint8_t data[]) const;
+    size_t fromRaw(const uint8_t data[]);
 
+    size_t size() const;
+    SGEGGrayGroup& operator=(const SGEGGrayGroup& other);
 };
 
 
 // Spectral Graphics Extended Group
 
-class SGEGBox
+struct SGEGBox
 {
-public:
     uint32_t revision;
 
     std::vector<SGEGSpectralGroup> spectral_groups;
     std::vector<SGEGGrayGroup> gray_groups;
 
-public:
+    std::vector<uint8_t> exr_attributes;
+
     SGEGBox();
 
     SGEGBox(const std::vector<uint8_t> &data);
@@ -81,6 +88,8 @@ public:
     virtual ~SGEGBox();
 
     void getRaw(std::vector<uint8_t> &data) const;
+
+    size_t getRaw(uint8_t data[]) const;
 
     size_t size() const;
 

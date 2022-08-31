@@ -36,6 +36,117 @@
 #include <cstring>
 #include <cstdint>
 
+// ----------------------------------------------------------------------------
+
+size_t SGEGSpectralGroup::getRaw(uint8_t data[]) const
+{
+    size_t offset = 0, write_size = 0;
+    uint32_t data_len = 0;
+
+    data_len = root_name.size();
+
+    write_size = sizeof(uint32_t);
+    std::memcpy(data + offset, &data_len, write_size);
+    offset += write_size;
+
+    write_size = data_len * sizeof(char);
+    std::memcpy(data + offset, root_name.data(), write_size);
+    offset += write_size;
+
+    // layer_indices
+    data_len = layer_indices.size();
+
+    write_size = sizeof(uint32_t);
+    std::memcpy(data + offset, &data_len, write_size);
+    offset += write_size;
+
+    write_size = data_len * sizeof(uint32_t);
+    std::memcpy(data + offset, layer_indices.data(), write_size);
+    offset += write_size;
+
+    // wavelengths
+    data_len = wavelengths.size();
+    
+    write_size = sizeof(uint32_t);
+    std::memcpy(data + offset, &data_len, write_size);
+    offset += write_size;
+
+    write_size = data_len * sizeof(float);
+    std::memcpy(data + offset, wavelengths.data(), write_size);
+    offset += write_size;
+
+    // mins / maxs
+    data_len = mins.size();
+
+    write_size = sizeof(uint32_t);
+    std::memcpy(data + offset, &data_len, write_size);
+    offset += write_size;
+
+    write_size = data_len * sizeof(float);
+    std::memcpy(data + offset, mins.data(), write_size);
+    offset += write_size;
+    std::memcpy(data + offset, maxs.data(), write_size);
+    offset += write_size;
+
+    return offset;
+}
+
+
+size_t SGEGSpectralGroup::fromRaw(const uint8_t data[])
+{
+    size_t offset = 0, read_size = 0;
+    uint32_t data_len = 0;
+
+    // root_name
+    read_size = sizeof(uint32_t);
+    std::memcpy(&data_len, data + offset, read_size);
+    offset += read_size;
+
+    root_name.resize(data_len);
+
+    read_size = data_len * sizeof(char);
+    std::memcpy(root_name.data(), data + offset, read_size);
+    offset += read_size;
+
+    // layer_indices
+    read_size = sizeof(uint32_t);
+    std::memcpy(&data_len, data + offset, read_size);
+    offset += read_size;
+
+    layer_indices.resize(data_len);
+
+    read_size = data_len * sizeof(uint32_t);
+    std::memcpy(layer_indices.data(), data + offset, read_size);
+    offset += read_size;
+
+    // wavelengths
+    read_size = sizeof(uint32_t);
+    std::memcpy(&data_len, data + offset, read_size);
+    offset += read_size;
+
+    wavelengths.resize(data_len);
+
+    read_size = data_len * sizeof(float);
+    std::memcpy(wavelengths.data(), data + offset, read_size);
+    offset += read_size;
+
+    // mins / maxs
+    read_size = sizeof(uint32_t);
+    std::memcpy(&data_len, data + offset, read_size);
+    offset += read_size;
+
+    mins.resize(data_len);
+    maxs.resize(data_len);
+
+    read_size = data_len * sizeof(float);
+    std::memcpy(mins.data(), data + offset, read_size);
+    offset += read_size;
+    std::memcpy(maxs.data(), data + offset, read_size);
+    offset += read_size;
+
+    return offset;
+}
+
 
 size_t SGEGSpectralGroup::size() const
 {
@@ -52,6 +163,70 @@ size_t SGEGSpectralGroup::size() const
 }
 
 
+SGEGSpectralGroup& SGEGSpectralGroup::operator=(const SGEGSpectralGroup& other) {
+    if (this != &other) {
+        root_name     = other.root_name;
+        layer_indices = other.layer_indices;
+        wavelengths   = other.wavelengths;
+        mins          = other.mins;
+        maxs          = other.maxs;
+    }
+
+    return *this;
+}
+
+// ----------------------------------------------------------------------------
+
+size_t SGEGGrayGroup::getRaw(uint8_t data[]) const
+{
+    size_t offset = 0, write_size = 0;
+    uint32_t data_len = 0;
+
+    // layer_name
+    data_len = layer_name.size();
+
+    write_size = sizeof(uint32_t);
+    std::memcpy(data + offset, &data_len, write_size);
+    offset += write_size;
+
+    write_size = data_len * sizeof(char);
+    std::memcpy(data + offset, layer_name.data(), write_size);
+    offset += write_size;
+
+    // layer_index
+    write_size = sizeof(uint32_t);
+    std::memcpy(data + offset, &layer_index, write_size);
+    offset += write_size;
+
+    return offset;
+}
+
+
+size_t SGEGGrayGroup::fromRaw(const uint8_t data[])
+{
+    size_t offset = 0, read_size = 0;
+    uint32_t data_len = 0;
+
+    // layer_name
+    read_size = sizeof(uint32_t);
+    std::memcpy(&data_len, data + offset, read_size);
+    offset += read_size;
+
+    layer_name.resize(data_len);
+
+    read_size = data_len * sizeof(char);
+    std::memcpy(layer_name.data(), data + offset, read_size);
+    offset += read_size;
+
+    // layer_index
+    read_size = sizeof(uint32_t);
+    std::memcpy(&layer_index, data + offset, read_size);
+    offset += read_size;
+
+    return offset;
+}
+
+
 size_t SGEGGrayGroup::size() const
 {
     return
@@ -60,6 +235,17 @@ size_t SGEGGrayGroup::size() const
         + sizeof(uint32_t);
 }
 
+
+SGEGGrayGroup& SGEGGrayGroup::operator=(const SGEGGrayGroup& other) {
+    if (this != &other) {
+        layer_name  = other.layer_name;
+        layer_index = other.layer_index;
+    }
+
+    return *this;
+}
+
+// ----------------------------------------------------------------------------
 
 SGEGBox::SGEGBox() 
     : revision(1)
@@ -84,52 +270,7 @@ SGEGBox::SGEGBox(const std::vector<uint8_t> &data)
     spectral_groups.resize(data_len);
 
     for (size_t i = 0; i < spectral_groups.size(); i++) {
-        // root_name
-        read_size = sizeof(uint32_t);
-        std::memcpy(&data_len, data.data() + offset, read_size);
-        offset += read_size;
-
-        spectral_groups[i].root_name.resize(data_len);
-
-        read_size = data_len * sizeof(char);
-        std::memcpy(spectral_groups[i].root_name.data(), data.data() + offset, read_size);
-        offset += read_size;
-
-        // layer_indices
-        read_size = sizeof(uint32_t);
-        std::memcpy(&data_len, data.data() + offset, read_size);
-        offset += read_size;
-
-        spectral_groups[i].layer_indices.resize(data_len);
-
-        read_size = data_len * sizeof(uint32_t);
-        std::memcpy(spectral_groups[i].layer_indices.data(), data.data() + offset, read_size);
-        offset += read_size;
-
-        // wavelengths
-        read_size = sizeof(uint32_t);
-        std::memcpy(&data_len, data.data() + offset, read_size);
-        offset += read_size;
-
-        spectral_groups[i].wavelengths.resize(data_len);
-
-        read_size = data_len * sizeof(float);
-        std::memcpy(spectral_groups[i].wavelengths.data(), data.data() + offset, read_size);
-        offset += read_size;
-
-        // mins / maxs
-        read_size = sizeof(uint32_t);
-        std::memcpy(&data_len, data.data() + offset, read_size);
-        offset += read_size;
-
-        spectral_groups[i].mins.resize(data_len);
-        spectral_groups[i].maxs.resize(data_len);
-
-        read_size = data_len * sizeof(float);
-        std::memcpy(spectral_groups[i].mins.data(), data.data() + offset, read_size);
-        offset += read_size;
-        std::memcpy(spectral_groups[i].maxs.data(), data.data() + offset, read_size);
-        offset += read_size;
+        offset += spectral_groups[i].fromRaw(data.data() + offset);
     } 
 
     // gray_groups
@@ -140,43 +281,28 @@ SGEGBox::SGEGBox(const std::vector<uint8_t> &data)
     gray_groups.resize(data_len);
 
     for (size_t i = 0; i < gray_groups.size(); i++) {
-        // layer_name
-        read_size = sizeof(uint32_t);
-        std::memcpy(&data_len, data.data() + offset, read_size);
-        offset += read_size;
-
-        gray_groups[i].layer_name.resize(data_len);
-
-        read_size = data_len * sizeof(char);
-        std::memcpy(gray_groups[i].layer_name.data(), data.data() + offset, read_size);
-        offset += read_size;
-
-        // layer_index
-        read_size = sizeof(uint32_t);
-        std::memcpy(&gray_groups[i].layer_index, data.data() + offset, read_size);
-        offset += read_size;
+        offset += gray_groups[i].fromRaw(data.data() + offset);
     }
+
+    // exr attributes
+    read_size = sizeof(uint32_t);
+    std::memcpy(&data_len, data.data() + offset, read_size);
+    offset += read_size;
+
+    exr_attributes.resize(data_len);
+
+    read_size = data_len * sizeof(uint8_t);
+    std::memcpy(exr_attributes.data(), data.data() + offset, read_size);
+    offset += read_size;
 }
 
 
 SGEGBox::SGEGBox(const SGEGBox& other)
     : revision(other.revision)
-    , spectral_groups(other.spectral_groups.size())
-    , gray_groups(other.gray_groups.size())
-{
-    for (size_t i = 0; i < spectral_groups.size(); i++) {
-        spectral_groups[i].root_name     = other.spectral_groups[i].root_name;
-        spectral_groups[i].layer_indices = other.spectral_groups[i].layer_indices;
-        spectral_groups[i].wavelengths   = other.spectral_groups[i].wavelengths;
-        spectral_groups[i].mins          = other.spectral_groups[i].mins;
-        spectral_groups[i].maxs          = other.spectral_groups[i].maxs;
-    }
-
-    for (size_t i = 0; i < gray_groups.size(); i++) {
-        gray_groups[i].layer_name  = other.gray_groups[i].layer_name;
-        gray_groups[i].layer_index = other.gray_groups[i].layer_index;
-    }
-}
+    , spectral_groups(other.spectral_groups)
+    , gray_groups(other.gray_groups)
+    , exr_attributes(other.exr_attributes)
+{}
 
 
 SGEGBox::~SGEGBox() {}
@@ -186,99 +312,61 @@ void SGEGBox::getRaw(std::vector<uint8_t> &data) const
 {
     data.resize(size());
 
+    getRaw(data.data());
+}
+
+size_t SGEGBox::getRaw(uint8_t data[]) const
+{
     size_t offset = 0, write_size = 0;
     uint32_t data_len = 0;
 
     // revision
     write_size = sizeof(uint32_t);
-    std::memcpy(data.data() + offset, &revision, write_size);
+    std::memcpy(data + offset, &revision, write_size);
     offset += write_size;
     
     // spectral_groups
     data_len = spectral_groups.size();
 
     write_size = sizeof(uint32_t);
-    std::memcpy(data.data() + offset, &data_len, write_size);
+    std::memcpy(data + offset, &data_len, write_size);
     offset += write_size;
 
     for (const SGEGSpectralGroup& sg: spectral_groups) {
-        // root_name
-        data_len = sg.root_name.size();
-
-        write_size = sizeof(uint32_t);
-        std::memcpy(data.data() + offset, &data_len, write_size);
-        offset += write_size;
-
-        write_size = data_len * sizeof(char);
-        std::memcpy(data.data() + offset, sg.root_name.data(), write_size);
-        offset += write_size;
-
-        // layer_indices
-        data_len = sg.layer_indices.size();
-
-        write_size = sizeof(uint32_t);
-        std::memcpy(data.data() + offset, &data_len, write_size);
-        offset += write_size;
-
-        write_size = data_len * sizeof(uint32_t);
-        std::memcpy(data.data() + offset, sg.layer_indices.data(), write_size);
-        offset += write_size;
-
-        // wavelengths
-        data_len = sg.wavelengths.size();
-        
-        write_size = sizeof(uint32_t);
-        std::memcpy(data.data() + offset, &data_len, write_size);
-        offset += write_size;
-
-        write_size = data_len * sizeof(float);
-        std::memcpy(data.data() + offset, sg.wavelengths.data(), write_size);
-        offset += write_size;
-
-        // mins / maxs
-        data_len = sg.mins.size();
-
-        write_size = sizeof(uint32_t);
-        std::memcpy(data.data() + offset, &data_len, write_size);
-        offset += write_size;
-
-        write_size = data_len * sizeof(float);
-        std::memcpy(data.data() + offset, sg.mins.data(), write_size);
-        offset += write_size;
-        std::memcpy(data.data() + offset, sg.maxs.data(), write_size);
-        offset += write_size;
+        offset += sg.getRaw(data + offset);
     }
 
     // gray_groups
     data_len = gray_groups.size();
 
     write_size = sizeof(uint32_t);
-    std::memcpy(data.data() + offset, &data_len, write_size);
+    std::memcpy(data + offset, &data_len, write_size);
     offset += write_size;
 
     for (const SGEGGrayGroup& gg: gray_groups) {
-        // layer_name
-        data_len = gg.layer_name.size();
-
-        write_size = sizeof(uint32_t);
-        std::memcpy(data.data() + offset, &data_len, write_size);
-        offset += write_size;
-
-        write_size = data_len * sizeof(char);
-        std::memcpy(data.data() + offset, gg.layer_name.data(), write_size);
-        offset += write_size;
-
-        // layer_index
-        write_size = sizeof(uint32_t);
-        std::memcpy(data.data() + offset, &gg.layer_index, write_size);
-        offset += write_size;
+        offset += gg.getRaw(data + offset);
     }
+
+    // exr attributes
+    data_len = exr_attributes.size();
+
+    write_size = sizeof(uint32_t);
+    std::memcpy(data + offset, &data_len, write_size);
+    offset += write_size;
+
+    write_size = data_len * sizeof(uint8_t);
+    std::memcpy(data + offset, exr_attributes.data(), write_size);
+    offset += write_size;
+
+    return offset;
 }
 
 
 size_t SGEGBox::size() const {
-    size_t sz = sizeof(uint32_t);// + main_layer_name.size() * sizeof(char);
-    sz += 2 * sizeof(uint32_t); // Arrays size;
+    size_t sz = 0;
+
+    sz += sizeof(uint32_t) // + main_layer_name.size() * sizeof(char);
+        + 2 * sizeof(uint32_t); // Arrays size;
         
     for (const SGEGSpectralGroup& sg: spectral_groups) {
         sz += sg.size();
@@ -288,6 +376,10 @@ size_t SGEGBox::size() const {
         sz += gg.size();
     }
 
+    // exr_attributes
+    sz += sizeof(uint32_t) // Array size
+        + exr_attributes.size() * sizeof(uint8_t);
+
     return sz;
 }
 
@@ -295,25 +387,10 @@ size_t SGEGBox::size() const {
 SGEGBox& SGEGBox::operator=(const SGEGBox& other)
 {        
     if (this != &other) {
-        revision = other.revision;
-        // main_layer_name = other.main_layer_name;
-
-        spectral_groups.resize(other.spectral_groups.size());
-
-        for (size_t i = 0; i < spectral_groups.size(); i++) {
-            spectral_groups[i].root_name     = other.spectral_groups[i].root_name;
-            spectral_groups[i].layer_indices = other.spectral_groups[i].layer_indices;
-            spectral_groups[i].wavelengths   = other.spectral_groups[i].wavelengths;
-            spectral_groups[i].mins          = other.spectral_groups[i].mins;
-            spectral_groups[i].maxs          = other.spectral_groups[i].maxs;
-        }
-
-        gray_groups.resize(other.gray_groups.size());
-
-        for (size_t i = 0; i < gray_groups.size(); i++) {
-            gray_groups[i].layer_name  = other.gray_groups[i].layer_name;
-            gray_groups[i].layer_index = other.gray_groups[i].layer_index;
-        }
+        revision        = other.revision;
+        spectral_groups = other.spectral_groups;
+        gray_groups     = other.gray_groups;
+        exr_attributes  = other.exr_attributes;
     }
 
     return *this;

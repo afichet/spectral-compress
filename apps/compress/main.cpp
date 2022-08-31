@@ -47,6 +47,7 @@
 #include <OpenEXR/ImfHeader.h>
 
 #include <JXLImage.h>
+#include <EXRImage.h>
 
 #include <moments.h>
 #include <moments_image.h>
@@ -339,20 +340,38 @@ int main(int argc, char *argv[])
     const char* filename_in  = argv[1];
     const char* filename_out = argv[2];
 
+    // TODO: move handling of layer types & attributes in EXRImage
     Imf::InputFile exr_in(filename_in);
+    Imf::Header exr_header = exr_in.header();
 
     const Imath::Box2i& dw = exr_in.header().dataWindow();
     const uint32_t width   = dw.max.x - dw.min.x + 1;
     const uint32_t height  = dw.max.y - dw.min.y + 1;
+
+    EXRArrayStream attr_stream;
+
+    for (Imf::Header::ConstIterator it = exr_header.begin(); it != exr_header.end(); it++) {
+        const char* attribute_name = it.name();
+        const char* attribute_type = it.attribute().typeName();
+
+        if (std::strcmp(attribute_name, "channels") != 0 
+         && std::strcmp(attribute_name, "compression") != 0) {
+            attr_stream.write(attribute_name, std::strlen(attribute_name) + 1);
+            attr_stream.write(attribute_type, std::strlen(attribute_type) + 1);
+            
+            it.attribute().writeValueTo(attr_stream, 1);
+        }
+    }
 
     std::vector<SpectralFramebuffer*> spectral_framebuffers;
     std::vector<GreyFramebuffer*> extra_framebuffers;
 
     get_buffers_from_exr(exr_in, spectral_framebuffers, extra_framebuffers);
 
-    // TODO: missing SGEG Box
     JXLImage jxl_out(width, height);
     SGEGBox box;
+
+    box.exr_attributes = attr_stream.data();
     
     for (const SpectralFramebuffer* fb: spectral_framebuffers) {
         SGEGSpectralGroup sg;
