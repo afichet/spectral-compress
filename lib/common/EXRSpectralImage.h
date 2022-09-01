@@ -36,31 +36,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <vector>
-
-#include <OpenEXR/ImfIO.h>
-
-
-class EXRFramebuffer
-{
-public:
-    EXRFramebuffer(
-        uint32_t width, uint32_t height,
-        const char* name);
-
-    EXRFramebuffer(
-        const std::vector<float>& framebuffer,
-        const char* name);
-
-    virtual ~EXRFramebuffer();
-
-    const char* getName() const { return _name; }
-    const std::vector<float>& getPixelDataConst() const { return _pixel_data; }
-    std::vector<float>& getPixelData() { return _pixel_data; }
-
-protected:
-    std::vector<float> _pixel_data;
-    char* _name;
-};
+#include <string>
 
 
 struct SpectralFramebuffer 
@@ -68,6 +44,8 @@ struct SpectralFramebuffer
     std::string root_name;
     std::vector<float> wavelengths_nm;
     std::vector<float> image_data;
+
+    virtual ~SpectralFramebuffer() {}
 };
 
 
@@ -75,18 +53,37 @@ struct GreyFramebuffer
 {
     std::string layer_name;
     std::vector<float> image_data;
+
+    virtual ~GreyFramebuffer() {}
 };
 
-class EXRImage
+
+class EXRSpectralImage
 {
 public:
-    EXRImage(const char *filename);
+    EXRSpectralImage(const char *filename);
 
-    EXRImage(uint32_t width, uint32_t height);
+    EXRSpectralImage(uint32_t width, uint32_t height);
 
-    virtual ~EXRImage();
+    virtual ~EXRSpectralImage();
 
-    void appendFramebuffer(
+    void appendSpectralFramebuffer(
+        const std::vector<float> &wavelengths_nm,
+        const std::vector<float> &framebuffer,
+        const std::string& prefix
+    );
+
+    void appendSpectralFramebuffer(
+        const std::vector<float> &wavelengths_nm,
+        const std::vector<float> &framebuffer,
+        const char* prefix
+    );
+
+    void appendExtraFramebuffer(
+        const std::vector<float>& framenuffer,
+        const std::string& name);
+
+    void appendExtraFramebuffer(
         const std::vector<float>& framenuffer,
         const char* name);
 
@@ -95,23 +92,28 @@ public:
     uint32_t width()  const { return _width; }
     uint32_t height() const { return _height; }
 
-    size_t n_framebuffers() const { return _framebuffers.size(); }
-
-    std::vector<EXRFramebuffer*>& getFramebuffers() {
-        return _framebuffers;
+    std::vector<SpectralFramebuffer*>& getSpectralFramebuffers() {
+        return _spectral_framebuffers;
     }
 
-    const std::vector<EXRFramebuffer*>& getFramebuffersConst() const {
-        return _framebuffers;
+    std::vector<GreyFramebuffer*>& getExtraFramebuffers() {
+        return _extra_framebuffers;
     }
-    
+
     void setAttributesData(const std::vector<uint8_t>& data) { _attributes_data = data; }
 
     const std::vector<uint8_t>& getAttributesData() const { return _attributes_data; }
 
+    static double to_nm(
+        const std::string& value,
+        const std::string& prefix,
+        const std::string& units);
+
 protected:
     uint32_t _width, _height;
-    std::vector<EXRFramebuffer*> _framebuffers;
+
+    std::vector<SpectralFramebuffer*> _spectral_framebuffers;
+    std::vector<GreyFramebuffer*> _extra_framebuffers;
 
     std::vector<uint8_t> _attributes_data;
 };

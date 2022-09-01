@@ -47,206 +47,10 @@
 #include <OpenEXR/ImfHeader.h>
 
 #include <JXLImage.h>
-#include <EXRImage.h>
+#include <EXRSpectralImage.h>
 
 #include <moments.h>
 #include <moments_image.h>
-
-
-void check_for_invalid_vals(const std::vector<float>& buffer) {
-    for (size_t i = 0; i < buffer.size(); i++) {
-        const float v = buffer[i];
-        if (std::isinf(v) || std::isnan(v)) {
-            std::cout << "Invalid moment value!" << std::endl;
-        }
-    }
-}
-
-
-double to_nm(
-    const std::string& value,
-    const std::string& prefix,
-    const std::string& units) 
-{
-    std::string centralValueStr(value);
-    std::replace(
-        centralValueStr.begin(),
-        centralValueStr.end(),
-        ',',
-        '.');
-
-    const double v = std::stod(centralValueStr);
-
-    if (prefix == "n" && units == "m") return v;
-
-    double wavelength_nm = v;
-
-    const std::map<std::string, double> unit_prefix = {
-        {"Y", 1e24},
-        {"Z", 1e21},
-        {"E", 1e18},
-        {"P", 1e15},
-        {"T", 1e12},
-        {"G", 1e9},
-        {"M", 1e6},
-        {"k", 1e3},
-        {"h", 1e2},
-        {"da", 1e1},
-        {"d", 1e-1},
-        {"c", 1e-2},
-        {"m", 1e-3},
-        {"u", 1e-6},
-        {"n", 1e-9},
-        {"p", 1e-12}};
-
-    // Apply multiplier
-    if (prefix.size() > 0) {
-        wavelength_nm *= unit_prefix.at(prefix);
-    }
-
-    // Apply units
-    if (units == "Hz") {
-        wavelength_nm = 299792458. / wavelength_nm * 1e9;
-    } else if (units == "m") {
-        wavelength_nm = wavelength_nm * 1e9;
-    } else {
-        // Unknown unit
-        // Something went wrong with the parsing. This shall not occur.
-        throw std::out_of_range("Unknown unit");
-    }
-
-    return wavelength_nm;
-}
-
-
-struct SpectralFramebuffer 
-{
-    std::string root_name;
-    std::vector<float> wavelengths_nm;
-    std::vector<float> image_data;
-};
-
-
-struct GreyFramebuffer
-{
-    std::string layer_name;
-    std::vector<float> image_data;
-};
-
-
-void get_buffers_from_exr(
-    Imf::InputFile& exr_in,
-    std::vector<SpectralFramebuffer*>& spectral_framebuffers,
-    std::vector<GreyFramebuffer*>& extra_framebuffers)
-{
-    const Imf::Header&  exr_header       = exr_in.header();
-    const Imath::Box2i& exr_datawindow   = exr_header.dataWindow();
-    const Imf::ChannelList &exr_channels = exr_header.channels();
-
-    const uint32_t width  = exr_datawindow.max.x - exr_datawindow.min.x + 1;
-    const uint32_t height = exr_datawindow.max.y - exr_datawindow.min.y + 1;
-
-    std::map<std::string, std::vector<std::pair<std::string, float>>> spectral_channels;
-    std::set<std::string> extra_channels;
-    std::set<std::string> ignored_channels;
-
-    Imf::FrameBuffer exr_framebuffer;
-
-    // ------------------------------------------------------------------------
-    // Determine channels' position
-    // ------------------------------------------------------------------------
-
-    const std::regex expr(
-        "^(.*)((S([0-3]))|T)\\.(\\d*,?\\d*([Ee][+-]?\\d+)?)(Y|Z|E|P|T|G|M|k|h|"
-        "da|d|c|m|u|n|p)?(m|Hz)$");
-
-    for (Imf::ChannelList::ConstIterator channel = exr_channels.begin();
-            channel != exr_channels.end();
-            channel++) {
-        std::smatch matches;
-        const std::string name = channel.name();
-        const bool matched = std::regex_search(name, matches, expr);
-
-        if (matched) {
-            const std::string root   = matches[1].str();
-            const std::string prefix = root + matches[2].str();
-            
-            if (spectral_channels[prefix].size() == 0) {
-                ignored_channels.insert(root + "R");
-                ignored_channels.insert(root + "G");
-                ignored_channels.insert(root + "B");                
-            }
-
-            const double value_nm = to_nm(
-                matches[5].str(),
-                matches[7].str(),
-                matches[8].str()
-            );
-
-            spectral_channels[prefix].push_back(std::make_pair(channel.name(), value_nm));
-        } else {
-            extra_channels.insert(channel.name());
-        }
-    }
-
-    // Filter out ignored channels
-    for (const std::string& s: ignored_channels) {
-        extra_channels.erase(s);
-    }
-
-    // ------------------------------------------------------------------------
-    // Read framebuffers
-    // ------------------------------------------------------------------------
-
-    for (const auto& n: spectral_channels) {
-        const std::string& root_name = n.first;
-        const std::vector<std::pair<std::string, float>>& wavelengths = n.second;
-
-        SpectralFramebuffer* fb = new SpectralFramebuffer;
-        fb->root_name = root_name;
-        fb->image_data.resize(width * height * wavelengths.size());
-        fb->wavelengths_nm.reserve(wavelengths.size());
-
-        const size_t x_stride = sizeof(float) * wavelengths.size();
-        const size_t y_stride = x_stride * width;
-
-        for (size_t wl_idx = 0; wl_idx < wavelengths.size(); wl_idx++) {
-            const std::string& layer_name    = n.second[wl_idx].first;
-            const float        wavelength_nm = n.second[wl_idx].second;
-
-            Imf::Slice slice = Imf::Slice::Make(
-                Imf::FLOAT,
-                &(fb->image_data[wl_idx]),
-                exr_header.dataWindow(),
-                x_stride, y_stride);
-            
-            exr_framebuffer.insert(layer_name, slice);
-
-            fb->wavelengths_nm.push_back(wavelength_nm);
-        }
-
-        spectral_framebuffers.push_back(fb);
-    }
-
-    for (const auto& name: extra_channels) {
-        GreyFramebuffer* fb = new GreyFramebuffer;
-        
-        fb->layer_name = name;
-        fb->image_data.resize(width * height);
-
-        Imf::Slice slice = Imf::Slice::Make(
-            Imf::FLOAT,
-            fb->image_data.data(),
-            exr_header.dataWindow());
-            
-        exr_framebuffer.insert(name, slice);
-
-        extra_framebuffers.push_back(fb);
-    }
-
-    exr_in.setFrameBuffer(exr_framebuffer);
-    exr_in.readPixels(exr_datawindow.min.y, exr_datawindow.max.y);
-}
 
 
 void compress_spectral_framebuffer(
@@ -340,50 +144,20 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-    const bool saveRGB = false;
-
     const char* filename_in  = argv[1];
     const char* filename_out = argv[2];
 
-    // TODO: move handling of layer types & attributes in EXRImage
-    Imf::InputFile exr_in(filename_in);
-    Imf::Header exr_header = exr_in.header();
+    EXRSpectralImage image_in(filename_in);
 
-    const Imath::Box2i& dw = exr_in.header().dataWindow();
-    const uint32_t width   = dw.max.x - dw.min.x + 1;
-    const uint32_t height  = dw.max.y - dw.min.y + 1;
+    const std::vector<SpectralFramebuffer*>& spectral_framebuffers = image_in.getSpectralFramebuffers();
+    const std::vector<GreyFramebuffer*>& extra_framebuffers = image_in.getExtraFramebuffers();
 
-    EXRArrayStream attr_stream;
+    // get_buffers_from_exr(exr_in, spectral_framebuffers, extra_framebuffers);
 
-    for (Imf::Header::ConstIterator it = exr_header.begin(); it != exr_header.end(); it++) {
-        const char* attribute_name = it.name();
-        const char* attribute_type = it.attribute().typeName();
-
-        if (std::strcmp(attribute_name, "channels") != 0 
-         && std::strcmp(attribute_name, "compression") != 0
-         && std::strcmp(attribute_name, "lineOrder") != 0) {
-            attr_stream.write(attribute_name, std::strlen(attribute_name) + 1);
-            attr_stream.write(attribute_type, std::strlen(attribute_type) + 1);
-            
-            // For unknown reasons as for now, we need to save the length of the string
-            if (std::strcmp(attribute_type, "string") == 0) {
-                uint32_t str_sz = ((const Imf::StringAttribute&)it.attribute()).value().size();
-                attr_stream.write((char*)&str_sz, sizeof(uint32_t));
-            }
-
-            it.attribute().writeValueTo(attr_stream, 1);
-        }
-    }
-
-    std::vector<SpectralFramebuffer*> spectral_framebuffers;
-    std::vector<GreyFramebuffer*> extra_framebuffers;
-
-    get_buffers_from_exr(exr_in, spectral_framebuffers, extra_framebuffers);
-
-    JXLImage jxl_out(width, height);
+    JXLImage jxl_out(image_in.width(), image_in.height());
     SGEGBox box;
 
-    box.exr_attributes = attr_stream.data();
+    box.exr_attributes = image_in.getAttributesData();
     
     for (const SpectralFramebuffer* fb: spectral_framebuffers) {
         SGEGSpectralGroup sg;
@@ -439,14 +213,6 @@ int main(int argc, char *argv[])
 
     jxl_out.setBox(box);
     jxl_out.write(filename_out);
-
-    for (SpectralFramebuffer* fb: spectral_framebuffers) {
-        delete fb;
-    }
-
-    for (GreyFramebuffer* fb: extra_framebuffers) {
-        delete fb;
-    }
 
     return 0;
 }

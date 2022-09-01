@@ -43,81 +43,8 @@
 #include <OpenEXR/ImfFrameBuffer.h>
 #include <OpenEXR/ImfHeader.h>
 
-// ----------------------------------------------------------------------------
+#include "EXRArrayStream.h"
 
-EXRArrayStream::EXRArrayStream()
-: Imf::OStream("mem")
-, Imf::IStream("mem")
-, _pos(0)
-{}
-
-
-EXRArrayStream::EXRArrayStream(const std::vector<uint8_t> data)
-: Imf::OStream("mem")
-, Imf::IStream("mem")
-, _data(data)
-, _pos(0)
-{}
-
-
-void EXRArrayStream::write(const char c[/*n*/], int n) {
-    const uint64_t remaining_bytes = _data.size() - _pos;
-
-    if (remaining_bytes < n) {
-        _data.resize(_data.size() + n - remaining_bytes);
-    }
-
-    std::memcpy(&_data[_pos], c, n);
-
-    _pos += n;
-}
-
-
-bool EXRArrayStream::read(char c[/*n*/], int n) {
-    const uint64_t remaining_bytes = _data.size() - _pos;
-
-    if (remaining_bytes < n) {
-        throw std::exception();
-    }
-
-    std::memcpy(c, &_data[_pos], n);
-
-    _pos += n;
-
-    return _pos == _data.size();
-}
-
-
-uint64_t EXRArrayStream::tellp() {
-    return _pos;
-}
-
-
-uint64_t EXRArrayStream::tellg() {
-    return _pos;
-}
-
-
-void EXRArrayStream::seekp(uint64_t pos) {
-    _pos = pos;
-}
-
-
-void EXRArrayStream::seekg(uint64_t pos) {
-    _pos = pos;
-}
-
-
-const std::vector<uint8_t>& EXRArrayStream::data() const {
-    return _data;
-}
-
-
-size_t EXRArrayStream::size() const {
-    return _data.size();
-}
-
-// ----------------------------------------------------------------------------
 
 EXRFramebuffer::EXRFramebuffer(
     uint32_t width, uint32_t height,

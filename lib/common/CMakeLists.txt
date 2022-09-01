@@ -3,6 +3,8 @@ set(PUBLIC_HEADERS
     moments_image.h
     JXLImage.h
     EXRImage.h
+    EXRSpectralImage.h
+    EXRArrayStream.h
     SGEGBox.h
 )
 
@@ -11,6 +13,8 @@ add_library(common STATIC
     moments_image.cpp
     JXLImage.cpp
     EXRImage.cpp
+    EXRSpectralImage.cpp
+    EXRArrayStream.cpp
     SGEGBox.cpp
 )
 
