@@ -167,10 +167,17 @@ EXRImage::EXRImage(const char* filename)
         const char* attribute_type = it.attribute().typeName();
 
         if (std::strcmp(attribute_name, "channels") != 0 
-         && std::strcmp(attribute_name, "compression") != 0) {
+         && std::strcmp(attribute_name, "compression") != 0
+         && std::strcmp(attribute_name, "lineOrder") != 0) {
             attr_stream.write(attribute_name, std::strlen(attribute_name) + 1);
             attr_stream.write(attribute_type, std::strlen(attribute_type) + 1);
-            
+
+            // For unknown reasons as for now, we need to save the length of the string
+            if (std::strcmp(attribute_type, "string") == 0) {
+                uint32_t str_sz = ((const Imf::StringAttribute&)it.attribute()).value().size();
+                attr_stream.write((char*)&str_sz, sizeof(uint32_t));
+            }
+
             it.attribute().writeValueTo(attr_stream, 1);
         }
     }
@@ -259,12 +266,17 @@ void EXRImage::write(const char* filename) const
             const std::string attribute_name = attribute_name_stream.str();
             const std::string attribute_type = attribute_type_stream.str();
 
-            Imf::Attribute* attr = Imf::Attribute::newAttribute(attribute_type.c_str());
-            attr->readValueFrom(attr_stream, attr_stream.size() - attr_stream.tellg(), 1);
+            const uint32_t sz = attr_stream.size() - attr_stream.tellg();
 
-            if (std::strcmp(attribute_name.c_str(), "channels") != 0) {
-                exr_header.insert(attribute_name, *attr);
+            // We saved the string size before the value
+            if (std::strcmp(attribute_type.c_str(), "string") == 0) {
+                attr_stream.read((char*)&sz, sizeof(uint32_t));
             }
+
+            Imf::Attribute* attr = Imf::Attribute::newAttribute(attribute_type.c_str());
+            attr->readValueFrom(attr_stream, sz, 1);
+
+            exr_header.insert(attribute_name, *attr);
 
             delete attr;
         } while (!(attr_stream.tellg() == attr_stream.size()));
@@ -280,7 +292,7 @@ void EXRImage::write(const char* filename) const
         exr_framebuffer.insert(
             fb->getName(), 
             Imf::Slice(
-                Imf::FLOAT, 
+                Imf::FLOAT,
                 (char*)fb->getPixelData().data(), 
                 x_stride, y_stride)
         );

@@ -262,20 +262,25 @@ void compress_spectral_framebuffer(
     const uint32_t n_moments = framebuffer->wavelengths_nm.size();
     const uint32_t n_pixels = framebuffer->image_data.size() / framebuffer->wavelengths_nm.size();
 
-    // TODO:
-    // for (size_t i = 0; i < width * height * n_bands; i++) {
-    //     const float v = framebuffer[i];
+    // TODO: this shall be revisited
+    std::vector<float> spectral_framebuffer(framebuffer->image_data.size());
 
-    //     if (std::isinf(v) || std::isnan(v) || v < 1e-8) {
-    //         framebuffer[i] = 1e-8;
-    //     }
-    // }
+    #pragma omp parallel for
+    for (size_t i = 0; i < spectral_framebuffer.size(); i++) {
+        float v = framebuffer->image_data[i];
+
+        if (std::isinf(v) || std::isnan(v) || v < 1e-8) {
+            v = 1e-8;
+        }
+
+        spectral_framebuffer[i] = v;
+    }
 
     wavelengths_to_phases(framebuffer->wavelengths_nm, phases);
     
     compute_moments_image(
         phases, 
-        framebuffer->image_data, 
+        spectral_framebuffer,
         n_pixels, 1, 
         n_moments, 
         moments_image
@@ -355,10 +360,17 @@ int main(int argc, char *argv[])
         const char* attribute_type = it.attribute().typeName();
 
         if (std::strcmp(attribute_name, "channels") != 0 
-         && std::strcmp(attribute_name, "compression") != 0) {
+         && std::strcmp(attribute_name, "compression") != 0
+         && std::strcmp(attribute_name, "lineOrder") != 0) {
             attr_stream.write(attribute_name, std::strlen(attribute_name) + 1);
             attr_stream.write(attribute_type, std::strlen(attribute_type) + 1);
             
+            // For unknown reasons as for now, we need to save the length of the string
+            if (std::strcmp(attribute_type, "string") == 0) {
+                uint32_t str_sz = ((const Imf::StringAttribute&)it.attribute()).value().size();
+                attr_stream.write((char*)&str_sz, sizeof(uint32_t));
+            }
+
             it.attribute().writeValueTo(attr_stream, 1);
         }
     }
@@ -385,7 +397,6 @@ int main(int argc, char *argv[])
         compress_spectral_framebuffer(fb, compressed_moments, sg.mins, sg.maxs);
 
         // Now we can save to JPEG XL
-
         for (size_t m = 0; m < compressed_moments.size(); m++) {
             float n_bits;
             float n_exponent_bits;

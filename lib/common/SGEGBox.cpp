@@ -36,57 +36,75 @@
 #include <cstring>
 #include <cstdint>
 
-// ----------------------------------------------------------------------------
+template<typename T>
+size_t write_value(const T& value, uint8_t data[])
+{
+    const size_t write_size = sizeof(T);
 
-size_t SGEGSpectralGroup::getRaw(uint8_t data[]) const
+    std::memcpy(data, &value, write_size);
+
+    return write_size;
+}
+
+template<typename T>
+size_t read_value(const uint8_t data[], T& value)
+{
+    const size_t read_size = sizeof(T);
+
+    std::memcpy(&value, data, read_size);
+
+    return read_size;
+}
+
+template<typename T>
+size_t write_vector(const std::vector<T>& vec, uint8_t data[]) 
 {
     size_t offset = 0, write_size = 0;
     uint32_t data_len = 0;
 
-    data_len = root_name.size();
+    data_len = vec.size();
 
-    write_size = sizeof(uint32_t);
+    write_size = sizeof(data_len);
     std::memcpy(data + offset, &data_len, write_size);
     offset += write_size;
 
-    write_size = data_len * sizeof(char);
-    std::memcpy(data + offset, root_name.data(), write_size);
+    write_size = data_len * sizeof(T);
+    std::memcpy(data + offset, vec.data(), write_size);
     offset += write_size;
 
-    // layer_indices
-    data_len = layer_indices.size();
+    return offset;
+}
 
-    write_size = sizeof(uint32_t);
-    std::memcpy(data + offset, &data_len, write_size);
-    offset += write_size;
+template<typename T>
+size_t read_vector(const uint8_t data[], std::vector<T>& vec)
+{
+    size_t offset = 0, read_size = 0;
+    uint32_t data_len = 0;
 
-    write_size = data_len * sizeof(uint32_t);
-    std::memcpy(data + offset, layer_indices.data(), write_size);
-    offset += write_size;
+    read_size = sizeof(data_len);
+    std::memcpy(&data_len, data + offset, read_size);
+    offset += read_size;
 
-    // wavelengths
-    data_len = wavelengths.size();
-    
-    write_size = sizeof(uint32_t);
-    std::memcpy(data + offset, &data_len, write_size);
-    offset += write_size;
+    vec.resize(data_len);
 
-    write_size = data_len * sizeof(float);
-    std::memcpy(data + offset, wavelengths.data(), write_size);
-    offset += write_size;
+    read_size = data_len * sizeof(T);
+    std::memcpy(vec.data(), data + offset, read_size);
+    offset += read_size;
 
-    // mins / maxs
-    data_len = mins.size();
+    return offset;
+}
 
-    write_size = sizeof(uint32_t);
-    std::memcpy(data + offset, &data_len, write_size);
-    offset += write_size;
+// ----------------------------------------------------------------------------
 
-    write_size = data_len * sizeof(float);
-    std::memcpy(data + offset, mins.data(), write_size);
-    offset += write_size;
-    std::memcpy(data + offset, maxs.data(), write_size);
-    offset += write_size;
+size_t SGEGSpectralGroup::getRaw(uint8_t data[]) const
+{
+    size_t offset = 0;
+
+    offset += write_vector(root_name, data + offset);
+    offset += write_vector(layer_indices, data + offset);
+    offset += write_vector(wavelengths, data + offset);
+    offset += write_vector(mins, data + offset);
+    offset += write_vector(maxs, data + offset);
 
     return offset;
 }
@@ -94,55 +112,13 @@ size_t SGEGSpectralGroup::getRaw(uint8_t data[]) const
 
 size_t SGEGSpectralGroup::fromRaw(const uint8_t data[])
 {
-    size_t offset = 0, read_size = 0;
-    uint32_t data_len = 0;
+    size_t offset = 0;
 
-    // root_name
-    read_size = sizeof(uint32_t);
-    std::memcpy(&data_len, data + offset, read_size);
-    offset += read_size;
-
-    root_name.resize(data_len);
-
-    read_size = data_len * sizeof(char);
-    std::memcpy(root_name.data(), data + offset, read_size);
-    offset += read_size;
-
-    // layer_indices
-    read_size = sizeof(uint32_t);
-    std::memcpy(&data_len, data + offset, read_size);
-    offset += read_size;
-
-    layer_indices.resize(data_len);
-
-    read_size = data_len * sizeof(uint32_t);
-    std::memcpy(layer_indices.data(), data + offset, read_size);
-    offset += read_size;
-
-    // wavelengths
-    read_size = sizeof(uint32_t);
-    std::memcpy(&data_len, data + offset, read_size);
-    offset += read_size;
-
-    wavelengths.resize(data_len);
-
-    read_size = data_len * sizeof(float);
-    std::memcpy(wavelengths.data(), data + offset, read_size);
-    offset += read_size;
-
-    // mins / maxs
-    read_size = sizeof(uint32_t);
-    std::memcpy(&data_len, data + offset, read_size);
-    offset += read_size;
-
-    mins.resize(data_len);
-    maxs.resize(data_len);
-
-    read_size = data_len * sizeof(float);
-    std::memcpy(mins.data(), data + offset, read_size);
-    offset += read_size;
-    std::memcpy(maxs.data(), data + offset, read_size);
-    offset += read_size;
+    offset += read_vector(data + offset, root_name);
+    offset += read_vector(data + offset, layer_indices);
+    offset += read_vector(data + offset, wavelengths);
+    offset += read_vector(data + offset, mins);
+    offset += read_vector(data + offset, maxs);
 
     return offset;
 }
@@ -159,6 +135,7 @@ size_t SGEGSpectralGroup::size() const
         + wavelengths.size() * sizeof(float)
         + sizeof(uint32_t) // Arrays size
         + mins.size() * sizeof(float)
+        + sizeof(uint32_t) // Arrays size
         + maxs.size() * sizeof(float);
 }
 
@@ -179,24 +156,10 @@ SGEGSpectralGroup& SGEGSpectralGroup::operator=(const SGEGSpectralGroup& other) 
 
 size_t SGEGGrayGroup::getRaw(uint8_t data[]) const
 {
-    size_t offset = 0, write_size = 0;
-    uint32_t data_len = 0;
+    size_t offset = 0;
 
-    // layer_name
-    data_len = layer_name.size();
-
-    write_size = sizeof(uint32_t);
-    std::memcpy(data + offset, &data_len, write_size);
-    offset += write_size;
-
-    write_size = data_len * sizeof(char);
-    std::memcpy(data + offset, layer_name.data(), write_size);
-    offset += write_size;
-
-    // layer_index
-    write_size = sizeof(uint32_t);
-    std::memcpy(data + offset, &layer_index, write_size);
-    offset += write_size;
+    offset += write_vector(layer_name, data + offset);
+    offset += write_value(layer_index, data + offset);
 
     return offset;
 }
@@ -204,24 +167,10 @@ size_t SGEGGrayGroup::getRaw(uint8_t data[]) const
 
 size_t SGEGGrayGroup::fromRaw(const uint8_t data[])
 {
-    size_t offset = 0, read_size = 0;
-    uint32_t data_len = 0;
+    size_t offset = 0;
 
-    // layer_name
-    read_size = sizeof(uint32_t);
-    std::memcpy(&data_len, data + offset, read_size);
-    offset += read_size;
-
-    layer_name.resize(data_len);
-
-    read_size = data_len * sizeof(char);
-    std::memcpy(layer_name.data(), data + offset, read_size);
-    offset += read_size;
-
-    // layer_index
-    read_size = sizeof(uint32_t);
-    std::memcpy(&layer_index, data + offset, read_size);
-    offset += read_size;
+    offset += read_vector(data + offset, layer_name);
+    offset += read_value(data + offset, layer_index);
 
     return offset;
 }
@@ -254,46 +203,31 @@ SGEGBox::SGEGBox()
 
 SGEGBox::SGEGBox(const std::vector<uint8_t> &data)
 {
-    uint32_t data_len = 0;
-    size_t offset = 0, read_size = 0;
+    size_t offset = 0;
+    uint32_t n_spectral_groups, n_gray_groups;
 
-    // revision
-    read_size = sizeof(uint32_t);
-    std::memcpy(&revision, data.data() + offset, read_size);
-    offset += read_size;
+    offset += read_value(data.data() + offset, revision);
 
-    // spectral_groups
-    read_size = sizeof(uint32_t);
-    std::memcpy(&data_len, data.data() + offset, read_size);
-    offset += read_size;
+    // spectral groups
+    offset += read_value(data.data() + offset, n_spectral_groups);
 
-    spectral_groups.resize(data_len);
+    spectral_groups.resize(n_spectral_groups);
 
     for (size_t i = 0; i < spectral_groups.size(); i++) {
         offset += spectral_groups[i].fromRaw(data.data() + offset);
     } 
 
     // gray_groups
-    read_size = sizeof(uint32_t);
-    std::memcpy(&data_len, data.data() + offset, read_size);
-    offset += read_size;
+    offset += read_value(data.data() + offset, n_gray_groups);
 
-    gray_groups.resize(data_len);
+    gray_groups.resize(n_gray_groups);
 
     for (size_t i = 0; i < gray_groups.size(); i++) {
         offset += gray_groups[i].fromRaw(data.data() + offset);
     }
 
     // exr attributes
-    read_size = sizeof(uint32_t);
-    std::memcpy(&data_len, data.data() + offset, read_size);
-    offset += read_size;
-
-    exr_attributes.resize(data_len);
-
-    read_size = data_len * sizeof(uint8_t);
-    std::memcpy(exr_attributes.data(), data.data() + offset, read_size);
-    offset += read_size;
+    offset += read_vector(data.data() + offset, exr_attributes);
 }
 
 
@@ -317,46 +251,29 @@ void SGEGBox::getRaw(std::vector<uint8_t> &data) const
 
 size_t SGEGBox::getRaw(uint8_t data[]) const
 {
-    size_t offset = 0, write_size = 0;
-    uint32_t data_len = 0;
+    size_t offset = 0;
+    const uint32_t n_spectral_groups = spectral_groups.size();
+    const uint32_t n_gray_groups = gray_groups.size();
 
     // revision
-    write_size = sizeof(uint32_t);
-    std::memcpy(data + offset, &revision, write_size);
-    offset += write_size;
+    offset += write_value(revision, data + offset);
     
     // spectral_groups
-    data_len = spectral_groups.size();
-
-    write_size = sizeof(uint32_t);
-    std::memcpy(data + offset, &data_len, write_size);
-    offset += write_size;
+    offset += write_value(n_spectral_groups, data + offset);
 
     for (const SGEGSpectralGroup& sg: spectral_groups) {
         offset += sg.getRaw(data + offset);
     }
 
     // gray_groups
-    data_len = gray_groups.size();
-
-    write_size = sizeof(uint32_t);
-    std::memcpy(data + offset, &data_len, write_size);
-    offset += write_size;
+    offset += write_value(n_gray_groups, data + offset);
 
     for (const SGEGGrayGroup& gg: gray_groups) {
         offset += gg.getRaw(data + offset);
     }
 
     // exr attributes
-    data_len = exr_attributes.size();
-
-    write_size = sizeof(uint32_t);
-    std::memcpy(data + offset, &data_len, write_size);
-    offset += write_size;
-
-    write_size = data_len * sizeof(uint8_t);
-    std::memcpy(data + offset, exr_attributes.data(), write_size);
-    offset += write_size;
+    offset += write_vector(exr_attributes, data + offset);
 
     return offset;
 }
@@ -364,21 +281,24 @@ size_t SGEGBox::getRaw(uint8_t data[]) const
 
 size_t SGEGBox::size() const {
     size_t sz = 0;
+  
+    sz += sizeof(revision);
 
-    sz += sizeof(uint32_t) // + main_layer_name.size() * sizeof(char);
-        + 2 * sizeof(uint32_t); // Arrays size;
-        
+    sz += sizeof(uint32_t); // spectral_group array size
+    
     for (const SGEGSpectralGroup& sg: spectral_groups) {
         sz += sg.size();
     }
-    
+
+    sz += sizeof(uint32_t); // gray_groups array size
+
     for (const SGEGGrayGroup& gg: gray_groups) {
         sz += gg.size();
     }
 
     // exr_attributes
-    sz += sizeof(uint32_t) // Array size
-        + exr_attributes.size() * sizeof(uint8_t);
+    sz += sizeof(uint32_t); // Array size
+    sz += exr_attributes.size() * sizeof(uint8_t);
 
     return sz;
 }
