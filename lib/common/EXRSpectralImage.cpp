@@ -49,6 +49,8 @@
 
 #include "EXRArrayStream.h"
 
+#include "SpectrumConverter.h"
+
 
 EXRSpectralImage::EXRSpectralImage(const char* filename)
 {
@@ -271,11 +273,21 @@ void EXRSpectralImage::appendExtraFramebuffer(
 }
 
 
+inline bool ends_with(std::string const & value, std::string const & ending)
+{
+    if (ending.size() > value.size()) return false;
+    return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+}
+
+
 void EXRSpectralImage::write(const char* filename) const
 {
     Imf::Header       exr_header(_width, _height);
     Imf::ChannelList &exr_channels = exr_header.channels();
     Imf::FrameBuffer  exr_framebuffer;
+
+    SpectrumConverter reflective_converter(false);
+    SpectrumConverter emissive_converter(true);
 
     // ------------------------------------------------------------------------
     // Write attributes if any
@@ -344,6 +356,44 @@ void EXRSpectralImage::write(const char* filename) const
                     (char*)&framebuffer->image_data[i], 
                     x_stride, y_stride)
             );
+        }
+
+        // Rebuild RGB layers from spectral hierachy
+        // TODO: consider the case where the hierachy both has T and S0 children
+
+        std::vector<float> rgb_image;
+
+        if (ends_with(root_name, "S0")) {
+            emissive_converter.spectralImageToRGB(
+                framebuffer->wavelengths_nm,
+                framebuffer->image_data,
+                _width, _height,
+                rgb_image
+            );
+        } else if (ends_with(root_name, "T")) {
+            reflective_converter.spectralImageToRGB(
+                framebuffer->wavelengths_nm,
+                framebuffer->image_data,
+                _width, _height,
+                rgb_image
+            );
+        }
+
+        if (rgb_image.size() == 3 * _width * _height) {
+            const char* RGB[3] = {"R", "G", "B"};
+
+            for (int c = 0; c < 3; c++) {
+                exr_channels.insert(RGB[c], Imf::Channel(Imf::FLOAT));
+
+                exr_framebuffer.insert(
+                    RGB[c], 
+                    Imf::Slice(
+                        Imf::FLOAT,
+                        (char*)&rgb_image[c], 
+                        3 * sizeof(float),
+                        3 * _width * sizeof(float))
+                );
+            }
         }
     }
 

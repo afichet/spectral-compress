@@ -6,6 +6,7 @@ set(PUBLIC_HEADERS
     EXRSpectralImage.h
     EXRArrayStream.h
     SGEGBox.h
+    SpectrumConverter.h
 )
 
 add_library(common STATIC 
@@ -16,6 +17,7 @@ add_library(common STATIC
     EXRSpectralImage.cpp
     EXRArrayStream.cpp
     SGEGBox.cpp
+    SpectrumConverter.cpp
 )
 
 set_target_properties(common PROPERTIES PUBLIC_HEADER "${PUBLIC_HEADERS}")
