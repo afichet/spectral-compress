@@ -63,20 +63,6 @@ protected:
 };
 
 
-struct SpectralFramebuffer 
-{
-    std::string root_name;
-    std::vector<float> wavelengths_nm;
-    std::vector<float> image_data;
-};
-
-
-struct GreyFramebuffer
-{
-    std::string layer_name;
-    std::vector<float> image_data;
-};
-
 class EXRImage
 {
 public:

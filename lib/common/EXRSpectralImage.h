@@ -39,13 +39,20 @@
 #include <string>
 
 
+enum PixelType {
+    UINT = 0,
+    HALF = 1,
+    FLOAT = 2,
+    N_PIXEL_TYPES
+};
+
 struct SpectralFramebuffer 
 {
     std::string root_name;
     std::vector<float> wavelengths_nm;
     std::vector<float> image_data;
 
-    virtual ~SpectralFramebuffer() {}
+    PixelType pixel_type;
 };
 
 
@@ -54,7 +61,7 @@ struct GreyFramebuffer
     std::string layer_name;
     std::vector<float> image_data;
 
-    virtual ~GreyFramebuffer() {}
+    PixelType pixel_type;
 };
 
 
@@ -70,39 +77,37 @@ public:
     void appendSpectralFramebuffer(
         const std::vector<float> &wavelengths_nm,
         const std::vector<float> &framebuffer,
-        const std::string& prefix
-    );
+        const std::string& prefix,
+        const PixelType save_as_type = PixelType::FLOAT);
 
     void appendSpectralFramebuffer(
         const std::vector<float> &wavelengths_nm,
         const std::vector<float> &framebuffer,
-        const char* prefix
-    );
+        const char* prefix,
+        const PixelType save_as_type = PixelType::FLOAT);
 
     void appendExtraFramebuffer(
         const std::vector<float>& framenuffer,
-        const std::string& name);
+        const std::string& name,
+        const PixelType save_as_type = PixelType::FLOAT);
 
     void appendExtraFramebuffer(
         const std::vector<float>& framenuffer,
-        const char* name);
+        const char* name,
+        const PixelType save_as_type = PixelType::FLOAT);
 
     void write(const char* filename) const;
 
-    uint32_t width()  const { return _width; }
-    uint32_t height() const { return _height; }
+    uint32_t width()  const;
+    uint32_t height() const;
 
-    std::vector<SpectralFramebuffer*>& getSpectralFramebuffers() {
-        return _spectral_framebuffers;
-    }
+    std::vector<SpectralFramebuffer*>& getSpectralFramebuffers();
 
-    std::vector<GreyFramebuffer*>& getExtraFramebuffers() {
-        return _extra_framebuffers;
-    }
+    std::vector<GreyFramebuffer*>& getExtraFramebuffers();
 
-    void setAttributesData(const std::vector<uint8_t>& data) { _attributes_data = data; }
+    void setAttributesData(const std::vector<uint8_t>& data);
 
-    const std::vector<uint8_t>& getAttributesData() const { return _attributes_data; }
+    const std::vector<uint8_t>& getAttributesData() const;
 
     static double to_nm(
         const std::string& value,
