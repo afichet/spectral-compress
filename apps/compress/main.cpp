@@ -132,6 +132,30 @@ void compress_spectral_framebuffer(
 }
 
 
+void quantization_from_exr(PixelType type, size_t& n_bits, size_t& n_exponent_bits) {
+    switch (type) {
+        case PixelType::UINT:
+            n_bits = 32;
+            n_exponent_bits = 0;
+            break;
+
+        case PixelType::HALF:
+            n_bits = 16;
+            n_exponent_bits = 5;
+            break;
+
+        case PixelType::FLOAT:
+            n_bits = 32;
+            n_exponent_bits = 8;
+            break;
+
+        default:
+            throw std::runtime_error("Unknown pixel type");
+            break;
+    }
+}
+
+
 int main(int argc, char *argv[]) 
 {
     // TODO: generate a default output name and check if exists,
@@ -166,6 +190,13 @@ int main(int argc, char *argv[])
         std::memcpy(sg.root_name.data(), fb->root_name.c_str(), sg.root_name.size() * sizeof(char));
         sg.wavelengths = fb->wavelengths_nm;
 
+        size_t main_n_bits;
+        size_t main_n_exponent_bits;
+
+        quantization_from_exr(fb->pixel_type, main_n_bits, main_n_exponent_bits);
+
+        std::cout << main_n_bits << " " << main_n_exponent_bits << std::endl;
+
         std::vector<std::vector<float>> compressed_moments;
 
         compress_spectral_framebuffer(fb, compressed_moments, sg.mins, sg.maxs);
@@ -176,19 +207,19 @@ int main(int argc, char *argv[])
             float n_exponent_bits;
 
             if (m == 0) {
-                n_bits = 32;
-                n_exponent_bits = 8;
+                n_bits          = main_n_bits;
+                n_exponent_bits = main_n_exponent_bits;
             } else {
-                n_bits = 8;
+                n_bits          = 8;
                 n_exponent_bits = 0;
             }
 
             const size_t idx = jxl_out.appendFramebuffer(
-                compressed_moments[m], 
-                1, 
-                n_bits, 
-                n_exponent_bits, 
-                1, 
+                compressed_moments[m],
+                1,
+                n_bits,
+                n_exponent_bits,
+                1,
                 fb->root_name.c_str());            
             
             sg.layer_indices.push_back(idx);
@@ -203,8 +234,19 @@ int main(int argc, char *argv[])
         gg.layer_name.resize(fb->layer_name.size() + 1);
         std::memcpy(gg.layer_name.data(), fb->layer_name.c_str(), gg.layer_name.size() * sizeof(char));
 
-        // TODO get the original data type from the EXR file
-        gg.layer_index = jxl_out.appendFramebuffer(fb->image_data, 1, 32, 8, 1, fb->layer_name.c_str());
+        size_t n_bits;
+        size_t n_exponent_bits;
+
+        quantization_from_exr(fb->pixel_type, n_bits, n_exponent_bits);
+
+        gg.layer_index = jxl_out.appendFramebuffer(
+            fb->image_data,
+            1,
+            n_bits,
+            n_exponent_bits,
+            1,
+            fb->layer_name.c_str()
+        );
 
         box.gray_groups.push_back(gg);
     }
