@@ -1,5 +1,6 @@
 #include <iostream>
-#include <EXRSpectralImage.h>
+#include <cmath>
+#include <EXRImage.h>
 
 int main(int argc, char *argv[])
 {
@@ -13,24 +14,20 @@ int main(int argc, char *argv[])
 
     const char* filename_in  = argv[1];
 
-    const SEXR::EXRSpectralImage image_in(filename_in);
+    const EXRImage exr_in(filename_in);
 
-    const size_t width     = image_in.width();
-    const size_t height    = image_in.height();
-    const size_t n_bands   = image_in.nSpectralBands();
+    const size_t width     = exr_in.width();
+    const size_t height    = exr_in.height();
 
     size_t n_nans     = 0;
     size_t n_inf      = 0;
     size_t n_neg      = 0;
-    size_t n_all_zero = 0;
 
-    const float* framebuffer = &image_in.emissive(0, 0, 0, 0);
+    const std::vector<EXRFramebuffer*>& framebuffers = exr_in.getFramebuffersConst();
 
-    for (size_t i = 0; i < width * height; i++) {
-        bool all_zeros = true;
-
-        for (size_t b = 0; b < n_bands; b++) {
-            const float v = framebuffer[n_bands * i + b];
+    for (const EXRFramebuffer* fb: framebuffers) {
+        for (size_t i = 0; i < width * height; i++) {
+            const float v = fb->getPixelDataConst()[i];
 
             if (std::isinf(v)) {
                 ++n_inf;
@@ -39,13 +36,6 @@ int main(int argc, char *argv[])
             } else if (v < 0) {
                 ++n_neg;
             }
-            else if (v > 0) {
-                all_zeros = false;
-            }
-        }
-
-        if (all_zeros) {
-            ++n_all_zero;
         }
     }
 
@@ -53,8 +43,6 @@ int main(int argc, char *argv[])
     std::cout << "        NaNs: " << n_nans << std::endl;
     std::cout << "         Inf: " << n_inf << std::endl;
     std::cout << "         Neg: " << n_neg << std::endl;
-    std::cout << "Zero spectra: " << n_all_zero << std::endl;
-
 
 
     return 0;

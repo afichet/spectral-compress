@@ -9,5 +9,4 @@ set(JPEGXL_ENABLE_EXAMPLES  false CACHE BOOL "")
 set(JPEGXL_ENABLE_VIEWERS   false CACHE BOOL "")
 
 add_subdirectory(libjxl)
-add_subdirectory(spectral-exr)
 add_subdirectory(eigen)
