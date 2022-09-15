@@ -36,21 +36,31 @@
 #include <string>
 #include <map>
 #include <stdexcept>
+#include <cmath>
 
 class Util
 {
 public:
-    static float interp(float x, float x0, float x1, float y0, float y1)
+    template<class Float>
+    static float interp(Float x, Float x0, Float x1, Float y0, Float y1)
     {
         return lerp(y0, y1, alpha(x0, x1, x));
     }
 
-    static float alpha(float x0, float x1, float x)
+
+    template<class Float>
+    static float alpha(Float x0, Float x1, Float x)
     {
         return (x - x0) / (x1 - x0);
     }
 
-    static float lerp(float a, float b, float t) { return a + t * (b - a); }
+
+    template<class Float>
+    static float lerp(Float a, Float b, Float t)
+    {
+        return a + t * (b - a);
+    }
+
 
     static size_t idxFromWavelengthIdx(size_t wlFrom_idx, size_t wlTo_idx)
     {
