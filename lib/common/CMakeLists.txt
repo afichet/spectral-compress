@@ -1,6 +1,7 @@
 set(PUBLIC_HEADERS
     moments.h
     moments_image.h
+    quantization.h
     JXLImage.h
     EXRImage.h
     EXRSpectralImage.h
@@ -12,6 +13,7 @@ set(PUBLIC_HEADERS
 add_library(common STATIC 
     moments.cpp
     moments_image.cpp
+    quantization.cpp
     JXLImage.cpp
     EXRImage.cpp
     EXRSpectralImage.cpp
