@@ -200,9 +200,10 @@ EXRSpectralImage::EXRSpectralImage(const char* filename)
     // Determine channels' position
     // ------------------------------------------------------------------------
 
-    const std::regex expr(
-        "^(.*)((S([0-3]))|T)\\.(\\d*,?\\d*([Ee][+-]?\\d+)?)(Y|Z|E|P|T|G|M|k|h|"
-        "da|d|c|m|u|n|p)?(m|Hz)$");
+    const std::string flt_comma_rgx_str = "(((\\d+(,\\d*)?)|(,\\d+))([eE][+-]?\\d+)?)";
+    const std::regex expr("^(.*)((S([0-3]))|T)\\." + flt_comma_rgx_str + "(Y|Z|E|P|T|G|M|k|h|"
+    "da|d|c|m|u|n|p)?(m|Hz)$");
+
 
     for (Imf::ChannelList::ConstIterator channel = exr_channels.begin();
             channel != exr_channels.end();
@@ -227,8 +228,8 @@ EXRSpectralImage::EXRSpectralImage(const char* filename)
 
             const double value_nm = to_nm(
                 matches[5].str(),
-                matches[7].str(),
-                matches[8].str()
+                matches[11].str(),
+                matches[12].str()
             );
 
             spectral_channels[prefix].push_back(std::make_pair(channel.name(), value_nm));
