@@ -103,7 +103,6 @@ void compute_moments(
     size_t n_moments, 
     float moments[])
 {
-    // TODO: double check, this looks a bit hacky
     std::vector<float> phases(n_phases + 2);
     std::vector<float> signal(n_phases + 2);
 
@@ -126,7 +125,6 @@ void compute_moments(
     const std::complex<float> J = std::complex<float>(0., 1.);
 
     for (size_t i = 0; i < phases.size() - 1; i++) {
-        // Required by the previous TODO
         if (phases[i] >= phases[i + 1]) {
             continue;
         }
@@ -140,8 +138,8 @@ void compute_moments(
                 y_intercept / (float)k);
 
             t_moments[k] += 
-                  (common_summands + gradient * J * (float)k * phases[i + 1] / (float)(k*k)) * std::exp(-J * (float)k * phases[i + 1])
-                - (common_summands + gradient * J * (float)k * phases[i    ] / (float)(k*k)) * std::exp(-J * (float)k * phases[i    ]);
+                  (common_summands + gradient * J * phases[i + 1] / (float)k) * std::exp(-J * (float)k * phases[i + 1])
+                - (common_summands + gradient * J * phases[i    ] / (float)k) * std::exp(-J * (float)k * phases[i    ]);
         }
 
         t_moments[0] += 
@@ -203,7 +201,7 @@ void compute_density_bounded_lagrange(
     size_t n_moments,
     float density[])
 {
-    if (moments[0] > MIN_FLT) {
+    if (moments[0] > 0) {
         std::vector<std::complex<float>> exponential_moments(n_moments);
         std::vector<std::complex<float>> toeplitz_column(n_moments);
 
@@ -249,7 +247,7 @@ void compress_moments(
     size_t n_moments,
     float compressed_moments[])
 {
-    if (moments[0] > MIN_FLT) {
+    if (moments[0] > 0) {
         dot_levinson(moments, n_moments, compressed_moments);
         compressed_moments[0] = moments[0];
     } else {
@@ -265,7 +263,7 @@ void compress_bounded_moments(
     size_t n_moments,
     float compressed_moments[])
 {
-    if (moments[0] > MIN_FLT) {
+    if (moments[0] > 0) {
         std::vector<std::complex<float>> exponential_moments(n_moments);
 
         moments_to_exponential_moments(
@@ -305,7 +303,7 @@ void decompress_moments(
     size_t n_compressed_moments,
     float moments[])
 {
-    if (compressed_moments[0] > MIN_FLT) {
+    if (compressed_moments[0] > 0) {
         levinson_from_dot(compressed_moments, n_compressed_moments, moments);
     } else {
         for (size_t m = 0; m < n_compressed_moments; m++) {
@@ -320,7 +318,7 @@ void decompress_bounded_moments(
     size_t n_compressed_moments,
     float moments[])
 {
-    if (compressed_moments[0] > MIN_FLT) {
+    if (compressed_moments[0] > 0) {
         const std::complex<float> J(0.f, 1.f);
         const std::complex<float> exp_0 = std::exp(J * M_PIf * (compressed_moments[0] - .5f)) / (4.f * M_PIf);
 
