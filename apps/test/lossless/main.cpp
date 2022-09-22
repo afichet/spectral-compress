@@ -20,6 +20,8 @@ void linspace(float min, float max, size_t size, std::vector<float>& array)
 
 int main(int argc, char* argv[])
 {
+    (void)argc; (void)argv;
+
     std::vector<float> reflectance = {
         0.060, 0.062, 0.068, 0.085,
         0.135, 0.269, 0.484, 0.545, 
