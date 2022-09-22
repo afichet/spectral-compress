@@ -179,6 +179,22 @@ void compute_density_bounded_lagrange_image(
     size_t n_moments,
     float density_image[]);
 
+
+void normalize_moment_image(
+    const float src[],
+    size_t n_px, size_t n_moments,
+    float dest[],
+    float mins[],
+    float maxs[]);
+
+
+void denormalize_moment_image(
+    const float src[],
+    size_t n_px, size_t n_moments,
+    const float mins[],
+    const float maxs[],
+    float dest[]);
+
 } // extern "C"
 
 
@@ -241,4 +257,19 @@ void compute_density_bounded_lagrange_image(
     size_t n_moments,
     std::vector<float>& density_image);
 
+
+void normalize_moment_image(
+    const std::vector<float>& src,
+    size_t n_px, size_t n_moments,
+    std::vector<float>& dest,
+    std::vector<float>& mins,
+    std::vector<float>& maxs);
+
+
+void denormalize_moment_image(
+    const std::vector<float>& src,
+    size_t n_px, size_t n_moments,
+    const std::vector<float>& mins,
+    const std::vector<float>& maxs,
+    std::vector<float>& dest);
 #endif // __cplusplus
