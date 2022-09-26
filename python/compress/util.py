@@ -112,7 +112,6 @@ def run_levinson_from_dots(diagonal_entry: complex, dots: np.array) -> np.array:
     return first_column
 
 
-
 def normalize(vec: np.array):
     mins = np.min(vec, axis=0)
     maxs = np.max(vec, axis=0)
