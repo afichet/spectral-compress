@@ -201,9 +201,10 @@ EXRSpectralImage::EXRSpectralImage(const char* filename)
     // ------------------------------------------------------------------------
 
     const std::string flt_comma_rgx_str = "(((\\d+(,\\d*)?)|(,\\d+))([eE][+-]?\\d+)?)";
+    // FIXME: seems incorrect, the search shall not start with . and this 
+    //        regex is expected to be matching the end of the string
     const std::regex expr("^(.*)((S([0-3]))|T)\\." + flt_comma_rgx_str + "(Y|Z|E|P|T|G|M|k|h|"
     "da|d|c|m|u|n|p)?(m|Hz)$");
-
 
     for (Imf::ChannelList::ConstIterator channel = exr_channels.begin();
             channel != exr_channels.end();
