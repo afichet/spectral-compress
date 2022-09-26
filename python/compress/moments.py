@@ -266,6 +266,24 @@ def unbounded_forward(base: np.array, moment_image: np.array):
     return normalized_moments.reshape((w, h, n_moments)), mins, maxs
 
 
+def unbounded_to_bounded_forward(base: np.array, moment_image: np.array):
+    w, h, n_moments = moment_image.shape
+
+    moments = np.real(moment_image.reshape((w * h, n_moments)) @ base)
+
+    compressed_moments  = np.zeros_like(moments)
+
+    for i in range(moments.shape[0]):
+        m0 = moments[i, 0]
+        moments[i, :] = moments[i, :] / (moments.shape[1] * m0)
+        compressed_moments[i, :] = unbounded_compress_real_trigonometric_moments(moments[i, :])
+        compressed_moments[i, 0] = m0
+
+    normalized_moments, mins, maxs = util.normalize(compressed_moments)
+
+    return normalized_moments.reshape((w, h, n_moments)), mins, maxs
+
+
 def bounded_backward(inv_base: np.array, normalized_moments_image: np.array, mins: np.array, maxs: np.array) -> np.array:
     w, h, n_moments = normalized_moments_image.shape
 
@@ -293,6 +311,26 @@ def unbounded_backward(inv_base: np.array, normalized_moments_image: np.array, m
     for i in range(moments.shape[0]):
         moments[i, :] = unbounded_decompress_real_trigonometric_moments(compressed_moments[i, :])
     
+    signals = moments @ inv_base
+
+    return np.real(signals.reshape((w, h, n_moments)))
+
+
+def unbounded_to_bounded_backward(inv_base: np.array, normalized_moments_image: np.array, mins: np.array, maxs: np.array) -> np.array:
+    w, h, n_moments = normalized_moments_image.shape
+
+    normalized_moments = normalized_moments_image.reshape((w * h, n_moments))
+    compressed_moments = util.denormalize(normalized_moments, mins, maxs)
+
+    moments = np.zeros_like(compressed_moments)
+
+    for i in range(moments.shape[0]):
+        m0 = compressed_moments[i, 0]
+        compressed_moments[i, 0] = 1/moments.shape[1]
+        moments[i, :] = unbounded_decompress_real_trigonometric_moments(compressed_moments[i, :])
+        moments[i, 1:] *= moments.shape[1] * m0
+        moments[i, 0] = m0
+
     signals = moments @ inv_base
 
     return np.real(signals.reshape((w, h, n_moments)))
