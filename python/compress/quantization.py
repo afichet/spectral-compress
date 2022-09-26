@@ -18,7 +18,7 @@ def rrmse(wl: np.array, s_ref: np.array, s_cmp: np.array) -> float:
 
 
 def bounded_get_error_progressive_quantization(wavelengths: np.array, ref: np.array, n_bits: int, err_fun=rrmse) -> np.array:
-    phases = moments.wavelength_to_phase(wavelengths)
+    phases = moments.wavelengths_to_phase(wavelengths)
     
     signal_to_moments = moments.get_basis_signal_to_moments(phases)
     moments_to_signal = np.linalg.inv(signal_to_moments)
@@ -37,7 +37,7 @@ def bounded_get_error_progressive_quantization(wavelengths: np.array, ref: np.ar
 
 
 def bounded_generate_quantization_curve(wavelengths: np.array, ref: np.array, n_bits: int, err_fun=rrmse) -> np.array:
-    phases = moments.wavelength_to_phase(wavelengths)
+    phases = moments.wavelengths_to_phase(wavelengths)
 
     signal_to_moments = moments.get_basis_signal_to_moments(phases)
     moments_to_signal = np.linalg.inv(signal_to_moments)
