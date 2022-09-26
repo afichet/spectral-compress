@@ -30,6 +30,8 @@
 import numpy as np
 import scipy
 
+import compress.util as util
+
 
 def wavelengths_to_phase(wavelengths: np.array, use_warp = False) -> np.array:
     if use_warp:
@@ -98,6 +100,25 @@ def signal_to_moments(phases: np.array, signal: np.array, n_moments: int) -> np.
     return np.real(np.sum(moments, axis=1)) / np.pi
 
 
+def get_basis_signal_to_moments(phases: np.array) -> np.array:
+    n_moments = len(phases)
+
+    mat_signal_moments = np.zeros((n_moments, n_moments))
+
+    signal = np.eye(n_moments)
+
+    for i in range(n_moments):
+        mat_signal_moments[i, :] = signal_to_moments(phases, signal[:, i], n_moments)
+
+    return mat_signal_moments
+
+
+def get_basis_moment_to_signal(phases: np.array) -> np.array:
+    mat_moments_signal = get_basis_signal_to_moments(phases)
+
+    return np.linalg.inv(mat_moments_signal)
+
+
 def compute_density(phases: np.array, moments: np.array) -> np.array:
     n_moments = len(moments)
 
@@ -140,7 +161,7 @@ def bounded_moments_to_exponential_moments(moments: np.array) -> np.array:
     return exponential_moments
 
 
-def exponential_moments_to_bounded_moments(exponential_moments: np.array) -> np.array:
+def bounded_exponential_moments_to_moments(exponential_moments: np.array) -> np.array:
     gamma_0_prime = exponential_moments[0]
 
     moments = np.zeros_like(exponential_moments, dtype=complex)
@@ -161,64 +182,7 @@ def exponential_moments_to_bounded_moments(exponential_moments: np.array) -> np.
     return np.real(moments)
 
 
-def get_basis_signal_to_moments(phases: np.array) -> np.array:
-    n_moments = len(phases)
-
-    mat_signal_moments = np.zeros((n_moments, n_moments))
-
-    signal = np.eye(n_moments)
-
-    for i in range(n_moments):
-        mat_signal_moments[i, :] = signal_to_moments(phases, signal[:, i], n_moments)
-
-    return mat_signal_moments
-
-
-def get_basis_moment_to_signal(phases: np.array) -> np.array:
-    mat_moments_signal = get_basis_signal_to_moments(phases)
-
-    return np.linalg.inv(mat_moments_signal)
-
-
-def get_levinson_dots(first_column: np.array) -> np.array:
-    """
-    :return: A vector holding the dot products that arise in each iteration of
-        Levinson's algorithm.
-    """
-    solution = np.zeros_like(first_column)
-    solution[0] = 1.0 / first_column[0]
-
-    dots = np.zeros_like(first_column)
-
-    for j in range(1, first_column.shape[0]):
-        dots[j] = np.dot(solution[0:j], first_column[j:0:-1])
-        solution[0:j + 1] = (solution[0:j + 1] - dots[j] * np.conj(solution[j::-1])) / (1 - np.abs(dots[j]) ** 2)
-    
-    return dots
-
-
-def run_levinson_from_dots(diagonal_entry: complex, dots: np.array) -> np.array:
-    """
-    Runs Levinson's algorithm using the given intermediate dot products and the
-    diagonal entry. Outputs the corresponding input vector and the result of
-    Levinson's algorithm.
-    """
-    solution = np.zeros_like(dots)
-    first_column = np.zeros_like(dots)
-
-    solution[0]     = 1.0 / diagonal_entry
-    first_column[0] = diagonal_entry
-
-    for j in range(1, dots.shape[0]):
-        radius = 1.0 / solution[0].real
-        center = -radius * np.dot(solution[1:j], first_column[j - 1:0:-1])
-        first_column[j] = center + radius * dots[j]
-        solution[0:j + 1] = (solution[0:j + 1] - dots[j] * np.conj(solution[j::-1])) / (1 - np.abs(dots[j]) ** 2)
-    
-    return first_column
-
-
-def compress_real_bounded_trigonometric_moments(bounded_trigonometric_moments):
+def bounded_compress_real_trigonometric_moments(bounded_trigonometric_moments):
     """
     Maps the given real, bounded trigonometric moments to a representation that
     holds the same information using scalars in [-1,1], which are more suitable
@@ -229,7 +193,7 @@ def compress_real_bounded_trigonometric_moments(bounded_trigonometric_moments):
     toeplitz_first_column    = exponential_moments / (2 * np.pi)
     toeplitz_first_column[0] = 2.0 * toeplitz_first_column[0].real
     
-    dots = get_levinson_dots(toeplitz_first_column)
+    dots = util.get_levinson_dots(toeplitz_first_column)
     
     compressed = (dots * np.abs(exponential_moments[0]) / (1.0j * exponential_moments[0])).real
     compressed[0] = bounded_trigonometric_moments[0]
@@ -237,44 +201,39 @@ def compress_real_bounded_trigonometric_moments(bounded_trigonometric_moments):
     return compressed
 
 
-def decompress_real_bounded_trigonometric_moments(compressed):
-    """Inverse mapping of compress_real_bounded_trigonometric_moments()."""
+def unbounded_compress_real_trigonometric_moments(trigonometric_moments):
+    """
+    Like compress_real_bounded_trigonometric_moments() but for unbounded moments
+    """
+    toeplitz_first_column = trigonometric_moments
+    dots = util.get_levinson_dots(toeplitz_first_column)
+    compressed = dots
+    compressed[0] = trigonometric_moments[0]
+    return compressed
+
+
+def bounded_decompress_real_trigonometric_moments(compressed):
+    """Inverse mapping of bounded_compress_real_trigonometric_moments()."""
     exp_0 = 0.25 / np.pi * np.exp(np.pi * 1.0j * (compressed[0] - 0.5))
 
     dots = np.zeros_like(compressed, dtype=complex)
     dots[1:] = compressed[1:] * (1.0j * exp_0 / np.abs(exp_0))
     
-    toeplitz_first_column = run_levinson_from_dots(np.real(exp_0) / np.pi, dots)
+    toeplitz_first_column = util.run_levinson_from_dots(np.real(exp_0) / np.pi, dots)
 
     exponential_moments = toeplitz_first_column * 2.0 * np.pi
     exponential_moments[0] = exp_0
 
-    return np.real(exponential_moments_to_bounded_moments(exponential_moments))
+    return np.real(bounded_exponential_moments_to_moments(exponential_moments))
 
 
-def normalize(vec: np.array):
-    mins = np.min(vec, axis=0)
-    maxs = np.max(vec, axis=0)
-
-    vec_rescaled = np.zeros_like(vec)
-
-    vec_rescaled[:, 0] = vec[:, 0]
-
-    for i in range(1, vec_rescaled.shape[1]):
-        vec_rescaled[:, i] = (vec[:, i] - mins[i]) / (maxs[i] - mins[i])
-
-    return vec_rescaled, mins, maxs
-
-
-def denormalize(vec_rescaled: np.array, mins: np.array, maxs: np.array) -> np.array:
-    vec = np.zeros_like(vec_rescaled)
-
-    vec[:, 0] = vec_rescaled[:, 0]
-
-    for i in range(1, vec.shape[1]):
-        vec[:, i] = vec_rescaled[:, i] * (maxs[i] - mins[i]) + mins[i]
-
-    return vec
+def unbounded_decompress_real_trigonometric_moments(compressed):
+    """Inverse mapping of unbounded_compress_real_trigonometric_moments()."""
+    dots = np.zeros_like(compressed, dtype=complex)
+    dots[1:] = compressed[1:]
+    toeplitz_first_column = util.run_levinson_from_dots(compressed[0], dots)
+    
+    return toeplitz_first_column
 
 
 def bounded_forward(base: np.array, moment_image: np.array):
@@ -285,9 +244,24 @@ def bounded_forward(base: np.array, moment_image: np.array):
     compressed_moments  = np.zeros_like(moments)
 
     for i in range(moments.shape[0]):
-        compressed_moments[i, :] = compress_real_bounded_trigonometric_moments(moments[i, :])
+        compressed_moments[i, :] = bounded_compress_real_trigonometric_moments(moments[i, :])
 
-    normalized_moments, mins, maxs = normalize(compressed_moments)
+    normalized_moments, mins, maxs = util.normalize(compressed_moments)
+
+    return normalized_moments.reshape((w, h, n_moments)), mins, maxs
+
+
+def unbounded_forward(base: np.array, moment_image: np.array):
+    w, h, n_moments = moment_image.shape
+
+    moments = np.real(moment_image.reshape((w * h, n_moments)) @ base)
+
+    compressed_moments  = np.zeros_like(moments)
+
+    for i in range(moments.shape[0]):
+        compressed_moments[i, :] = unbounded_compress_real_trigonometric_moments(moments[i, :])
+
+    normalized_moments, mins, maxs = util.normalize(compressed_moments)
 
     return normalized_moments.reshape((w, h, n_moments)), mins, maxs
 
@@ -296,12 +270,28 @@ def bounded_backward(inv_base: np.array, normalized_moments_image: np.array, min
     w, h, n_moments = normalized_moments_image.shape
 
     normalized_moments = normalized_moments_image.reshape((w * h, n_moments))
-    compressed_moments = denormalize(normalized_moments, mins, maxs)
+    compressed_moments = util.denormalize(normalized_moments, mins, maxs)
 
     moments = np.zeros_like(compressed_moments)
 
     for i in range(moments.shape[0]):
-        moments[i, :] = decompress_real_bounded_trigonometric_moments(compressed_moments[i, :])
+        moments[i, :] = bounded_decompress_real_trigonometric_moments(compressed_moments[i, :])
+    
+    signals = moments @ inv_base
+
+    return np.real(signals.reshape((w, h, n_moments)))
+    
+
+def unbounded_backward(inv_base: np.array, normalized_moments_image: np.array, mins: np.array, maxs: np.array) -> np.array:
+    w, h, n_moments = normalized_moments_image.shape
+
+    normalized_moments = normalized_moments_image.reshape((w * h, n_moments))
+    compressed_moments = util.denormalize(normalized_moments, mins, maxs)
+
+    moments = np.zeros_like(compressed_moments)
+
+    for i in range(moments.shape[0]):
+        moments[i, :] = unbounded_decompress_real_trigonometric_moments(compressed_moments[i, :])
     
     signals = moments @ inv_base
 
