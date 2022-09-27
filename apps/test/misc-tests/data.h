@@ -1,10 +1,10 @@
 #include <vector>
     
-void linspace(float min, float max, size_t size, std::vector<float>& array)
+void linspace(double min, double max, size_t size, std::vector<double>& array)
 {
     array.resize(size);
 
-    float delta = (max - min) / float(size - 1);
+    double delta = (max - min) / double(size - 1);
 
     for (size_t i = 0; i < size; i++) {
         array[i] = min + i * delta;
@@ -12,7 +12,7 @@ void linspace(float min, float max, size_t size, std::vector<float>& array)
 }
 
 
-std::vector<float> reflectance = {
+std::vector<double> reflectance = {
     0.060000000, 0.061000000, 0.061000000, 0.061000000, 0.062000000, 0.063000000, 0.064000000, 0.066000000,
     0.068000000, 0.071000000, 0.075000000, 0.079000000, 0.085000000, 0.093000000, 0.104000000, 0.118000000,
     0.135000000, 0.157000000, 0.185000000, 0.221000000, 0.269000000, 0.326000000, 0.384000000, 0.440000000,
@@ -23,7 +23,7 @@ std::vector<float> reflectance = {
     0.354000000, 0.362000000, 0.368000000, 0.375000000, 0.379000000
 };
 
-std::vector<float> emission = {
+std::vector<double> emission = {
     0.03183, 0.02949, 0.02075, 0.00807, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000,
     0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00281,
     0.00439, 0.00257, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000,

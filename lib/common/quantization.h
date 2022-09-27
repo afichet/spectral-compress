@@ -38,11 +38,11 @@
 #include <cstddef>
 
 void compute_quantization_curve(
-    const std::vector<float>& wavelengths,
-    const std::vector<float>& ref,
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& ref,
     size_t n_px, size_t n_moments,
-    const std::vector<float>& norm_moments,
-    const std::vector<float>& mins,
-    const std::vector<float>& maxs,
+    const std::vector<double>& norm_moments,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
     int n_bits_start,
     std::vector<int>& quantization_curve);

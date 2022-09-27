@@ -50,21 +50,21 @@ extern "C" {
  *                      elements.
  */
 void wavelengths_to_phases(
-    const float wavelengths[],
+    const double wavelengths[],
     size_t n_wavelengths,
-    float phases[]);
+    double phases[]);
 
 
 void compute_basis_signal_to_moments(
-    const float phases[],
+    const double phases[],
     size_t n_phases,
-    float basis[]);
+    double basis[]);
 
 
 void compute_basis_moments_to_signal(
-    const float phases[],
+    const double phases[],
     size_t n_phases,
-    float basis[]);
+    double basis[]);
 
 
 /**
@@ -78,11 +78,11 @@ void compute_basis_moments_to_signal(
  *                  `n_moments` elements.
  */
 void compute_moments(
-    const float phases[],
+    const double phases[],
     size_t n_phases,
-    const float signal[],
+    const double signal[],
     size_t n_moments, 
-    float moments[]);
+    double moments[]);
 
 
 /**
@@ -96,11 +96,11 @@ void compute_moments(
  *                  elements.
  */
 void compute_density(
-    const float phases[],
+    const double phases[],
     size_t n_phases,
-    const float moments[],
+    const double moments[],
     size_t n_moments,
-    float density[]);
+    double density[]);
 
 
 /**
@@ -114,11 +114,11 @@ void compute_density(
  *                  elements.
  */
 void bounded_compute_density_lagrange(
-    const float phases[],
+    const double phases[],
     size_t n_phases,
-    const float moments[],
+    const double moments[],
     size_t n_moments,
-    float density[]);
+    double density[]);
 
 
 /**
@@ -130,9 +130,9 @@ void bounded_compute_density_lagrange(
  *                            with `n_compressed_moments` elements.
  */
 void unbounded_compress_moments(
-    const float moments[],
+    const double moments[],
     size_t n_moments,
-    float compressed_moments[]);
+    double compressed_moments[]);
 
 
 /**
@@ -144,15 +144,15 @@ void unbounded_compress_moments(
  *                            with `n_compressed_moments` elements.
  */
 void bounded_compress_moments(
-    const float moments[],
+    const double moments[],
     size_t n_moments,
-    float compressed_moments[]);
+    double compressed_moments[]);
 
 
 void unbounded_to_bounded_compress_moments(
-    const float moments[],
+    const double moments[],
     size_t n_moments,
-    float compressed_moments[]);
+    double compressed_moments[]);
 
 
 /**
@@ -164,9 +164,9 @@ void unbounded_to_bounded_compress_moments(
  *                             `n_compressed_moments` elements.
  */
 void unbounded_decompress_moments(
-    const float compressed_moments[],
+    const double compressed_moments[],
     size_t n_compressed_moments,
-    float moments[]);
+    double moments[]);
 
 
 /**
@@ -178,15 +178,15 @@ void unbounded_decompress_moments(
  *                             `n_compressed_moments` elements.
  */
 void bounded_decompress_moments(
-    const float compressed_moments[],
+    const double compressed_moments[],
     size_t n_compressed_moments,
-    float moments[]);
+    double moments[]);
 
 
 void unbounded_to_bounded_decompress_moments(
-    const float compressed_moments[],
+    const double compressed_moments[],
     size_t n_compressed_moments,
-    float moments[]);
+    double moments[]);
 
 
 /* ----------------------------------------------------------------------------
@@ -203,9 +203,9 @@ void unbounded_to_bounded_decompress_moments(
  *                     elements.
  */
 void solve_levinson(
-    const float first_column[],
+    const double first_column[],
     size_t size,
-    float solution[]);
+    double solution[]);
 
 
 /**
@@ -217,9 +217,9 @@ void solve_levinson(
  *                     allocated with `size` elements.
  */
 void dot_levinson(
-    const float first_column[],
+    const double first_column[],
     size_t size,
-    float dot_product[]);
+    double dot_product[]);
 
 
 /**
@@ -230,9 +230,9 @@ void dot_levinson(
  * @param first_column Solution. Must be allocated with `size` elements.
  */
 void levinson_from_dot(
-    const float dot_product[],
+    const double dot_product[],
     size_t size,
-    float first_column[]);
+    double first_column[]);
 
 } // extern "C"
 
@@ -248,67 +248,67 @@ void levinson_from_dot(
 
 
 void wavelengths_to_phases(
-    const std::vector<float>& wavelengths, 
-    std::vector<float>& phases);
+    const std::vector<double>& wavelengths, 
+    std::vector<double>& phases);
 
 
 void compute_basis_signal_to_moments(
-    const std::vector<float>& phases,
-    std::vector<float>& basis);
+    const std::vector<double>& phases,
+    std::vector<double>& basis);
 
 
 void compute_basis_moments_to_signal(
-    const std::vector<float>& phases,
-    std::vector<float>& basis);
+    const std::vector<double>& phases,
+    std::vector<double>& basis);
 
 
 void compute_moments(
-    const std::vector<float>& phases, 
-    const std::vector<float>& signal, 
+    const std::vector<double>& phases, 
+    const std::vector<double>& signal, 
     size_t n_moments,
-    std::vector<float>& moments);
+    std::vector<double>& moments);
 
 
 void compute_density(
-    const std::vector<float>& phases, 
-    const std::vector<float>& moments,
-    std::vector<float>& density);
+    const std::vector<double>& phases, 
+    const std::vector<double>& moments,
+    std::vector<double>& density);
 
 
 void bounded_compute_density_lagrange(
-    const std::vector<float>& phases,
-    const std::vector<float>& moments,
-    std::vector<float>& density);
+    const std::vector<double>& phases,
+    const std::vector<double>& moments,
+    std::vector<double>& density);
 
 
 void unbounded_compress_moments(
-    const std::vector<float>& moments,
-    std::vector<float>& compressed_moments);
+    const std::vector<double>& moments,
+    std::vector<double>& compressed_moments);
 
 
 void bounded_compress_moments(
-    const std::vector<float>& moments,
-    std::vector<float>& compressed_moments);
+    const std::vector<double>& moments,
+    std::vector<double>& compressed_moments);
 
 
 void unbounded_to_bounded_compress_moments(
-    const std::vector<float>& moments,
-    std::vector<float>& compressed_moments);
+    const std::vector<double>& moments,
+    std::vector<double>& compressed_moments);
 
 
 void unbounded_decompress_moments(
-    const std::vector<float>& compressed_moments,
-    std::vector<float>& moments);
+    const std::vector<double>& compressed_moments,
+    std::vector<double>& moments);
 
 
 void bounded_decompress_moments(
-    const std::vector<float>& compressed_moments,
-    std::vector<float>& moments);
+    const std::vector<double>& compressed_moments,
+    std::vector<double>& moments);
 
 
 void unbounded_to_bounded_decompress_moments(
-    const std::vector<float>& compressed_moments,
-    std::vector<float>& moments);
+    const std::vector<double>& compressed_moments,
+    std::vector<double>& moments);
 
 
 /* ----------------------------------------------------------------------------
@@ -316,59 +316,59 @@ void unbounded_to_bounded_decompress_moments(
    ------------------------------------------------------------------------- */
 
 void solve_levinson(
-    const std::vector<float>& first_column,
-    std::vector<float>& solution);
+    const std::vector<double>& first_column,
+    std::vector<double>& solution);
 
 
 void solve_levinson(
-    const std::vector<std::complex<float>>& first_column,
-    std::vector<std::complex<float>>& solution);
+    const std::vector<std::complex<double>>& first_column,
+    std::vector<std::complex<double>>& solution);
 
 
 void dot_levinson(
-    const std::vector<float>& first_column,
-    std::vector<float>& dot_product);
+    const std::vector<double>& first_column,
+    std::vector<double>& dot_product);
 
 
 void dot_levinson(
-    const std::vector<std::complex<float>>& first_column,
-    std::vector<std::complex<float>>& dot_product);
+    const std::vector<std::complex<double>>& first_column,
+    std::vector<std::complex<double>>& dot_product);
 
 
 void levinson_from_dot(
-    const std::vector<float>& dot_product,
-    std::vector<float>& first_column);
+    const std::vector<double>& dot_product,
+    std::vector<double>& first_column);
 
 
 void levinson_from_dot(
-    const std::vector<std::complex<float>>& dot_product,
-    std::vector<std::complex<float>>& first_column);
+    const std::vector<std::complex<double>>& dot_product,
+    std::vector<std::complex<double>>& first_column);
 
 
 void moments_to_exponential_moments(
-    const float moments[],
+    const double moments[],
     size_t n_moments,
-    std::vector<std::complex<float>>& exponential_moments);
+    std::vector<std::complex<double>>& exponential_moments);
 
 
 void exponential_moments_to_moments(
-    const std::vector<std::complex<float>>& exponential_moments,
-    float moments[]);
+    const std::vector<std::complex<double>>& exponential_moments,
+    double moments[]);
 
 
 void compute_lagrange_multipliers(
-    const std::vector<std::complex<float>>& exponential_moments,
-    const std::vector<std::complex<float>>& evaluation_polynomial,
-    std::vector<std::complex<float>>& lagrange_multipliers);
+    const std::vector<std::complex<double>>& exponential_moments,
+    const std::vector<std::complex<double>>& evaluation_polynomial,
+    std::vector<std::complex<double>>& lagrange_multipliers);
 
 
 
 // void evaluate_herglotz_transform(
-//     const std::vector<std::complex<float>>& point_in_disk,
-//     const std::vector<std::complex<float>>& exponential_moments,
-//     std::vector<std::complex<float>>& evaluation_polynomial)
+//     const std::vector<std::complex<double>>& point_in_disk,
+//     const std::vector<std::complex<double>>& exponential_moments,
+//     std::vector<std::complex<double>>& evaluation_polynomial)
 // {
-//     std::vector<std::complex<float>> coefficients(exponential_moments.size());
+//     std::vector<std::complex<double>> coefficients(exponential_moments.size());
 
 //     for (size_t i = exponential_moments.size() - 1; i >= 0; i--) {
 //         coefficients[i] = evaluation_polynomial[exponential_moments.size() - 1 - i]

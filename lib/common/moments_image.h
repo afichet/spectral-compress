@@ -55,12 +55,12 @@ extern "C" {
  *                          `width` * `height` * `n_moments` elements.
  */
 void compute_moments_image(
-    const float phases[],
+    const double phases[],
     size_t n_phases,
-    const float spectral_image[],
+    const double spectral_image[],
     size_t width, size_t height,
     size_t n_moments,
-    float moments_image[]);
+    double moments_image[]);
 
 
 /**
@@ -75,10 +75,10 @@ void compute_moments_image(
  *                          `width` * `height` * `n_moments` elements.
  */
 void unbounded_compress_moments_image(
-    const float moments_image[],
+    const double moments_image[],
     size_t width, size_t height,
     size_t n_moments,
-    float compressed_moments_image[]);
+    double compressed_moments_image[]);
 
 
 /**
@@ -93,17 +93,17 @@ void unbounded_compress_moments_image(
  *                          `width` * `height` * `n_moments` elements.
  */
 void bounded_compress_moments_image(
-    const float moments_image[],
+    const double moments_image[],
     size_t width, size_t height,
     size_t n_moments,
-    float compressed_moments_image[]);
+    double compressed_moments_image[]);
 
 
 void unbounded_to_bounded_compress_moments_image(
-    const float moments_image[],
+    const double moments_image[],
     size_t width, size_t height,
     size_t n_moments,
-    float compressed_moments_image[]);
+    double compressed_moments_image[]);
 
 
 /**
@@ -119,10 +119,10 @@ void unbounded_to_bounded_compress_moments_image(
  *                                 elements.
  */
 void unbounded_decompress_moments_image(
-    const float compressed_moments_image[],
+    const double compressed_moments_image[],
     size_t width, size_t height,
     size_t n_moments,
-    float moments_image[]);
+    double moments_image[]);
 
 
 /**
@@ -139,17 +139,17 @@ void unbounded_decompress_moments_image(
  *                                 elements.
  */
 void bounded_decompress_moments_image(
-    const float compressed_moments_image[],
+    const double compressed_moments_image[],
     size_t width, size_t height,
     size_t n_moments,
-    float moments_image[]);
+    double moments_image[]);
 
 
 void unbounded_to_bounded_decompress_moments_image(
-    const float compressed_moments_image[],
+    const double compressed_moments_image[],
     size_t width, size_t height,
     size_t n_moments,
-    float moments_image[]);
+    double moments_image[]);
 
 
 /**
@@ -165,12 +165,12 @@ void unbounded_to_bounded_decompress_moments_image(
  *                       `width` * `height` * `n_moments` elements.
  */
 void compute_density_image(
-    const float phases[],
+    const double phases[],
     size_t n_phases,
-    const float moments_image[],
+    const double moments_image[],
     size_t width, size_t height,
     size_t n_moments,
-    float density_image[]);
+    double density_image[]);
 
 
 /**
@@ -186,28 +186,28 @@ void compute_density_image(
  *                       `width` * `height` * `n_moments` elements.
  */
 void bounded_compute_density_lagrange_image(
-    const float phases[],
+    const double phases[],
     size_t n_phases,
-    const float moments_image[],
+    const double moments_image[],
     size_t width, size_t height,
     size_t n_moments,
-    float density_image[]);
+    double density_image[]);
 
 
 void normalize_moment_image(
-    const float src[],
+    const double src[],
     size_t n_px, size_t n_moments,
-    float dest[],
-    float mins[],
-    float maxs[]);
+    double dest[],
+    double mins[],
+    double maxs[]);
 
 
 void denormalize_moment_image(
-    const float src[],
+    const double src[],
     size_t n_px, size_t n_moments,
-    const float mins[],
-    const float maxs[],
-    float dest[]);
+    const double mins[],
+    const double maxs[],
+    double dest[]);
 
 } // extern "C"
 
@@ -221,83 +221,83 @@ void denormalize_moment_image(
 #include <vector>
 
 void compute_moments_image(
-    const std::vector<float>& phases,
-    const std::vector<float>& spectral_image,
+    const std::vector<double>& phases,
+    const std::vector<double>& spectral_image,
     size_t width, size_t height,
     size_t n_moments,
-    std::vector<float>& moments_image);
+    std::vector<double>& moments_image);
 
 
 void unbounded_compress_moments_image(
-    const std::vector<float>& moments_image,
+    const std::vector<double>& moments_image,
     size_t width, size_t height, 
     size_t n_moments,
-    std::vector<float>& compressed_moments_image);
+    std::vector<double>& compressed_moments_image);
 
 
 void bounded_compress_moments_image(
-    const std::vector<float>& moments_image,
+    const std::vector<double>& moments_image,
     size_t width, size_t height, 
     size_t n_moments,
-    std::vector<float>& compressed_moments_image);
+    std::vector<double>& compressed_moments_image);
 
 
 // void unbounded_to_bounded_compress_moments_image(
-//     const std::vector<float>& moments_image,
+//     const std::vector<double>& moments_image,
 //     size_t width, size_t height,
 //     size_t n_moments,
-//     std::vector<float>& compresed_moments_image);
+//     std::vector<double>& compresed_moments_image);
 
 
 void unbounded_decompress_moments_image(
-    const std::vector<float>& compressed_moments_image,
+    const std::vector<double>& compressed_moments_image,
     size_t width, size_t height, 
     size_t n_moments,
-    std::vector<float>& moments_image);
+    std::vector<double>& moments_image);
 
 
 void bounded_decompress_moments_image(
-    const std::vector<float>& compressed_moments_image,
+    const std::vector<double>& compressed_moments_image,
     size_t width, size_t height, 
     size_t n_moments,
-    std::vector<float>& moments_image);
+    std::vector<double>& moments_image);
 
 
 // void unbounded_to_bounded_decompress_moments_image(
-//     const std::vector<float>& compressed_moments_image,
+//     const std::vector<double>& compressed_moments_image,
 //     size_t width, size_t height,
 //     size_t n_moments,
-//     std::vector<float>& moments_image);
+//     std::vector<double>& moments_image);
 
 
 void compute_density_image(
-    const std::vector<float>& phases,
-    const std::vector<float>& moments_image,
+    const std::vector<double>& phases,
+    const std::vector<double>& moments_image,
     size_t width, size_t height,
     size_t n_moments,
-    std::vector<float>& density_image);
+    std::vector<double>& density_image);
 
 
 void bounded_compute_density_lagrange_image(
-    const std::vector<float>& phases,
-    const std::vector<float>& moments_image,
+    const std::vector<double>& phases,
+    const std::vector<double>& moments_image,
     size_t width, size_t height,
     size_t n_moments,
-    std::vector<float>& density_image);
+    std::vector<double>& density_image);
 
 
 void normalize_moment_image(
-    const std::vector<float>& src,
+    const std::vector<double>& src,
     size_t n_px, size_t n_moments,
-    std::vector<float>& dest,
-    std::vector<float>& mins,
-    std::vector<float>& maxs);
+    std::vector<double>& dest,
+    std::vector<double>& mins,
+    std::vector<double>& maxs);
 
 
 void denormalize_moment_image(
-    const std::vector<float>& src,
+    const std::vector<double>& src,
     size_t n_px, size_t n_moments,
-    const std::vector<float>& mins,
-    const std::vector<float>& maxs,
-    std::vector<float>& dest);
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
+    std::vector<double>& dest);
 #endif // __cplusplus

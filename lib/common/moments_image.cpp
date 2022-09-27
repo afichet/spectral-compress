@@ -44,28 +44,28 @@
 extern "C" {
 
 void compute_moments_image(
-    const float phases[],
+    const double phases[],
     size_t n_phases,
-    const float spectral_image[],
+    const double spectral_image[],
     size_t width, size_t height,
     size_t n_moments,
-    float moments_image[])
+    double moments_image[])
 {
     // TODO: Simplify
     if (n_moments == n_phases) {
-        std::vector<float> transform(n_phases * n_phases);
+        std::vector<double> transform(n_phases * n_phases);
         compute_basis_signal_to_moments(phases, n_phases, transform.data());
 
-        Eigen::Map<Eigen::MatrixXf> t_mat(transform.data(), n_phases, n_phases);
+        Eigen::Map<Eigen::MatrixXd> t_mat(transform.data(), n_phases, n_phases);
 
         // Local copy for non const manipulation
-        std::vector<float> spec_image(width * height * n_phases);
-        std::memcpy(spec_image.data(), spectral_image, width * height * n_phases * sizeof(float));
+        std::vector<double> spec_image(width * height * n_phases);
+        std::memcpy(spec_image.data(), spectral_image, width * height * n_phases * sizeof(double));
 
         #pragma omp parallel for
         for (size_t i = 0; i < width * height; i++) {
-            const Eigen::Map<Eigen::VectorXf> signal(&(spec_image[n_phases * i]), n_phases);
-            Eigen::Map<Eigen::VectorXf> moments(&(moments_image[n_phases * i]), n_phases);
+            const Eigen::Map<Eigen::VectorXd> signal(&(spec_image[n_phases * i]), n_phases);
+            Eigen::Map<Eigen::VectorXd> moments(&(moments_image[n_phases * i]), n_phases);
 
             moments = t_mat * signal;
         }
@@ -84,10 +84,10 @@ void compute_moments_image(
 
 
 void unbounded_compress_moments_image(
-    const float moments_image[],
+    const double moments_image[],
     size_t width, size_t height,
     size_t n_moments,
-    float compressed_moments_image[])
+    double compressed_moments_image[])
 {
     #pragma omp parallel for
     for (size_t i = 0; i < width * height; i++) {
@@ -101,10 +101,10 @@ void unbounded_compress_moments_image(
 
 
 void bounded_compress_moments_image(
-    const float moments_image[],
+    const double moments_image[],
     size_t width, size_t height,
     size_t n_moments,
-    float compressed_moments_image[])
+    double compressed_moments_image[])
 {
     #pragma omp parallel for
     for (size_t i = 0; i < width * height; i++) {
@@ -118,10 +118,10 @@ void bounded_compress_moments_image(
 
 
 void unbounded_to_bounded_compress_moments_image(
-    const float moments_image[],
+    const double moments_image[],
     size_t width, size_t height,
     size_t n_moments,
-    float compressed_moment_image[])
+    double compressed_moment_image[])
 {
     #pragma omp parallel for
     for (size_t i = 0; i < width * height; i++) {
@@ -135,10 +135,10 @@ void unbounded_to_bounded_compress_moments_image(
 
 
 void unbounded_decompress_moments_image(
-    const float compressed_moments_image[],
+    const double compressed_moments_image[],
     size_t width, size_t height,
     size_t n_moments,
-    float moments_image[])
+    double moments_image[])
 {
     #pragma omp parallel for
     for (size_t i = 0; i < width * height; i++) {
@@ -152,10 +152,10 @@ void unbounded_decompress_moments_image(
 
 
 void bounded_decompress_moments_image(
-    const float compressed_moments_image[],
+    const double compressed_moments_image[],
     size_t width, size_t height,
     size_t n_moments,
-    float moments_image[])
+    double moments_image[])
 {
     #pragma omp parallel for
     for (size_t i = 0; i < width * height; i++) {
@@ -169,10 +169,10 @@ void bounded_decompress_moments_image(
 
 
 void unbounded_to_bounded_decompress_moments_image(
-    const float compressed_moments_image[],
+    const double compressed_moments_image[],
     size_t width, size_t height,
     size_t n_moments,
-    float moments_image[])
+    double moments_image[])
 {
     #pragma omp parallel for
     for (size_t i = 0; i < width * height; i++) {
@@ -186,28 +186,28 @@ void unbounded_to_bounded_decompress_moments_image(
 
 
 void compute_density_image(
-    const float phases[],
+    const double phases[],
     size_t n_phases,
-    const float moments_image[],
+    const double moments_image[],
     size_t width, size_t height,
     size_t n_moments,
-    float density_image[])
+    double density_image[])
 {
     // TODO: Simplify
     if (n_moments == n_phases) {
-        std::vector<float> transform(n_phases * n_phases);
+        std::vector<double> transform(n_phases * n_phases);
         compute_basis_moments_to_signal(phases, n_phases, transform.data());
 
-        Eigen::Map<Eigen::MatrixXf> t_mat(transform.data(), n_phases, n_phases);
+        Eigen::Map<Eigen::MatrixXd> t_mat(transform.data(), n_phases, n_phases);
 
         // Local copy for non const manipulation
-        std::vector<float> m_img(width * height * n_moments);
-        std::memcpy(m_img.data(), moments_image, width * height * n_moments * sizeof(float));
+        std::vector<double> m_img(width * height * n_moments);
+        std::memcpy(m_img.data(), moments_image, width * height * n_moments * sizeof(double));
 
         #pragma omp parallel for
         for (size_t i = 0; i < width * height; i++) {
-            const Eigen::Map<Eigen::VectorXf> moments(&(m_img[n_phases * i]), n_phases);
-            Eigen::Map<Eigen::VectorXf> signal(&(density_image[n_phases * i]), n_phases);
+            const Eigen::Map<Eigen::VectorXd> moments(&(m_img[n_phases * i]), n_phases);
+            Eigen::Map<Eigen::VectorXd> signal(&(density_image[n_phases * i]), n_phases);
 
             signal = t_mat * moments;
         }
@@ -227,12 +227,12 @@ void compute_density_image(
 
 
 void bounded_compute_density_lagrange_image(
-    const float phases[],
+    const double phases[],
     size_t n_phases,
-    const float moments_image[],
+    const double moments_image[],
     size_t width, size_t height,
     size_t n_moments,
-    float density_image[])
+    double density_image[])
 {
     #pragma omp parallel for
     for (size_t i = 0; i < width * height; i++) {
@@ -248,11 +248,11 @@ void bounded_compute_density_lagrange_image(
 
 
 void normalize_moment_image(
-    const float src[],
+    const double src[],
     size_t n_px, size_t n_moments,
-    float dest[],
-    float mins[],
-    float maxs[])
+    double dest[],
+    double mins[],
+    double maxs[])
 {    
     // Initialize vectors
     for (size_t m = 1; m < n_moments; m++) {
@@ -276,8 +276,8 @@ void normalize_moment_image(
 
         // AC components
         for (size_t m = 1; m < n_moments; m++) {
-            const float& min = mins[m - 1];
-            const float& max = maxs[m - 1];
+            const double& min = mins[m - 1];
+            const double& max = maxs[m - 1];
 
             dest[px * n_moments + m] = (src[px * n_moments + m] - min) / (max - min);
         }
@@ -286,11 +286,11 @@ void normalize_moment_image(
 
 
 void denormalize_moment_image(
-    const float src[],
+    const double src[],
     size_t n_px, size_t n_moments,
-    const float mins[],
-    const float maxs[],
-    float dest[])
+    const double mins[],
+    const double maxs[],
+    double dest[])
 {
     #pragma omp parallel for
     for (size_t px = 0; px < n_px; px++) {
@@ -299,8 +299,8 @@ void denormalize_moment_image(
 
         // AC components
         for (size_t m = 1; m < n_moments; m++) {
-            const float& min = mins[m - 1];
-            const float& max = maxs[m - 1];
+            const double& min = mins[m - 1];
+            const double& max = maxs[m - 1];
 
             dest[px * n_moments + m] = (max - min) * src[px * n_moments + m] + min;
         }
@@ -315,11 +315,11 @@ void denormalize_moment_image(
  *****************************************************************************/
 
 void compute_moments_image(
-    const std::vector<float>& phases,
-    const std::vector<float>& spectral_image,
+    const std::vector<double>& phases,
+    const std::vector<double>& spectral_image,
     size_t width, size_t height,
     size_t n_moments,
-    std::vector<float>& moments_image)
+    std::vector<double>& moments_image)
 {
     moments_image.resize(width * height * n_moments);
 
@@ -334,10 +334,10 @@ void compute_moments_image(
 
 
 void unbounded_compress_moments_image(
-    const std::vector<float>& moments_image,
+    const std::vector<double>& moments_image,
     size_t width, size_t height,
     size_t n_moments,
-    std::vector<float>& compressed_moments_image)
+    std::vector<double>& compressed_moments_image)
 {
     compressed_moments_image.resize(moments_image.size());
 
@@ -351,10 +351,10 @@ void unbounded_compress_moments_image(
 
 
 void bounded_compress_moments_image(
-    const std::vector<float>& moments_image,
+    const std::vector<double>& moments_image,
     size_t width, size_t height,
     size_t n_moments,
-    std::vector<float>& compressed_moments_image)
+    std::vector<double>& compressed_moments_image)
 {
     compressed_moments_image.resize(moments_image.size());
 
@@ -368,10 +368,10 @@ void bounded_compress_moments_image(
 
 
 void unbounded_to_bounded_compress_moments_image(
-    const std::vector<float>& moments_image,
+    const std::vector<double>& moments_image,
     size_t width, size_t height,
     size_t n_moments,
-    std::vector<float>& compressed_moments_image)
+    std::vector<double>& compressed_moments_image)
 {
     compressed_moments_image.resize(moments_image.size());
 
@@ -385,10 +385,10 @@ void unbounded_to_bounded_compress_moments_image(
 
 
 void unbounded_decompress_moments_image(
-    const std::vector<float>& compressed_moments_image,
+    const std::vector<double>& compressed_moments_image,
     size_t width, size_t height,
     size_t n_moments,
-    std::vector<float>& moments_image)
+    std::vector<double>& moments_image)
 {
     moments_image.resize(compressed_moments_image.size());
 
@@ -402,10 +402,10 @@ void unbounded_decompress_moments_image(
 
 
 void bounded_decompress_moments_image(
-    const std::vector<float>& compressed_moments_image,
+    const std::vector<double>& compressed_moments_image,
     size_t width, size_t height,
     size_t n_moments,
-    std::vector<float>& moments_image)
+    std::vector<double>& moments_image)
 {
     moments_image.resize(compressed_moments_image.size());
 
@@ -419,10 +419,10 @@ void bounded_decompress_moments_image(
 
 
 void unbounded_to_bounded_decompress_moments_image(
-    const std::vector<float>& compressed_moments_image,
+    const std::vector<double>& compressed_moments_image,
     size_t width, size_t height,
     size_t n_moments,
-    std::vector<float>& moments_image)
+    std::vector<double>& moments_image)
 {
     moments_image.resize(compressed_moments_image.size());
 
@@ -436,11 +436,11 @@ void unbounded_to_bounded_decompress_moments_image(
 
 
 void compute_density_image(
-    const std::vector<float>& phases,
-    const std::vector<float>& moments_image,
+    const std::vector<double>& phases,
+    const std::vector<double>& moments_image,
     size_t width, size_t height,
     size_t n_moments,
-    std::vector<float>& density_image)
+    std::vector<double>& density_image)
 {
     density_image.resize(phases.size() * width * height);
 
@@ -456,11 +456,11 @@ void compute_density_image(
 
 
 void bounded_compute_density_lagrange_image(
-    const std::vector<float>& phases,
-    const std::vector<float>& moments_image,
+    const std::vector<double>& phases,
+    const std::vector<double>& moments_image,
     size_t width, size_t height,
     size_t n_moments,
-    std::vector<float>& density_image)
+    std::vector<double>& density_image)
 {
     density_image.resize(phases.size() * width * height);
 
@@ -476,11 +476,11 @@ void bounded_compute_density_lagrange_image(
 
 
 void normalize_moment_image(
-    const std::vector<float>& src,
+    const std::vector<double>& src,
     size_t n_px, size_t n_moments,
-    std::vector<float>& dest,
-    std::vector<float>& mins,
-    std::vector<float>& maxs)
+    std::vector<double>& dest,
+    std::vector<double>& mins,
+    std::vector<double>& maxs)
 {
     dest.resize(src.size());
     mins.resize(n_px * (n_moments - 1));
@@ -497,11 +497,11 @@ void normalize_moment_image(
 
 
 void denormalize_moment_image(
-    const std::vector<float>& src,
+    const std::vector<double>& src,
     size_t n_px, size_t n_moments,
-    const std::vector<float>& mins,
-    const std::vector<float>& maxs,
-    std::vector<float>& dest)
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
+    std::vector<double>& dest)
 {
     dest.resize(src.size());
 

@@ -40,23 +40,23 @@
 
 // #define USE_BOUNDED
 
-inline float quantize_dequantize(float src, size_t n_bits)
+inline double quantize_dequantize(double src, size_t n_bits)
 {
     const uint64_t v = (1 << n_bits) - 1;
 
-    return std::round(src * (float)v) / (float)v; 
+    return std::round(src * (double)v) / (double)v; 
 }
 
 
 void quantize_dequantize_single_image(
-    const std::vector<float>& src,
+    const std::vector<double>& src,
     size_t n_px, size_t n_moments,
-    std::vector<float>& dest,
+    std::vector<double>& dest,
     size_t i, size_t n_bits)
 {
     dest.resize(src.size());
 
-    std::memcpy(dest.data(), src.data(), sizeof(float) * src.size());
+    std::memcpy(dest.data(), src.data(), sizeof(double) * src.size());
 
     for (size_t px = 0; px < n_px; px++) {
         dest[px * n_moments + i] = quantize_dequantize(src[px * n_moments + i], n_bits);
@@ -64,22 +64,22 @@ void quantize_dequantize_single_image(
 }
 
 
-float average_err(
-    const std::vector<float>& wavelengths,
-    const std::vector<float>& ref,
+double average_err(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& ref,
     size_t n_px, size_t n_moments,
-    const std::vector<float>& norm_noments,
-    const std::vector<float>& mins,
-    const std::vector<float>& maxs)
+    const std::vector<double>& norm_noments,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs)
 {
-    float err = 0;
+    double err = 0;
     const size_t n_wl = wavelengths.size();
 
-    std::vector<float> phases;
+    std::vector<double> phases;
 
-    std::vector<float> compressed_moments;
-    std::vector<float> moments;
-    std::vector<float> reconst_signal;
+    std::vector<double> compressed_moments;
+    std::vector<double> moments;
+    std::vector<double> reconst_signal;
 
     wavelengths_to_phases(wavelengths, phases);
     denormalize_moment_image(norm_noments, n_px, n_moments, mins, maxs, compressed_moments);
@@ -92,7 +92,7 @@ float average_err(
 
     for (size_t p = 0; p < n_px; p++) {
         for (size_t i = 0; i < n_wl; i++) {
-            const float q = reconst_signal[p * n_wl + i] - ref[p * n_wl + i];
+            const double q = reconst_signal[p * n_wl + i] - ref[p * n_wl + i];
             err += q * q;
         }
     }
@@ -102,12 +102,12 @@ float average_err(
 
 
 void compute_quantization_curve(
-    const std::vector<float>& wavelengths,
-    const std::vector<float>& ref,
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& ref,
     size_t n_px, size_t n_moments,
-    const std::vector<float>& norm_moments,
-    const std::vector<float>& mins,
-    const std::vector<float>& maxs,
+    const std::vector<double>& norm_moments,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
     int n_bits_start,
     std::vector<int>& quantization_curve)
 {
@@ -116,7 +116,7 @@ void compute_quantization_curve(
     quantization_curve[0] = 16; // TODO: remove
     quantization_curve[1] = n_bits_start;
 
-    std::vector<float> quantized_moments;
+    std::vector<double> quantized_moments;
 
     quantize_dequantize_single_image(
         norm_moments,
@@ -125,7 +125,7 @@ void compute_quantization_curve(
         1, quantization_curve[1]
     );
 
-    const float base_err = average_err(
+    const double base_err = average_err(
         wavelengths,
         ref,
         n_px, n_moments,
@@ -145,7 +145,7 @@ void compute_quantization_curve(
                 m, n_bits
             );
 
-            float curr_err = average_err(
+            double curr_err = average_err(
                 wavelengths,
                 ref,
                 n_px, n_moments,
