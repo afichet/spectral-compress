@@ -194,7 +194,7 @@ void compute_density(
 }
 
 
-void compute_density_bounded_lagrange(
+void bounded_compute_density_lagrange(
     const float phases[],
     size_t n_phases,
     const float moments[],
@@ -242,7 +242,7 @@ void compute_density_bounded_lagrange(
 }
 
 
-void compress_moments(
+void unbounded_compress_moments(
     const float moments[],
     size_t n_moments,
     float compressed_moments[])
@@ -258,7 +258,7 @@ void compress_moments(
 }
 
 
-void compress_bounded_moments(
+void bounded_compress_moments(
     const float moments[],
     size_t n_moments,
     float compressed_moments[])
@@ -298,7 +298,7 @@ void compress_bounded_moments(
 }
 
 
-void decompress_moments(
+void unbounded_decompress_moments(
     const float compressed_moments[],
     size_t n_compressed_moments,
     float moments[])
@@ -313,7 +313,7 @@ void decompress_moments(
 }
 
 
-void decompress_bounded_moments(
+void bounded_decompress_moments(
     const float compressed_moments[],
     size_t n_compressed_moments,
     float moments[])
@@ -513,14 +513,14 @@ void compute_density(
 }
 
 
-void compute_density_bounded_lagrange(
+void bounded_compute_density_lagrange(
     const std::vector<float>& phases,
     const std::vector<float>& moments,
     std::vector<float>& density)
 {
     density.resize(phases.size());
 
-    compute_density_bounded_lagrange(
+    bounded_compute_density_lagrange(
         phases.data(),
         phases.size(),
         moments.data(),
@@ -530,7 +530,7 @@ void compute_density_bounded_lagrange(
 }
 
 
-void compress_moments(
+void unbounded_compress_moments(
     const std::vector<float>& moments,
     std::vector<float>& compressed_moments)
 {
@@ -539,12 +539,12 @@ void compress_moments(
 }
 
 
-void compress_bounded_moments(
+void bounded_compress_moments(
     const std::vector<float>& moments,
     std::vector<float>& compressed_moments)
 {
     compressed_moments.resize(moments.size());
-    compress_bounded_moments(
+    bounded_compress_moments(
         moments.data(),
         moments.size(),
         compressed_moments.data()
@@ -552,7 +552,7 @@ void compress_bounded_moments(
 }
 
 
-void decompress_moments(
+void unbounded_decompress_moments(
     const std::vector<float>& compressed_moments,
     std::vector<float>& moments)
 {
@@ -560,12 +560,12 @@ void decompress_moments(
 }
 
 
-void decompress_bounded_moments(
+void bounded_decompress_moments(
     const std::vector<float>& compressed_moments,
     std::vector<float>& moments)
 {
     moments.resize(compressed_moments.size());
-    decompress_bounded_moments(
+    bounded_decompress_moments(
         compressed_moments.data(),
         compressed_moments.size(),
         moments.data()

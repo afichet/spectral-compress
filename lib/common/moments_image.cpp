@@ -91,7 +91,7 @@ void unbounded_compress_moments_image(
 {
     #pragma omp parallel for
     for (size_t i = 0; i < width * height; i++) {
-        compress_moments(
+        unbounded_compress_moments(
             &(moments_image[n_moments * i]),
             n_moments,
             &(compressed_moments_image[n_moments * i])
@@ -108,7 +108,7 @@ void bounded_compress_moments_image(
 {
     #pragma omp parallel for
     for (size_t i = 0; i < width * height; i++) {
-        compress_bounded_moments(
+        bounded_compress_moments(
             &(moments_image[n_moments * i]),
             n_moments,
             &(compressed_moments_image[n_moments * i])
@@ -125,7 +125,7 @@ void unbounded_decompress_moments_image(
 {
     #pragma omp parallel for
     for (size_t i = 0; i < width * height; i++) {
-        decompress_moments(
+        unbounded_decompress_moments(
             &(compressed_moments_image[n_moments * i]),
             n_moments,
             &(moments_image[n_moments * i])
@@ -142,7 +142,7 @@ void bounded_decompress_moments_image(
 {
     #pragma omp parallel for
     for (size_t i = 0; i < width * height; i++) {
-        decompress_bounded_moments(
+        bounded_decompress_moments(
             &(compressed_moments_image[n_moments * i]),
             n_moments,
             &(moments_image[n_moments * i])
@@ -202,7 +202,7 @@ void bounded_compute_density_lagrange_image(
 {
     #pragma omp parallel for
     for (size_t i = 0; i < width * height; i++) {
-        compute_density_bounded_lagrange(
+        bounded_compute_density_lagrange(
             phases,
             n_phases,
             &(moments_image[n_moments * i]),

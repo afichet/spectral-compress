@@ -55,7 +55,7 @@ int main(int argc, char* argv[]) {
     print_array(reflectance_moments);
 
     std::cout << "-- COMPRESSED BOUNDED --" << std::endl;
-    compress_bounded_moments(reflectance_moments, reflectance_compressed);
+    bounded_compress_moments(reflectance_moments, reflectance_compressed);
     print_array(reflectance_compressed);
 
 
@@ -64,7 +64,7 @@ int main(int argc, char* argv[]) {
     std::vector<float> basis(reflectance_moments.size() * reflectance_moments.size());
 
     std::cout << "-- BACKWARD MOMENTS --" << std::endl;
-    decompress_bounded_moments(reflectance_compressed, b_reflectance_moments);
+    bounded_decompress_moments(reflectance_compressed, b_reflectance_moments);
     print_array_diff(reflectance_moments, b_reflectance_moments);
 
     std::cout << "-- BACKWARD SIGNAL --" << std::endl;

@@ -200,17 +200,17 @@ int main(int argc, char* argv[])
         reflectance_moments
     );
 
-    compress_bounded_moments(
+    bounded_compress_moments(
         reflectance_moments,
         reflectance_compressed
     );
 
-    decompress_bounded_moments(
+    bounded_decompress_moments(
         reflectance_compressed,
         reflectance_inflated
     );
 
-    compute_density_bounded_lagrange(
+    bounded_compute_density_lagrange(
         reflectance_phases,
         reflectance_inflated,
         reflectance_density
@@ -245,12 +245,12 @@ int main(int argc, char* argv[])
         emission_moments
     );
 
-    compress_moments(
+    unbounded_compress_moments(
         emission_moments,
         emission_compressed
     );
 
-    decompress_moments(
+    unbounded_decompress_moments(
         emission_compressed,
         emission_inflated
     );
