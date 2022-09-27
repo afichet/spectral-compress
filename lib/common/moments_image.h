@@ -242,11 +242,11 @@ void bounded_compress_moments_image(
     std::vector<double>& compressed_moments_image);
 
 
-// void unbounded_to_bounded_compress_moments_image(
-//     const std::vector<double>& moments_image,
-//     size_t width, size_t height,
-//     size_t n_moments,
-//     std::vector<double>& compresed_moments_image);
+void unbounded_to_bounded_compress_moments_image(
+    const std::vector<double>& moments_image,
+    size_t width, size_t height,
+    size_t n_moments,
+    std::vector<double>& compresed_moments_image);
 
 
 void unbounded_decompress_moments_image(
@@ -263,11 +263,11 @@ void bounded_decompress_moments_image(
     std::vector<double>& moments_image);
 
 
-// void unbounded_to_bounded_decompress_moments_image(
-//     const std::vector<double>& compressed_moments_image,
-//     size_t width, size_t height,
-//     size_t n_moments,
-//     std::vector<double>& moments_image);
+void unbounded_to_bounded_decompress_moments_image(
+    const std::vector<double>& compressed_moments_image,
+    size_t width, size_t height,
+    size_t n_moments,
+    std::vector<double>& moments_image);
 
 
 void compute_density_image(

@@ -58,33 +58,46 @@ void decompress_spectral_framebuffer(
     std::vector<float>& spectral_framebuffer)
 {
     // const uint32_t n_pixels = compressed_moments.size() / wavelengths.size();
-    std::vector<float> phases;
-    std::vector<float> moments_image;
+    std::vector<double> phases;
+    std::vector<double> wavelengths_d(wavelengths.size());
+    std::vector<double> moments_image;
+    std::vector<double> spectral_framebuffer_d;
 
     const size_t n_moments = compressed_moments.size();
     const size_t n_pixels = compressed_moments[0].size();
     
-    wavelengths_to_phases(wavelengths, phases);
+    for (size_t i = 0; i < wavelengths.size(); i++) {
+        wavelengths_d[i] = wavelengths[i];
+    }
 
-    std::vector<float> compressed_moments_rescaled(n_moments * n_pixels);
+    wavelengths_to_phases(wavelengths_d, phases);
+
+    std::vector<double> compressed_moments_rescaled(n_moments * n_pixels);
 
     for (size_t i = 0; i < n_pixels; i++) {
         compressed_moments_rescaled[n_moments * i] = compressed_moments[0][i];
     }
 
     for (size_t m = 1; m < n_moments; m++) {
-        const float v_min = mins[m - 1];
-        const float v_max = maxs[m - 1];
+        const double v_min = mins[m - 1];
+        const double v_max = maxs[m - 1];
 
         for (size_t i = 0; i < n_pixels; i++) {
-            const float v = compressed_moments[m][i];
+            const double v = compressed_moments[m][i];
 
             compressed_moments_rescaled[n_moments * i + m] = (v_max - v_min) * v + v_min;
         }
     }
 
-    unbounded_decompress_moments_image(compressed_moments_rescaled, n_pixels, 1, n_moments, moments_image);
-    compute_density_image(phases, moments_image, n_pixels, 1, n_moments, spectral_framebuffer);
+    unbounded_to_bounded_decompress_moments_image(compressed_moments_rescaled, n_pixels, 1, n_moments, moments_image);
+    compute_density_image(phases, moments_image, n_pixels, 1, n_moments, spectral_framebuffer_d);
+
+    spectral_framebuffer.resize(spectral_framebuffer_d.size());
+
+    #pragma omp parallel for
+    for (size_t i = 0; i < spectral_framebuffer_d.size(); i++) {
+        spectral_framebuffer[i] = spectral_framebuffer_d[i];
+    }
 }
 
 

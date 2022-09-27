@@ -59,19 +59,25 @@ void compress_spectral_framebuffer(
     std::vector<float>& mins,
     std::vector<float>& maxs)
 {
-    std::vector<float> phases;
-    std::vector<float> moments_image;
-    std::vector<float> compressed_moments_image;
+    std::vector<double> phases;
+    std::vector<double> moments_image;
+    std::vector<double> compressed_moments_image;
     
     const uint32_t n_moments = framebuffer->wavelengths_nm.size();
     const uint32_t n_pixels = framebuffer->image_data.size() / framebuffer->wavelengths_nm.size();
 
     // TODO: this shall be revisited
-    std::vector<float> spectral_framebuffer(framebuffer->image_data.size());
+    std::vector<double> spectral_wavelengths(framebuffer->wavelengths_nm.size());
+    std::vector<double> spectral_framebuffer(framebuffer->image_data.size());
+
+    #pragma omp parallel for
+    for (size_t i = 0; i < spectral_wavelengths.size(); i++) {
+        spectral_wavelengths[i] = framebuffer->wavelengths_nm[i];
+    }
 
     #pragma omp parallel for
     for (size_t i = 0; i < spectral_framebuffer.size(); i++) {
-        float v = framebuffer->image_data[i];
+        double v = framebuffer->image_data[i];
 
         if (std::isinf(v) || std::isnan(v) || v < 1e-8) {
             v = 1e-8;
@@ -80,7 +86,7 @@ void compress_spectral_framebuffer(
         spectral_framebuffer[i] = v;
     }
 
-    wavelengths_to_phases(framebuffer->wavelengths_nm, phases);
+    wavelengths_to_phases(spectral_wavelengths, phases);
     
     compute_moments_image(
         phases, 
@@ -90,7 +96,7 @@ void compress_spectral_framebuffer(
         moments_image
     );
 
-    unbounded_compress_moments_image(
+    unbounded_to_bounded_compress_moments_image(
         moments_image,
         n_pixels, 1,
         n_moments,
@@ -111,8 +117,8 @@ void compress_spectral_framebuffer(
     // Rescale AC components in [0..1]
     for (size_t m = 1; m < n_moments; m++) {
         // Get min / max
-        float v_min = compressed_moments_image[m];
-        float v_max = compressed_moments_image[m];
+        double v_min = compressed_moments_image[m];
+        double v_max = compressed_moments_image[m];
 
         for (size_t i = 0; i < n_pixels; i++) {
             v_min = std::min(v_min, compressed_moments_image[n_moments * i + m]);
