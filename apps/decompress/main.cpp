@@ -83,7 +83,7 @@ void decompress_spectral_framebuffer(
         }
     }
 
-    decompress_moments_image(compressed_moments_rescaled, n_pixels, 1, n_moments, moments_image);
+    unbounded_decompress_moments_image(compressed_moments_rescaled, n_pixels, 1, n_moments, moments_image);
     compute_density_image(phases, moments_image, n_pixels, 1, n_moments, spectral_framebuffer);
 }
 

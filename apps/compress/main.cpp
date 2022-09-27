@@ -90,7 +90,7 @@ void compress_spectral_framebuffer(
         moments_image
     );
 
-    compress_moments_image(
+    unbounded_compress_moments_image(
         moments_image,
         n_pixels, 1,
         n_moments,

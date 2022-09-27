@@ -74,7 +74,7 @@ void compute_moments_image(
  *                          allocated with 
  *                          `width` * `height` * `n_moments` elements.
  */
-void compress_moments_image(
+void unbounded_compress_moments_image(
     const float moments_image[],
     size_t width, size_t height,
     size_t n_moments,
@@ -92,7 +92,7 @@ void compress_moments_image(
  *                          allocated with 
  *                          `width` * `height` * `n_moments` elements.
  */
-void compress_bounded_moments_image(
+void bounded_compress_moments_image(
     const float moments_image[],
     size_t width, size_t height,
     size_t n_moments,
@@ -111,7 +111,7 @@ void compress_bounded_moments_image(
  *                                 with `width` * `height` * `n_moments`
  *                                 elements.
  */
-void decompress_moments_image(
+void unbounded_decompress_moments_image(
     const float compressed_moments_image[],
     size_t width, size_t height,
     size_t n_moments,
@@ -131,7 +131,7 @@ void decompress_moments_image(
  *                                 with `width` * `height` * `n_moments`
  *                                 elements.
  */
-void decompress_bounded_moments_image(
+void bounded_decompress_moments_image(
     const float compressed_moments_image[],
     size_t width, size_t height,
     size_t n_moments,
@@ -171,7 +171,7 @@ void compute_density_image(
  * @param density_image  Computed density image. Must be allocated with
  *                       `width` * `height` * `n_moments` elements.
  */
-void compute_density_bounded_lagrange_image(
+void bounded_compute_density_lagrange_image(
     const float phases[],
     size_t n_phases,
     const float moments_image[],
@@ -214,28 +214,28 @@ void compute_moments_image(
     std::vector<float>& moments_image);
 
 
-void compress_moments_image(
+void unbounded_compress_moments_image(
     const std::vector<float>& moments_image,
     size_t width, size_t height, 
     size_t n_moments,
     std::vector<float>& compressed_moments_image);
 
 
-void compress_bounded_moments_image(
+void bounded_compress_moments_image(
     const std::vector<float>& moments_image,
     size_t width, size_t height, 
     size_t n_moments,
     std::vector<float>& compressed_moments_image);
 
 
-void decompress_moments_image(
+void unbounded_decompress_moments_image(
     const std::vector<float>& compressed_moments_image,
     size_t width, size_t height, 
     size_t n_moments,
     std::vector<float>& moments_image);
 
 
-void decompress_bounded_moments_image(
+void bounded_decompress_moments_image(
     const std::vector<float>& compressed_moments_image,
     size_t width, size_t height, 
     size_t n_moments,
@@ -250,7 +250,7 @@ void compute_density_image(
     std::vector<float>& density_image);
 
 
-void compute_density_bounded_lagrange_image(
+void bounded_compute_density_lagrange_image(
     const std::vector<float>& phases,
     const std::vector<float>& moments_image,
     size_t width, size_t height,

@@ -89,13 +89,13 @@ int main(int argc, char* argv[])
     );
 
 #if defined(USE_BOUNDED)
-    compress_bounded_moments_image(
+    bounded_compress_moments_image(
         moments,
         n_px, 1, n_moments,
         compressed_moments
     );
 #else
-    compress_moments_image(
+    unbounded_compress_moments_image(
         moments,
         n_px, 1, n_moments,
         compressed_moments

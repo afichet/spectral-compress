@@ -84,9 +84,9 @@ float average_err(
     wavelengths_to_phases(wavelengths, phases);
     denormalize_moment_image(norm_noments, n_px, n_moments, mins, maxs, compressed_moments);
 #if defined(USE_BOUNDED)
-    decompress_bounded_moments_image(compressed_moments, n_px, 1, n_moments, moments);
+    bounded_decompress_moments_image(compressed_moments, n_px, 1, n_moments, moments);
 #else
-    decompress_moments_image(compressed_moments, n_px, 1, n_moments, moments);
+    unbounded_decompress_moments_image(compressed_moments, n_px, 1, n_moments, moments);
 #endif // USE_BOUNDED
     compute_density_image(phases, moments, n_px, 1, n_moments, reconst_signal);
 
