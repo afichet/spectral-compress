@@ -52,7 +52,7 @@ extern "C" {
  * @param n_moments         Number of moments to use for the moment 
  *                          representation.
  * @param moments_image     Computed moments image. Must be allocated with
- *                          `width` * `height` * (`n_moments` + 1) elements.
+ *                          `width` * `height` * `n_moments` elements.
  */
 void compute_moments_image(
     const float phases[],
@@ -72,7 +72,7 @@ void compute_moments_image(
  * @param n_moments         Number of moments.
  * @param compressed_moments_image Computed compressed moments image. Must be
  *                          allocated with 
- *                          `width` * `height` * (`n_moments` + 1) elements.
+ *                          `width` * `height` * `n_moments` elements.
  */
 void compress_moments_image(
     const float moments_image[],
@@ -90,7 +90,7 @@ void compress_moments_image(
  * @param n_moments         Number of moments.
  * @param compressed_moments_image Computed compressed moments image. Must be
  *                          allocated with 
- *                          `width` * `height` * (`n_moments` + 1) elements.
+ *                          `width` * `height` * `n_moments` elements.
  */
 void compress_bounded_moments_image(
     const float moments_image[],
@@ -108,7 +108,7 @@ void compress_bounded_moments_image(
  * @param n_moments                Number of moments in the compressed moments
  *                                 image.
  * @param moments_image            Computed moment image. Must be allocated
- *                                 with `width` * `height` * (`n_moments` + 1)
+ *                                 with `width` * `height` * `n_moments`
  *                                 elements.
  */
 void decompress_moments_image(
@@ -128,7 +128,7 @@ void decompress_moments_image(
  * @param n_moments                Number of moments in the compressed moments
  *                                 image.
  * @param moments_image            Computed moment image. Must be allocated
- *                                 with `width` * `height` * (`n_moments` + 1)
+ *                                 with `width` * `height` * `n_moments`
  *                                 elements.
  */
 void decompress_bounded_moments_image(
@@ -148,7 +148,7 @@ void decompress_bounded_moments_image(
  * @param height         Height of the moments image.
  * @param n_moments      Number of moments.
  * @param density_image  Computed density image. Must be allocated with
- *                       `width` * `height` * (`n_moments` + 1) elements.
+ *                       `width` * `height` * `n_moments` elements.
  */
 void compute_density_image(
     const float phases[],
@@ -169,7 +169,7 @@ void compute_density_image(
  * @param height         Height of the moments image.
  * @param n_moments      Number of moments.
  * @param density_image  Computed density image. Must be allocated with
- *                       `width` * `height` * (`n_moments` + 1) elements.
+ *                       `width` * `height` * `n_moments` elements.
  */
 void compute_density_bounded_lagrange_image(
     const float phases[],
