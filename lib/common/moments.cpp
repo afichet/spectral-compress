@@ -74,6 +74,7 @@ void compute_basis_signal_to_moments(
 
     signal.setIdentity();
 
+    #pragma omp parallel for
     for (size_t i = 0; i < n_phases; i++) {
         compute_moments(
             phases, n_phases,
@@ -298,6 +299,50 @@ void bounded_compress_moments(
 }
 
 
+void unbounded_to_bounded_compress_moments(
+    const float moments[],
+    size_t n_moments,
+    float compressed_moments[])
+{
+    if (moments[0] > 0) {
+        std::vector<float> rescaled_moments(n_moments);
+        std::vector<std::complex<float>> exponential_moments(n_moments);
+
+        for (size_t i = 0; i < n_moments; i++) {
+            rescaled_moments[i] = moments[i] / ((float)n_moments * moments[0]);
+        }
+
+        moments_to_exponential_moments(
+            rescaled_moments.data(),
+            n_moments,
+            exponential_moments
+        );
+
+        std::vector<std::complex<float>> toeplitz_first_column(n_moments);
+
+        for (size_t i = 0; i < n_moments; i++) {
+            toeplitz_first_column[i] = exponential_moments[i] / (2.f * M_PIf);
+        }
+
+        toeplitz_first_column[0] = 2.f * toeplitz_first_column[0].real();
+
+        std::vector<std::complex<float>> dots;
+        dot_levinson(toeplitz_first_column, dots);
+
+        const std::complex<float> m = std::abs(exponential_moments[0]) / (std::complex<float>(0.f, 1.f) * exponential_moments[0]);
+
+        for (size_t i = 1; i < n_moments; i++) {
+            compressed_moments[i] = (dots[i] * m).real();
+        }
+
+        compressed_moments[0] = moments[0];
+    } else {
+        for (size_t m = 0; m < n_moments; m++) {
+            compressed_moments[m] = 0;
+        }
+    }}
+
+
 void unbounded_decompress_moments(
     const float compressed_moments[],
     size_t n_compressed_moments,
@@ -340,6 +385,46 @@ void bounded_decompress_moments(
         exponential_moments[0] = exp_0;
 
         exponential_moments_to_moments(exponential_moments, moments);
+    } else {
+        for (size_t m = 0; m < n_compressed_moments; m++) {
+            moments[m] = 0;
+        }
+    }
+}
+
+
+void unbounded_to_bounded_decompress_moments(
+    const float compressed_moments[],
+    size_t n_compressed_moments,
+    float moments[])
+{
+    if (compressed_moments[0] > 0) {
+        const std::complex<float> J(0.f, 1.f);
+        const float m0 = 1. / (float)n_compressed_moments;
+        const std::complex<float> exp_0 = std::exp(J * M_PIf * (m0 - .5f)) / (4.f * M_PIf);
+
+        std::vector<std::complex<float>> dots(n_compressed_moments);
+
+        for (size_t i = 1; i < n_compressed_moments; i++) {
+            dots[i] = compressed_moments[i] * J * exp_0 / std::abs(exp_0);
+        }
+
+        dots[0] = exp_0.real() / M_PIf;
+
+        std::vector<std::complex<float>> exponential_moments;
+        levinson_from_dot(dots, exponential_moments);
+
+        for (size_t i = 1; i < n_compressed_moments; i++) {
+            exponential_moments[i] *= 2.f * M_PIf;
+        }
+
+        exponential_moments[0] = exp_0;
+
+        exponential_moments_to_moments(exponential_moments, moments);
+
+        for (size_t i = 0; i < n_compressed_moments; i++) {
+            moments[i] *= (float)n_compressed_moments * compressed_moments[0];
+        }
     } else {
         for (size_t m = 0; m < n_compressed_moments; m++) {
             moments[m] = 0;
@@ -544,7 +629,22 @@ void bounded_compress_moments(
     std::vector<float>& compressed_moments)
 {
     compressed_moments.resize(moments.size());
+
     bounded_compress_moments(
+        moments.data(),
+        moments.size(),
+        compressed_moments.data()
+    );
+}
+
+
+void unbounded_to_bounded_compress_moments(
+    const std::vector<float>& moments,
+    std::vector<float>& compressed_moments)
+{
+    compressed_moments.resize(moments.size());
+
+    unbounded_to_bounded_compress_moments(
         moments.data(),
         moments.size(),
         compressed_moments.data()
@@ -571,6 +671,21 @@ void bounded_decompress_moments(
         moments.data()
     );
 }
+
+
+void unbounded_to_bounded_decompress_moments(
+    const std::vector<float>& compressed_moments,
+    std::vector<float>& moments)
+{
+    moments.resize(compressed_moments.size());
+
+    unbounded_to_bounded_decompress_moments(
+        compressed_moments.data(),
+        compressed_moments.size(),
+        moments.data()
+    );
+}
+
 
 
 /* ----------------------------------------------------------------------------

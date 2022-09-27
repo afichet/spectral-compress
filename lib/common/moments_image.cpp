@@ -117,6 +117,23 @@ void bounded_compress_moments_image(
 }
 
 
+void unbounded_to_bounded_compress_moments_image(
+    const float moments_image[],
+    size_t width, size_t height,
+    size_t n_moments,
+    float compressed_moment_image[])
+{
+    #pragma omp parallel for
+    for (size_t i = 0; i < width * height; i++) {
+        unbounded_to_bounded_compress_moments(
+            &(moments_image[n_moments * i]),
+            n_moments,
+            &(compressed_moment_image[n_moments * i])
+        );
+    }
+}
+
+
 void unbounded_decompress_moments_image(
     const float compressed_moments_image[],
     size_t width, size_t height,
@@ -143,6 +160,23 @@ void bounded_decompress_moments_image(
     #pragma omp parallel for
     for (size_t i = 0; i < width * height; i++) {
         bounded_decompress_moments(
+            &(compressed_moments_image[n_moments * i]),
+            n_moments,
+            &(moments_image[n_moments * i])
+        );
+    }
+}
+
+
+void unbounded_to_bounded_decompress_moments_image(
+    const float compressed_moments_image[],
+    size_t width, size_t height,
+    size_t n_moments,
+    float moments_image[])
+{
+    #pragma omp parallel for
+    for (size_t i = 0; i < width * height; i++) {
+        unbounded_to_bounded_decompress_moments(
             &(compressed_moments_image[n_moments * i]),
             n_moments,
             &(moments_image[n_moments * i])
@@ -333,6 +367,23 @@ void bounded_compress_moments_image(
 }
 
 
+void unbounded_to_bounded_compress_moments_image(
+    const std::vector<float>& moments_image,
+    size_t width, size_t height,
+    size_t n_moments,
+    std::vector<float>& compressed_moments_image)
+{
+    compressed_moments_image.resize(moments_image.size());
+
+    unbounded_to_bounded_compress_moments_image(
+        moments_image.data(),
+        width, height,
+        n_moments,
+        compressed_moments_image.data()
+    );
+}
+
+
 void unbounded_decompress_moments_image(
     const std::vector<float>& compressed_moments_image,
     size_t width, size_t height,
@@ -359,6 +410,23 @@ void bounded_decompress_moments_image(
     moments_image.resize(compressed_moments_image.size());
 
     bounded_decompress_moments_image(
+        compressed_moments_image.data(),
+        width, height,
+        n_moments,
+        moments_image.data()
+    );
+}
+
+
+void unbounded_to_bounded_decompress_moments_image(
+    const std::vector<float>& compressed_moments_image,
+    size_t width, size_t height,
+    size_t n_moments,
+    std::vector<float>& moments_image)
+{
+    moments_image.resize(compressed_moments_image.size());
+
+    unbounded_to_bounded_decompress_moments_image(
         compressed_moments_image.data(),
         width, height,
         n_moments,

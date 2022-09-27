@@ -149,6 +149,12 @@ void bounded_compress_moments(
     float compressed_moments[]);
 
 
+void unbounded_to_bounded_compress_moments(
+    const float moments[],
+    size_t n_moments,
+    float compressed_moments[]);
+
+
 /**
  * @brief Decompress a set of compressed moments.
  * 
@@ -172,6 +178,12 @@ void unbounded_decompress_moments(
  *                             `n_compressed_moments` elements.
  */
 void bounded_decompress_moments(
+    const float compressed_moments[],
+    size_t n_compressed_moments,
+    float moments[]);
+
+
+void unbounded_to_bounded_decompress_moments(
     const float compressed_moments[],
     size_t n_compressed_moments,
     float moments[]);
@@ -279,6 +291,11 @@ void bounded_compress_moments(
     std::vector<float>& compressed_moments);
 
 
+void unbounded_to_bounded_compress_moments(
+    const std::vector<float>& moments,
+    std::vector<float>& compressed_moments);
+
+
 void unbounded_decompress_moments(
     const std::vector<float>& compressed_moments,
     std::vector<float>& moments);
@@ -288,9 +305,10 @@ void bounded_decompress_moments(
     const std::vector<float>& compressed_moments,
     std::vector<float>& moments);
 
-// void bounded_compress_moments(
-//     const std::vector<float>& moments,
-//     std::vector<float>&c compressed_moments);
+
+void unbounded_to_bounded_decompress_moments(
+    const std::vector<float>& compressed_moments,
+    std::vector<float>& moments);
 
 
 /* ----------------------------------------------------------------------------
