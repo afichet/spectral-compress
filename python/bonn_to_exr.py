@@ -114,7 +114,7 @@ def main():
     material_name = os.path.basename(path)
     material_dir  = path[:len(path) - len(material_name)]
 
-    cmf = CMF(os.path.join('data', 'cmf', 'ciexyz06_2deg.csv'))
+    cmf = CMF(os.path.join('..', 'data', 'cmf', 'ciexyz06_2deg.csv'))
     
     export_material(material_dir, material_name, cmf, export_dir)
 
