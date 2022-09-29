@@ -438,8 +438,7 @@ void JXLImage::write(const char* filename) const {
     CHECK_JXL_ENC_STATUS(status);
 
     const JxlPixelFormat format = _framebuffers[0]->getPixelFormat();
-
-    const size_t data_size = _width * _height * _framebuffers[0]->getNColorChannels() * sizeof(float);
+    const size_t data_size      = _framebuffers[0]->getPixelData().size() * sizeof(float);
 
     status = JxlEncoderAddImageFrame(
         frame_settings, 
@@ -455,8 +454,9 @@ void JXLImage::write(const char* filename) const {
     // ====================================================================
 
     for (size_t i = 1; i < _framebuffers.size(); i++) {
-        const JXLFramebuffer* fb = _framebuffers[i];
+        const JXLFramebuffer* fb    = _framebuffers[i];
         const JxlPixelFormat format = fb->getPixelFormat();
+        const size_t data_size      = fb->getPixelDataConst().size() * sizeof(float);
 
         JxlExtraChannelInfo extra_info;
         JxlEncoderInitExtraChannelInfo(JXL_CHANNEL_OPTIONAL, &extra_info);
@@ -471,17 +471,6 @@ void JXLImage::write(const char* filename) const {
         // JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_EXTRA_CHANNEL_RESAMPLING, downsampling);
         // status = JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_EXTRA_CHANNEL_RESAMPLING, 4);
         // CHECK_JXL_ENC_STATUS(status);
-
-        // // TODO: Fixme!
-        // color_encoding.color_space       = JXL_COLOR_SPACE_GRAY;
-        // color_encoding.white_point       = JXL_WHITE_POINT_D65;
-        // color_encoding.primaries         = JXL_PRIMARIES_SRGB;
-        // color_encoding.transfer_function = JXL_TRANSFER_FUNCTION_LINEAR;
-        // color_encoding.rendering_intent  = JXL_RENDERING_INTENT_PERCEPTUAL;
-
-        // status = JxlEncoderSetColorEncoding(enc.get(), &color_encoding);
-
-        const size_t data_size = _width * _height * fb->getNColorChannels() * sizeof(float);
 
         status = JxlEncoderSetExtraChannelInfo(enc.get(), i - 1, &extra_info);
         CHECK_JXL_ENC_STATUS(status);
@@ -521,7 +510,7 @@ void JXLImage::write(const char* filename) const {
             size_t offset = next_out - compressed.data();
             compressed.resize(compressed.size() * 2);
 
-            next_out = compressed.data() + offset;
+            next_out  = compressed.data() + offset;
             avail_out = compressed.size() - offset;
         }
     }
