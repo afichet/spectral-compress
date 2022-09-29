@@ -53,7 +53,7 @@ EXRArrayStream::EXRArrayStream(const std::vector<uint8_t> data)
 void EXRArrayStream::write(const char c[/*n*/], int n) {
     const uint64_t remaining_bytes = _data.size() - _pos;
 
-    if (remaining_bytes < n) {
+    if ((int)remaining_bytes < n) {
         _data.resize(_data.size() + n - remaining_bytes);
     }
 
@@ -66,7 +66,7 @@ void EXRArrayStream::write(const char c[/*n*/], int n) {
 bool EXRArrayStream::read(char c[/*n*/], int n) {
     const uint64_t remaining_bytes = _data.size() - _pos;
 
-    if (remaining_bytes < n) {
+    if ((int)remaining_bytes < n) {
         throw std::exception();
     }
 
