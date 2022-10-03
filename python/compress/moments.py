@@ -211,6 +211,22 @@ def unbounded_compress_real_trigonometric_moments(trigonometric_moments):
     return compressed
 
 
+def unbounded_to_bounded_compress_real_trigonometric_moments(trigonometric_moments: np.array) -> np.array:
+    bounded_trigonometric_moments = trigonometric_moments / (len(trigonometric_moments) * trigonometric_moments[0])
+
+    exponential_moments = bounded_moments_to_exponential_moments(bounded_trigonometric_moments)
+
+    toeplitz_first_column    = exponential_moments / (2 * np.pi)
+    toeplitz_first_column[0] = 2.0 * toeplitz_first_column[0].real
+    
+    dots = util.get_levinson_dots(toeplitz_first_column)
+    
+    compressed = (dots * np.abs(exponential_moments[0]) / (1.0j * exponential_moments[0])).real
+    compressed[0] = trigonometric_moments[0]
+
+    return compressed
+
+
 def bounded_decompress_real_trigonometric_moments(compressed):
     """Inverse mapping of bounded_compress_real_trigonometric_moments()."""
     exp_0 = 0.25 / np.pi * np.exp(np.pi * 1.0j * (compressed[0] - 0.5))
@@ -233,6 +249,27 @@ def unbounded_decompress_real_trigonometric_moments(compressed):
     toeplitz_first_column = util.run_levinson_from_dots(compressed[0], dots)
     
     return toeplitz_first_column
+
+
+def unbounded_to_bounded_decompress_real_trigonometric_moments(compressed_m):
+    compressed = compressed_m
+    compressed[0] = 1. / len(compressed)
+
+    """Inverse mapping of bounded_compress_real_trigonometric_moments()."""
+    exp_0 = 0.25 / np.pi * np.exp(np.pi * 1.0j * (compressed[0] - 0.5))
+
+    dots = np.zeros_like(compressed, dtype=complex)
+    dots[1:] = compressed[1:] * (1.0j * exp_0 / np.abs(exp_0))
+    
+    toeplitz_first_column = util.run_levinson_from_dots(np.real(exp_0) / np.pi, dots)
+
+    exponential_moments = toeplitz_first_column * 2.0 * np.pi
+    exponential_moments[0] = exp_0
+
+    moments = np.real(bounded_exponential_moments_to_moments(exponential_moments))
+    moments[0] = compressed_m[0]
+
+    return moments
 
 
 def bounded_forward(base: np.array, moment_image: np.array):
