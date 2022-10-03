@@ -94,7 +94,10 @@ def signal_to_moments(phases: np.array, signal: np.array, n_moments: int) -> np.
     m1 = (cm_summand + a_k * 1j * phases_1 / kk[1:, 1:]) * exp[1:, :-1]
 
     trigonometric_moments[1:] = np.sum(m2 - m1, axis=1)
-    trigonometric_moments[0] = np.sum((phases_2 - phases_1) * ((signal_2 - signal_1) / 2 + b_k))
+    trigonometric_moments[0] += np.sum(0.5 * a_k * phases_2 ** 2 + b_k * phases_2)
+    trigonometric_moments[0] -= np.sum(0.5 * a_k * phases_1 ** 2 + b_k * phases_1)
+    # trigonometric_moments[0] = np.sum(0.5 * a_k * (phases_2**2 - phases_1**2) + b_k * (phases_2 - phases_1))
+    # trigonometric_moments[0] = np.sum((signal_2 - signal_1) * (phases_2 + phases_1) / 2 + b_k * (phases_2 - phases_1))
 
     return trigonometric_moments.real / np.pi
 
