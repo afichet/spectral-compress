@@ -275,7 +275,7 @@ def unbounded_to_bounded_forward(base: np.array, moment_image: np.array):
     for i in range(moments.shape[0]):
         m0 = moments[i, 0]
         moments[i, :] = moments[i, :] / (moments.shape[1] * m0)
-        compressed_moments[i, :] = unbounded_compress_real_trigonometric_moments(moments[i, :])
+        compressed_moments[i, :] = bounded_compress_real_trigonometric_moments(moments[i, :])
         compressed_moments[i, 0] = m0
 
     normalized_moments, mins, maxs = util.normalize(compressed_moments)
@@ -326,7 +326,7 @@ def unbounded_to_bounded_backward(inv_base: np.array, normalized_moments_image: 
     for i in range(moments.shape[0]):
         m0 = compressed_moments[i, 0]
         compressed_moments[i, 0] = 1/moments.shape[1]
-        moments[i, :] = unbounded_decompress_real_trigonometric_moments(compressed_moments[i, :])
+        moments[i, :] = bounded_decompress_real_trigonometric_moments(compressed_moments[i, :])
         moments[i, 1:] *= moments.shape[1] * m0
         moments[i, 0] = m0
 
