@@ -64,40 +64,39 @@ def wavelengths_to_phase(wavelengths: np.array, use_warp = False) -> np.array:
 
 
 def signal_to_moments(phases: np.array, signal: np.array, n_moments: int) -> np.array:
-    phases = np.concatenate([[-np.pi], phases, [0]])
-    signal = np.concatenate([[signal[0]], signal, [signal[-1]]])
+    # We do not want to treat out of range values as zero but want to continue
+    # the outermost value to the end of the integration range
+    if phases[0] != -np.pi:
+        phases = np.concatenate([[-np.pi], phases])
+        signal = np.concatenate([[signal[0]], signal])
+    if phases[-1] != 0:
+        phases = np.concatenate([phases, [0]])
+        signal = np.concatenate([signal, [signal[-1]]])
 
-    k = np.arange(0, n_moments)
-    pp, kk = np.meshgrid(phases, k)
-    exp = np.exp(-1j * pp * kk)
+    trigonometric_moments = np.zeros((n_moments,), dtype=complex)
 
     phases_1 = phases[:-1]
-    phases_2 = phases[1:]
-
     signal_1 = signal[:-1]
+
+    phases_2 = phases[1:]
     signal_2 = signal[1:]
 
-    a_k = np.zeros_like(signal[1:])
-    a_k[phases_1 != phases_2] = (
-          (signal_2[phases_1 != phases_2] - signal_1[phases_1 != phases_2]) 
-        / (phases_2[phases_1 != phases_2] - phases_1[phases_1 != phases_2])
-    )
-
+    a_k = (signal_2 - signal_1) / (phases_2 - phases_1)
     b_k = signal_1 - a_k * phases_1
 
-    common = a_k / kk[1:, :-1]**2 + 1j * b_k / kk[1:, :-1]
-    m2 = 1j * a_k * phases_2 / kk[1:, :-1]
-    m1 = 1j * a_k * phases_1 / kk[1:, :-1]
+    k = np.arange(0, n_moments)
+    pp, kk = np.meshgrid(phases, k) # [m, p]
+    exp = np.exp(-1j * pp * kk)
 
-    moments = np.zeros((n_moments, phases.shape[0] - 1), dtype=complex)
+    cm_summand = (a_k / kk[1:, 1:] + 1j * b_k) / kk[1:, 1:]
 
-    # k > 0
-    moments[1:, :] = ((common + m2) * exp[1:, 1:] - (common + m1) * exp[1:, :-1])
+    m2 = (cm_summand + a_k * 1j * phases_2 / kk[1:, 1:]) * exp[1:, 1:]
+    m1 = (cm_summand + a_k * 1j * phases_1 / kk[1:, 1:]) * exp[1:, :-1]
 
-    # k = 0
-    moments[0, :] = (phases_2 - phases_1) * (a_k / 2 * (phases_2 + phases_1) + b_k)
+    trigonometric_moments[1:] = np.sum(m2 - m1, axis=1)
+    trigonometric_moments[0] = np.sum((phases_2 - phases_1) * ((signal_2 - signal_1) / 2 + b_k))
 
-    return np.real(np.sum(moments, axis=1)) / np.pi
+    return trigonometric_moments.real / np.pi
 
 
 def get_basis_signal_to_moments(phases: np.array) -> np.array:
