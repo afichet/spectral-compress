@@ -37,14 +37,14 @@
 
 #include <cmath>
 #include <cstring>
+#include <cassert>
 
-// #define USE_BOUNDED
 
 inline double quantize_dequantize(double src, size_t n_bits)
 {
     const uint64_t v = (1 << n_bits) - 1;
 
-    return std::round(src * (double)v) / (double)v; 
+    return std::round(src * (double)v) / (double)v;
 }
 
 
@@ -64,9 +64,9 @@ void quantize_dequantize_single_image(
 }
 
 
-double average_err(
+double unbounded_average_err(
     const std::vector<double>& wavelengths,
-    const std::vector<double>& ref,
+    const std::vector<double>& spectral_image,
     size_t n_px, size_t n_moments,
     const std::vector<double>& norm_noments,
     const std::vector<double>& mins,
@@ -82,17 +82,30 @@ double average_err(
     std::vector<double> reconst_signal;
 
     wavelengths_to_phases(wavelengths, phases);
-    denormalize_moment_image(norm_noments, n_px, n_moments, mins, maxs, compressed_moments);
-#if defined(USE_BOUNDED)
-    bounded_decompress_moments_image(compressed_moments, n_px, 1, n_moments, moments);
-#else
-    unbounded_decompress_moments_image(compressed_moments, n_px, 1, n_moments, moments);
-#endif // USE_BOUNDED
-    compute_density_image(phases, moments, n_px, 1, n_moments, reconst_signal);
+
+    denormalize_moment_image(
+        norm_noments,
+        n_px, n_moments,
+        mins, maxs,
+        compressed_moments
+    );
+
+    unbounded_decompress_moments_image(
+        compressed_moments,
+        n_px, 1, n_moments,
+        moments
+    );
+
+    compute_density_image(
+        phases,
+        moments,
+        n_px, 1, n_moments,
+        reconst_signal
+    );
 
     for (size_t p = 0; p < n_px; p++) {
         for (size_t i = 0; i < n_wl; i++) {
-            const double q = reconst_signal[p * n_wl + i] - ref[p * n_wl + i];
+            const double q = reconst_signal[p * n_wl + i] - spectral_image[p * n_wl + i];
             err += q * q;
         }
     }
@@ -101,19 +114,145 @@ double average_err(
 }
 
 
-void compute_quantization_curve(
+double bounded_average_err(
     const std::vector<double>& wavelengths,
-    const std::vector<double>& ref,
+    const std::vector<double>& spectral_image,
     size_t n_px, size_t n_moments,
-    const std::vector<double>& norm_moments,
+    const std::vector<double>& norm_noments,
     const std::vector<double>& mins,
-    const std::vector<double>& maxs,
+    const std::vector<double>& maxs)
+{
+    double err = 0;
+    const size_t n_wl = wavelengths.size();
+
+    std::vector<double> phases;
+
+    std::vector<double> compressed_moments;
+    std::vector<double> moments;
+    std::vector<double> reconst_signal;
+
+    wavelengths_to_phases(wavelengths, phases);
+
+    denormalize_moment_image(
+        norm_noments,
+        n_px, n_moments,
+        mins, maxs,
+        compressed_moments
+    );
+
+    bounded_decompress_moments_image(
+        compressed_moments,
+        n_px, 1, n_moments,
+        moments
+    );
+
+    compute_density_image(
+        phases,
+        moments,
+        n_px, 1, n_moments,
+        reconst_signal
+    );
+
+    for (size_t p = 0; p < n_px; p++) {
+        for (size_t i = 0; i < n_wl; i++) {
+            const double q = reconst_signal[p * n_wl + i] - spectral_image[p * n_wl + i];
+            err += q * q;
+        }
+    }
+
+    return err;
+}
+
+
+double unbounded_to_bounded_average_err(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    size_t n_px, size_t n_moments,
+    const std::vector<double>& norm_noments,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs)
+{
+    double err = 0;
+    const size_t n_wl = wavelengths.size();
+
+    std::vector<double> phases;
+
+    std::vector<double> compressed_moments;
+    std::vector<double> moments;
+    std::vector<double> reconst_signal;
+
+    wavelengths_to_phases(wavelengths, phases);
+
+    denormalize_moment_image(
+        norm_noments,
+        n_px, n_moments,
+        mins, maxs,
+        compressed_moments
+    );
+
+    unbounded_to_bounded_decompress_moments_image(
+        compressed_moments,
+        n_px, 1, n_moments,
+        moments
+    );
+
+    compute_density_image(
+        phases,
+        moments,
+        n_px, 1, n_moments,
+        reconst_signal
+    );
+
+    for (size_t p = 0; p < n_px; p++) {
+        for (size_t i = 0; i < n_wl; i++) {
+            const double q = reconst_signal[p * n_wl + i] - spectral_image[p * n_wl + i];
+            err += q * q;
+        }
+    }
+
+    return err;
+}
+
+
+void unbounded_compute_quantization_curve(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    size_t n_px, size_t n_moments,
     int n_bits_start,
     std::vector<int>& quantization_curve)
 {
+    std::vector<double> phases;
+    std::vector<double> moments;
+    std::vector<double> compressed_moments;
+    std::vector<double> norm_moments;
+    std::vector<double> mins, maxs;
+
+    wavelengths_to_phases(wavelengths, phases);
+
+    compute_moments_image(
+        phases,
+        spectral_image,
+        n_px, 1, n_moments,
+        moments
+    );
+
+    unbounded_compress_moments_image(
+        moments,
+        n_px, 1, n_moments,
+        compressed_moments
+    );
+
+    normalize_moment_image(
+        compressed_moments,
+        n_px, n_moments,
+        norm_moments,
+        mins, maxs
+    );
+
+
     quantization_curve.resize(n_moments);
 
-    quantization_curve[0] = 16; // TODO: remove
+    quantization_curve[0] = 32; // TODO: remove
     quantization_curve[1] = n_bits_start;
 
     std::vector<double> quantized_moments;
@@ -125,9 +264,9 @@ void compute_quantization_curve(
         1, quantization_curve[1]
     );
 
-    const double base_err = average_err(
+    const double base_err = unbounded_average_err(
         wavelengths,
-        ref,
+        spectral_image,
         n_px, n_moments,
         quantized_moments,
         mins, maxs
@@ -145,9 +284,9 @@ void compute_quantization_curve(
                 m, n_bits
             );
 
-            double curr_err = average_err(
+            double curr_err = unbounded_average_err(
                 wavelengths,
-                ref,
+                spectral_image,
                 n_px, n_moments,
                 quantized_moments,
                 mins, maxs
@@ -160,4 +299,288 @@ void compute_quantization_curve(
             quantization_curve[m] = n_bits;
         }
     }
+}
+
+
+void bounded_compute_quantization_curve(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    size_t n_px, size_t n_moments,
+    int n_bits_start,
+    std::vector<int>& quantization_curve)
+{
+    std::vector<double> phases;
+    std::vector<double> moments;
+    std::vector<double> compressed_moments;
+    std::vector<double> norm_moments;
+    std::vector<double> mins, maxs;
+
+    wavelengths_to_phases(wavelengths, phases);
+
+    compute_moments_image(
+        phases,
+        spectral_image,
+        n_px, 1, n_moments,
+        moments
+    );
+
+    bounded_compress_moments_image(
+        moments,
+        n_px, 1, n_moments,
+        compressed_moments
+    );
+
+    normalize_moment_image(
+        compressed_moments,
+        n_px, n_moments,
+        norm_moments,
+        mins, maxs
+    );
+
+    quantization_curve.resize(n_moments);
+
+    quantization_curve[0] = 32; // TODO: remove
+    quantization_curve[1] = n_bits_start;
+
+    std::vector<double> quantized_moments;
+
+    quantize_dequantize_single_image(
+        norm_moments,
+        n_px, n_moments,
+        quantized_moments,
+        1, quantization_curve[1]
+    );
+
+    const double base_err = bounded_average_err(
+        wavelengths,
+        spectral_image,
+        n_px, n_moments,
+        quantized_moments,
+        mins, maxs
+    );
+
+
+    for (size_t m = 2; m < n_moments; m++) {
+        quantization_curve[m] = quantization_curve[m - 1];
+
+        for (size_t n_bits = quantization_curve[m]; n_bits > 0; n_bits--) {
+            quantize_dequantize_single_image(
+                norm_moments,
+                n_px, n_moments,
+                quantized_moments,
+                m, n_bits
+            );
+
+            double curr_err = bounded_average_err(
+                wavelengths,
+                spectral_image,
+                n_px, n_moments,
+                quantized_moments,
+                mins, maxs
+            );
+
+            if (curr_err >= base_err) {
+                break;
+            }
+
+            quantization_curve[m] = n_bits;
+        }
+    }
+}
+
+
+void unbounded_to_bounded_compute_quantization_curve(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    size_t n_px, size_t n_moments,
+    int n_bits_start,
+    std::vector<int>& quantization_curve)
+{
+    std::vector<double> phases;
+    std::vector<double> moments;
+    std::vector<double> compressed_moments;
+    std::vector<double> norm_moments;
+    std::vector<double> mins, maxs;
+
+    wavelengths_to_phases(wavelengths, phases);
+
+    compute_moments_image(
+        phases,
+        spectral_image,
+        n_px, 1, n_moments,
+        moments
+    );
+
+    unbounded_to_bounded_compress_moments_image(
+        moments,
+        n_px, 1, n_moments,
+        compressed_moments
+    );
+
+    normalize_moment_image(
+        compressed_moments,
+        n_px, n_moments,
+        norm_moments,
+        mins, maxs
+    );
+
+    quantization_curve.resize(n_moments);
+
+    quantization_curve[0] = 32; // TODO: remove
+    quantization_curve[1] = n_bits_start;
+
+    std::vector<double> quantized_moments;
+
+    quantize_dequantize_single_image(
+        norm_moments,
+        n_px, n_moments,
+        quantized_moments,
+        1, quantization_curve[1]
+    );
+
+    const double base_err = unbounded_to_bounded_average_err(
+        wavelengths,
+        spectral_image,
+        n_px, n_moments,
+        quantized_moments,
+        mins, maxs
+    );
+
+    for (size_t m = 2; m < n_moments; m++) {
+        quantization_curve[m] = quantization_curve[m - 1];
+
+        for (size_t n_bits = quantization_curve[m]; n_bits > 0; n_bits--) {
+            quantize_dequantize_single_image(
+                norm_moments,
+                n_px, n_moments,
+                quantized_moments,
+                m, n_bits
+            );
+
+            double curr_err = unbounded_to_bounded_average_err(
+                wavelengths,
+                spectral_image,
+                n_px, n_moments,
+                quantized_moments,
+                mins, maxs
+            );
+
+            if (curr_err >= base_err) {
+                break;
+            }
+
+            quantization_curve[m] = n_bits;
+        }
+    }
+}
+
+
+double unbounded_error_for_quantization_curve(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    size_t n_px, size_t n_moments,
+    const std::vector<double>& normalized_moments,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
+    const std::vector<int>& quantization_curve)
+{
+    assert(normalized_moments.size() == n_px * n_moments);
+
+    // Quantize & dequantize each moment of the image
+    std::vector<double> quantized_moments(normalized_moments.size());
+
+    for (size_t px = 0; px < n_px; px++) {
+        // We ignore moment 0
+        quantized_moments[px * n_moments + 0] = normalized_moments[px * n_moments + 0];
+
+        for (size_t m = 1; m < n_moments; m++) {
+            quantized_moments[px * n_moments + m] =
+                quantize_dequantize(
+                    normalized_moments[px * n_moments + m],
+                    quantization_curve[m]
+                );
+        }
+    }
+
+    return unbounded_average_err(
+        wavelengths,
+        spectral_image,
+        n_px, n_moments,
+        quantized_moments,
+        mins, maxs
+    );
+}
+
+
+double bounded_error_for_quantization_curve(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    size_t n_px, size_t n_moments,
+    const std::vector<double>& normalized_moments,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
+    const std::vector<int>& quantization_curve)
+{
+    assert(normalized_moments.size() == n_px * n_moments);
+
+    // Quantize & dequantize each moment of the image
+    std::vector<double> quantized_moments(normalized_moments.size());
+
+    for (size_t px = 0; px < n_px; px++) {
+        // We ignore moment 0
+        quantized_moments[px * n_moments + 0] = normalized_moments[px * n_moments + 0];
+
+        for (size_t m = 1; m < n_moments; m++) {
+            quantized_moments[px * n_moments + m] =
+                quantize_dequantize(
+                    normalized_moments[px * n_moments + m],
+                    quantization_curve[m]
+                );
+        }
+    }
+
+    return bounded_average_err(
+        wavelengths,
+        spectral_image,
+        n_px, n_moments,
+        quantized_moments,
+        mins, maxs
+    );
+}
+
+
+double unbounded_to_bounded_error_for_quantization_curve(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    size_t n_px, size_t n_moments,
+    const std::vector<double>& normalized_moments,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
+    const std::vector<int>& quantization_curve)
+{
+    assert(normalized_moments.size() == n_px * n_moments);
+
+    // Quantize & dequantize each moment of the image
+    std::vector<double> quantized_moments(normalized_moments.size());
+
+    for (size_t px = 0; px < n_px; px++) {
+        // We ignore moment 0
+        quantized_moments[px * n_moments + 0] = normalized_moments[px * n_moments + 0];
+
+        for (size_t m = 1; m < n_moments; m++) {
+            quantized_moments[px * n_moments + m] =
+                quantize_dequantize(
+                    normalized_moments[px * n_moments + m],
+                    quantization_curve[m]
+                );
+        }
+    }
+
+    return unbounded_to_bounded_average_err(
+        wavelengths,
+        spectral_image,
+        n_px, n_moments,
+        quantized_moments,
+        mins, maxs
+    );
 }

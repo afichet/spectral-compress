@@ -37,12 +37,56 @@
 #include <cstdint>
 #include <cstddef>
 
-void compute_quantization_curve(
+
+void unbounded_compute_quantization_curve(
     const std::vector<double>& wavelengths,
-    const std::vector<double>& ref,
+    const std::vector<double>& spectral_image,
     size_t n_px, size_t n_moments,
-    const std::vector<double>& norm_moments,
-    const std::vector<double>& mins,
-    const std::vector<double>& maxs,
     int n_bits_start,
     std::vector<int>& quantization_curve);
+
+
+void bounded_compute_quantization_curve(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    size_t n_px, size_t n_moments,
+    int n_bits_start,
+    std::vector<int>& quantization_curve);
+
+
+void unbounded_to_bounded_compute_quantization_curve(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    size_t n_px, size_t n_moments,
+    int n_bits_start,
+    std::vector<int>& quantization_curve);
+
+
+double unbounded_error_for_quantization_curve(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    size_t n_px, size_t n_moments,
+    const std::vector<double>& normalized_moments,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
+    const std::vector<int>& quantization_curve);
+
+
+double bounded_error_for_quantization_curve(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    size_t n_px, size_t n_moments,
+    const std::vector<double>& normalized_moments,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
+    const std::vector<int>& quantization_curve);
+
+
+double unbounded_to_bounded_error_for_quantization_curve(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    size_t n_px, size_t n_moments,
+    const std::vector<double>& normalized_moments,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
+    const std::vector<int>& quantization_curve);
