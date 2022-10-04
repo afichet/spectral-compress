@@ -104,48 +104,74 @@ void compute_moments(
     size_t n_moments, 
     double moments[])
 {
-    std::vector<double> phases(n_phases + 2);
-    std::vector<double> signal(n_phases + 2);
+    assert(og_phases[0] >= -M_PI);
+    assert(og_phases[n_moments - 1] <= 0);
 
-    // Cause a strange warning...
-    // memcpy(&phases[1], og_phases, n_phases * sizeof(double));
-    // memcpy(&signal[1], og_signal, n_phases * sizeof(double));
+    // Duplicate first and last element if phases do not cover the whole
+    // integration domain
+    size_t vec_sz = n_phases;
+    size_t start_idx = 0;
 
-    for (size_t i = 0; i < n_phases; i++) {
-        phases[i + 1] = og_phases[i];
-        signal[i + 1] = og_signal[i];
+    if (og_phases[0] != -M_PI) {
+        vec_sz++;
+        start_idx = 1;
     }
 
-    phases[0]        = -M_PI;
-    phases[n_phases] = 0;
+    if (og_phases[n_moments - 1] < 0) {
+        vec_sz++;
+    }
 
-    signal[0]        = og_signal[0];
-    signal[n_phases] = og_signal[n_phases - 1];
+    std::vector<double> phases(vec_sz);
+    std::vector<double> signal(vec_sz);
 
+    phases.front() = -M_PI;
+    phases.back()  = 0;
+
+    signal.front() = og_signal[0];
+    signal.back()  = og_signal[n_phases - 1];
+
+    for (size_t i = start_idx; i < n_phases; i++) {
+        phases[i] = og_phases[i - start_idx];
+        signal[i] = og_signal[i - start_idx];
+
+        assert(phases[i] >= -M_PI);
+        assert(signal[i] >= 0);
+    }
+   
     std::vector<std::complex<double>> t_moments(n_moments);
     const std::complex<double> J = std::complex<double>(0., 1.);
 
     for (size_t i = 0; i < phases.size() - 1; i++) {
-        if (phases[i] >= phases[i + 1]) {
-            continue;
-        }
- 
-        const double gradient    = (signal[i + 1] - signal[i]) / (phases[i + 1] - phases[i]);
+        assert(phases[i] != phases[i + 1]);
+
+        const double d_signal = signal[i + 1] - signal[i];
+        const double d_phases = phases[i + 1] - phases[i];
+        const double gradient = d_signal / d_phases;
         const double y_intercept = signal[i] - gradient * phases[i];
 
         for (size_t k = 1; k < n_moments; k++) {
-            const std::complex<double> common_summands(
-                gradient / (double)(k*k), 
-                y_intercept / (double)k);
+            const double k_d = (double)k;
+            // const std::complex<double> common_summands(
+            //     gradient / (double)(k*k),
+            //     y_intercept / (double)k);
+
+            const std::complex<double> common_summands = 
+                std::complex<double>(gradient / k_d, y_intercept) / k_d;
 
             t_moments[k] += 
-                  (common_summands + gradient * J * phases[i + 1] / (double)k) * std::exp(-J * (double)k * phases[i + 1])
-                - (common_summands + gradient * J * phases[i    ] / (double)k) * std::exp(-J * (double)k * phases[i    ]);
+                  (common_summands + gradient * J * phases[i + 1] / k_d) * std::exp(-J * k_d * phases[i + 1])
+                - (common_summands + gradient * J * phases[i    ] / k_d) * std::exp(-J * k_d * phases[i    ]);
         }
 
+        // t_moments[0] += 
+        //     (.5 * gradient * phases[i + 1] * phases[i + 1] + y_intercept * phases[i + 1])
+        //   - (.5 * gradient * phases[i    ] * phases[i    ] + y_intercept * phases[i    ]);
+
+        // t_moments[0] += .5 * d_signal * (phases[i + 1] + phases[i]) + y_intercept * d_phases;
         t_moments[0] += 
-            (.5 * gradient * phases[i + 1] * phases[i + 1] + y_intercept * phases[i + 1])
-          - (.5 * gradient * phases[i    ] * phases[i    ] + y_intercept * phases[i    ]);
+            d_signal * (phases[i + 1] + phases[i]) / 2. 
+            + signal[i] * d_phases 
+            - d_signal * phases[i];
      }
 
     // Mirrored signal
@@ -340,7 +366,8 @@ void unbounded_to_bounded_compress_moments(
         for (size_t m = 0; m < n_moments; m++) {
             compressed_moments[m] = 0;
         }
-    }}
+    }
+}
 
 
 void unbounded_decompress_moments(
@@ -365,7 +392,7 @@ void bounded_decompress_moments(
 {
     if (compressed_moments[0] > 0) {
         const std::complex<double> J(0., 1.);
-        const std::complex<double> exp_0 = std::exp(J * M_PI * (compressed_moments[0] - .5f)) / (4. * M_PI);
+        const std::complex<double> exp_0 = std::exp(J * M_PI * (compressed_moments[0] - .5)) / (4. * M_PI);
 
         std::vector<std::complex<double>> dots(n_compressed_moments);
 
@@ -401,7 +428,8 @@ void unbounded_to_bounded_decompress_moments(
     if (compressed_moments[0] > 0) {
         const std::complex<double> J(0., 1.);
         const double m0 = 1. / (double)n_compressed_moments;
-        const std::complex<double> exp_0 = std::exp(J * M_PI * (m0 - .5f)) / (4. * M_PI);
+
+        const std::complex<double> exp_0 = std::exp(J * M_PI * (m0 - .5)) / (4. * M_PI);
 
         std::vector<std::complex<double>> dots(n_compressed_moments);
 
