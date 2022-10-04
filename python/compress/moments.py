@@ -3,7 +3,7 @@
 # Copyright (c) 2019, Christoph Peters
 #               2022, Alban Fichet
 # All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
 #     * Redistributions of source code must retain the above copyright
@@ -14,7 +14,7 @@
 #     * Neither the name of the Karlsruhe Institute of Technology nor the
 #       names of its contributors may be used to endorse or promote products
 #       derived from this software without specific prior written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 # ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -27,6 +27,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
+from black import target_version_option_callback
 import numpy as np
 import scipy
 
@@ -81,7 +82,10 @@ def signal_to_moments(phases: np.array, signal: np.array, n_moments: int) -> np.
     phases_2 = phases[1:]
     signal_2 = signal[1:]
 
-    a_k = (signal_2 - signal_1) / (phases_2 - phases_1)
+    d_signal = signal_2 - signal_1
+    d_phases = phases_2 - phases_1
+
+    a_k = d_signal / d_phases
     b_k = signal_1 - a_k * phases_1
 
     k = np.arange(0, n_moments)
@@ -94,10 +98,18 @@ def signal_to_moments(phases: np.array, signal: np.array, n_moments: int) -> np.
     m1 = (cm_summand + a_k * 1j * phases_1 / kk[1:, 1:]) * exp[1:, :-1]
 
     trigonometric_moments[1:] = np.sum(m2 - m1, axis=1)
-    trigonometric_moments[0] += np.sum(0.5 * a_k * phases_2 ** 2 + b_k * phases_2)
+    trigonometric_moments[0]  = np.sum(0.5 * a_k * phases_2 ** 2 + b_k * phases_2)
     trigonometric_moments[0] -= np.sum(0.5 * a_k * phases_1 ** 2 + b_k * phases_1)
-    # trigonometric_moments[0] = np.sum(0.5 * a_k * (phases_2**2 - phases_1**2) + b_k * (phases_2 - phases_1))
+    # trigonometric_moments[0] = np.sum(
+    #     0.5 * a_k * (phases_2**2 - phases_1**2) + b_k * (phases_2 - phases_1)
+    # )
     # trigonometric_moments[0] = np.sum((signal_2 - signal_1) * (phases_2 + phases_1) / 2 + b_k * (phases_2 - phases_1))
+
+    # trigonometric_moments[0] = np.sum(
+    #     d_signal * (phases_1 + phases_2) / 2
+    #     + signal_1 * d_phases
+    #     + d_signal * phases_1
+    # )
 
     return trigonometric_moments.real / np.pi
 
@@ -128,7 +140,7 @@ def compute_density(phases: np.array, moments: np.array) -> np.array:
     e[0] = 1
 
     evaluation_polynomial = scipy.linalg.solve_toeplitz(
-        (moments / (2 * np.pi), 
+        (moments / (2 * np.pi),
         np.conj(moments / (2 * np.pi))), e)
 
     k = np.arange(0, n_moments)
@@ -194,9 +206,9 @@ def bounded_compress_real_trigonometric_moments(bounded_trigonometric_moments):
 
     toeplitz_first_column    = exponential_moments / (2 * np.pi)
     toeplitz_first_column[0] = 2.0 * toeplitz_first_column[0].real
-    
+
     dots = util.get_levinson_dots(toeplitz_first_column)
-    
+
     compressed = (dots * np.abs(exponential_moments[0]) / (1.0j * exponential_moments[0])).real
     compressed[0] = bounded_trigonometric_moments[0]
 
@@ -221,9 +233,9 @@ def unbounded_to_bounded_compress_real_trigonometric_moments(trigonometric_momen
 
     toeplitz_first_column    = exponential_moments / (2 * np.pi)
     toeplitz_first_column[0] = 2.0 * toeplitz_first_column[0].real
-    
+
     dots = util.get_levinson_dots(toeplitz_first_column)
-    
+
     compressed = (dots * np.abs(exponential_moments[0]) / (1.0j * exponential_moments[0])).real
     compressed[0] = trigonometric_moments[0]
 
@@ -236,7 +248,7 @@ def bounded_decompress_real_trigonometric_moments(compressed):
 
     dots = np.zeros_like(compressed, dtype=complex)
     dots[1:] = compressed[1:] * (1.0j * exp_0 / np.abs(exp_0))
-    
+
     toeplitz_first_column = util.run_levinson_from_dots(np.real(exp_0) / np.pi, dots)
 
     exponential_moments = toeplitz_first_column * 2.0 * np.pi
@@ -250,7 +262,7 @@ def unbounded_decompress_real_trigonometric_moments(compressed):
     dots = np.zeros_like(compressed, dtype=complex)
     dots[1:] = compressed[1:]
     toeplitz_first_column = util.run_levinson_from_dots(compressed[0], dots)
-    
+
     return toeplitz_first_column
 
 
@@ -263,7 +275,7 @@ def unbounded_to_bounded_decompress_real_trigonometric_moments(compressed_m):
 
     dots = np.zeros_like(compressed, dtype=complex)
     dots[1:] = compressed[1:] * (1.0j * exp_0 / np.abs(exp_0))
-    
+
     toeplitz_first_column = util.run_levinson_from_dots(np.real(exp_0) / np.pi, dots)
 
     exponential_moments = toeplitz_first_column * 2.0 * np.pi
@@ -333,11 +345,11 @@ def bounded_backward(inv_base: np.array, normalized_moments_image: np.array, min
 
     for i in range(moments.shape[0]):
         moments[i, :] = bounded_decompress_real_trigonometric_moments(compressed_moments[i, :])
-    
+
     signals = moments @ inv_base
 
     return np.real(signals.reshape((w, h, n_moments)))
-    
+
 
 def unbounded_backward(inv_base: np.array, normalized_moments_image: np.array, mins: np.array, maxs: np.array) -> np.array:
     w, h, n_moments = normalized_moments_image.shape
@@ -349,7 +361,7 @@ def unbounded_backward(inv_base: np.array, normalized_moments_image: np.array, m
 
     for i in range(moments.shape[0]):
         moments[i, :] = unbounded_decompress_real_trigonometric_moments(compressed_moments[i, :])
-    
+
     signals = moments @ inv_base
 
     return np.real(signals.reshape((w, h, n_moments)))
