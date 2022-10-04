@@ -36,6 +36,7 @@
 #include <cstring>
 #include <vector>
 #include <array>
+#include <fstream>
 
 #include <moments.h>
 #include <moments_image.h>
@@ -52,35 +53,359 @@
 // TODO: sorry that's ugly, I know...
 SpectrumConverter sc;
 
+// ----------------------------------------------------------------------------
+// Optimal quantization curve generation
+// ----------------------------------------------------------------------------
+
+void bounded_generate_quantization_curves(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    size_t n_px, size_t n_moments,
+    std::vector<std::vector<int>>& optimized_quantization_curves)
+{
+    optimized_quantization_curves.clear();
+
+    for (size_t n_bits = 3; n_bits <= 12; n_bits++) {
+        optimized_quantization_curves.resize(optimized_quantization_curves.size() + 1);
+
+        std::vector<int>& quantization_curve = optimized_quantization_curves.back();
+
+        bounded_compute_quantization_curve(
+            wavelengths,
+            spectral_image,
+            n_px, n_moments,
+            n_bits,
+            quantization_curve
+        );
+    }
+}
+
+
+void unbounded_generate_quantization_curves(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    size_t n_px, size_t n_moments,
+    std::vector<std::vector<int>>& optimized_quantization_curves)
+{
+    optimized_quantization_curves.clear();
+
+    for (size_t n_bits = 3; n_bits <= 12; n_bits++) {
+        optimized_quantization_curves.resize(optimized_quantization_curves.size() + 1);
+
+        std::vector<int>& quantization_curve = optimized_quantization_curves.back();
+
+        unbounded_compute_quantization_curve(
+            wavelengths,
+            spectral_image,
+            n_px, n_moments,
+            n_bits,
+            quantization_curve
+        );
+    }
+}
+
+
+void unbounded_to_bounded_generate_quantization_curves(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    size_t n_px, size_t n_moments,
+    std::vector<std::vector<int>>& optimized_quantization_curves)
+{
+    optimized_quantization_curves.clear();
+
+    for (size_t n_bits = 3; n_bits <= 12; n_bits++) {
+        optimized_quantization_curves.resize(optimized_quantization_curves.size() + 1);
+
+        std::vector<int>& quantization_curve = optimized_quantization_curves.back();
+
+        unbounded_to_bounded_compute_quantization_curve(
+            wavelengths,
+            spectral_image,
+            n_px, n_moments,
+            n_bits,
+            quantization_curve
+        );
+    }
+}
+
+
+// ----------------------------------------------------------------------------
+// Curves alteration
+// ----------------------------------------------------------------------------
+
+void generate_random_curves(
+    size_t lower_bound, size_t upper_bound,
+    size_t n_curves_per_range,
+    size_t n_elements,
+    std::vector<std::vector<int>>& random_quantization_curves)
+{
+    random_quantization_curves.clear();
+    random_quantization_curves.reserve((upper_bound - lower_bound + 1) * n_curves_per_range);
+
+    for (size_t n_bits = lower_bound; n_bits <= upper_bound; n_bits++) {
+        for (size_t iter = 0; iter < n_curves_per_range; iter++) {
+            random_quantization_curves.resize(random_quantization_curves.size() + 1);
+            std::vector<int>& quantization_curve = random_quantization_curves.back();
+            quantization_curve.resize(n_elements);
+
+            quantization_curve[0] = 32;
+
+            for (size_t m = 1; m < n_elements; m++) {
+                quantization_curve[m] = std::round((n_bits - 1) * (float)std::rand() / (float)RAND_MAX) + 1;
+            }
+        }
+    }
+}
+
+
+void generate_mutated_curves(
+    const std::vector<std::vector<int>>& original_curves,
+    size_t n_mutations,
+    std::vector<std::vector<int>>& mutated_curves)
+{
+    mutated_curves.clear();
+    mutated_curves.reserve(original_curves.size() * n_mutations);
+
+    for (const std::vector<int>& org_curve: original_curves) {
+        for (size_t mutation = 0; mutation < n_mutations; mutation++) {
+            mutated_curves.resize(mutated_curves.size() + 1);
+            std::vector<int>& quantization_curve = mutated_curves.back();
+            quantization_curve.resize(org_curve.size());
+
+            quantization_curve[0] = org_curve[0];
+
+            for (size_t m = 1; m < org_curve.size(); m++) {
+                const int bits = std::round(16.f * ((float)std::rand() / (float)RAND_MAX) - 8.f);
+
+                quantization_curve[m] = std::max(org_curve[m] + bits, 1);
+            }
+        }
+    }
+}
+
+
+// ----------------------------------------------------------------------------
+// Error computation for a set of quantization curves
+// ----------------------------------------------------------------------------
+
+void bounded_errors_for_quantization_curves(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    size_t n_px, size_t n_moments,
+    const std::vector<double>& normalized_moments,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
+    const std::vector<std::vector<int>>& quantization_curves,
+    std::vector<std::pair<int, double>>& errors)
+{
+    errors.clear();
+    errors.reserve(quantization_curves.size());
+
+    for (const std::vector<int>& quantization_curve: quantization_curves) {
+        int n_bits = 32;
+
+        for (size_t i = 1; i < quantization_curve.size(); i++) {
+            n_bits += quantization_curve[i];
+        }
+
+        const double err = bounded_error_for_quantization_curve(
+            wavelengths, spectral_image,
+            n_px, n_moments,
+            normalized_moments,
+            mins, maxs,
+            quantization_curve);
+
+        errors.push_back(std::make_pair(n_bits, err));
+    }
+}
+
+
+void unbounded_errors_for_quantization_curves(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    size_t n_px, size_t n_moments,
+    const std::vector<double>& normalized_moments,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
+    const std::vector<std::vector<int>>& quantization_curves,
+    std::vector<std::pair<int, double>>& errors)
+{
+    errors.clear();
+    errors.reserve(quantization_curves.size());
+
+    for (const std::vector<int>& quantization_curve: quantization_curves) {
+        int n_bits = 32;
+
+        for (size_t i = 1; i < quantization_curve.size(); i++) {
+            n_bits += quantization_curve[i];
+        }
+
+        const double err = unbounded_error_for_quantization_curve(
+            wavelengths, spectral_image,
+            n_px, n_moments,
+            normalized_moments,
+            mins, maxs,
+            quantization_curve);
+
+        errors.push_back(std::make_pair(n_bits, err));
+    }
+}
+
+
+void unbounded_to_bounded_errors_for_quantization_curves(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    size_t n_px, size_t n_moments,
+    const std::vector<double>& normalized_moments,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
+    const std::vector<std::vector<int>>& quantization_curves,
+    std::vector<std::pair<int, double>>& errors)
+{
+    errors.clear();
+    errors.reserve(quantization_curves.size());
+
+    for (const std::vector<int>& quantization_curve: quantization_curves) {
+        int n_bits = 32;
+
+        for (size_t i = 1; i < quantization_curve.size(); i++) {
+            n_bits += quantization_curve[i];
+        }
+
+        const double err = unbounded_to_bounded_error_for_quantization_curve(
+            wavelengths, spectral_image,
+            n_px, n_moments,
+            normalized_moments,
+            mins, maxs,
+            quantization_curve);
+
+        errors.push_back(std::make_pair(n_bits, err));
+    }
+}
+
+
+
+// ----------------------------------------------------------------------------
+// Gnuplot output
+// ----------------------------------------------------------------------------
+
+void gnuplot_output_quantization_curves(
+    const std::vector<std::vector<int>>& quantization_curves,
+    std::ostream& output)
+{
+    for (const std::vector<int>& q_curve: quantization_curves) {
+        for (size_t m = 1; m < q_curve.size(); m++) {
+            output << m << " " << q_curve[m] << std::endl;
+        }
+
+        output << std::endl << std::endl;
+    }
+}
+
+
+void gnuplot_output_bits_errors(
+    const std::vector<std::pair<int, double>> errors,
+    std::ostream& output)
+{
+    for (const std::pair<int, double>& error: errors) {
+        output << error.first << " " << error.second << std::endl;
+    }
+}
+
+// ----------------------------------------------------------------------------
 
 int main(int argc, char* argv[])
 {
     (void)argc; (void)argv;
-    
+
     const size_t n_wl = 36;
     const size_t n_px = 24;
     const size_t n_moments = n_wl;
 
-    std::vector<float> wavelengths(n_wl);
+    std::vector<double> wavelengths(n_wl);
     for (size_t i = 0; i < n_wl; i++) {
         wavelengths[i] = macbeth_wavelengths[i];
     }
 
-    std::vector<float> macbeth(n_wl * n_px);
+    std::vector<double> macbeth(n_wl * n_px);
     for (size_t wl = 0; wl < n_wl; wl++) {
         for (size_t px = 0; px < n_px; px++) {
             macbeth[px * n_wl + wl] = macbeth_patches[px][wl];
         }
     }
 
-    std::vector<float> phases(n_wl);
+    // ------------------------------------------------------------------------
+    // Error for quantizing a given moment
+    // ------------------------------------------------------------------------
 
-    wavelengths_to_phases(macbeth_wavelengths, phases.size(), phases.data());
+    // for (int m = 1; m < n_moments; m++) {
+    //     quantize_dequantize_single_image(normalized_moments, n_px, n_moments, quantized_moments, m, 8);
+    //     const double err = average_err(wavelengths, macbeth, n_px, n_moments, quantized_moments, mins, maxs);
+    //     std::cout << m << " " << err << std::endl;
+    // }
 
-    std::vector<float> moments(n_wl * n_px);
-    std::vector<float> compressed_moments(n_wl * n_px);
-    std::vector<float> normalized_moments(n_wl * n_px);
-    std::vector<float> mins, maxs;
+    // ------------------------------------------------------------------------
+    // Determining quantization curves
+    // ------------------------------------------------------------------------
+
+    std::vector<std::vector<int>> bounded_quantization_curves;
+
+    bounded_generate_quantization_curves(
+        wavelengths, macbeth,
+        n_px, n_moments,
+        bounded_quantization_curves
+    );
+
+    const std::string filename_quantization_bounded = "q_curves_bounded.dat";
+    std::ofstream f_quantization_b(filename_quantization_bounded);
+
+    if (!f_quantization_b.is_open()) {
+        std::cerr << "Could not open " << filename_quantization_bounded
+                  << " for writing" << std::endl;
+
+        return -1;
+    }
+
+    gnuplot_output_quantization_curves(bounded_quantization_curves, f_quantization_b);
+
+    f_quantization_b.close();
+
+
+    std::vector<std::vector<int>> unbounded_quantization_curves;
+
+    unbounded_generate_quantization_curves(
+        wavelengths, macbeth,
+        n_px, n_moments,
+        unbounded_quantization_curves
+    );
+
+    std::vector<std::vector<int>> unbounded_to_bounded_quantization_curves;
+
+    unbounded_to_bounded_generate_quantization_curves(
+        wavelengths, macbeth,
+        n_px, n_moments,
+        unbounded_to_bounded_quantization_curves
+    );
+
+    // ------------------------------------------------------------------------
+    // Pareto
+    // ------------------------------------------------------------------------
+
+    const std::string filename_pareto_bounded = "pareto_bounded.dat";
+
+    std::ofstream f_pareto_b(filename_pareto_bounded);
+
+    if (!f_pareto_b.is_open()) {
+        std::cerr << "Could not open " << filename_pareto_bounded
+                  << " for writing" << std::endl;
+        return -1;
+    }
+
+    std::vector<double> phases(n_wl);
+
+    wavelengths_to_phases(wavelengths, phases);
+
+    std::vector<double> moments(n_wl * n_px);
 
     compute_moments_image(
         phases, macbeth,
@@ -88,170 +413,130 @@ int main(int argc, char* argv[])
         moments
     );
 
-#if defined(USE_BOUNDED)
+    std::vector<double> bounded_compressed_moments(n_wl * n_px);
+    std::vector<double> bounded_normalized_moments(n_wl * n_px);
+    std::vector<double> bounded_mins, bounded_maxs;
+
     bounded_compress_moments_image(
         moments,
         n_px, 1, n_moments,
-        compressed_moments
+        bounded_compressed_moments
     );
-#else
+
+    normalize_moment_image(
+        bounded_compressed_moments,
+        n_px, n_moments,
+        bounded_normalized_moments,
+        bounded_mins, bounded_maxs
+    );
+
+
+    std::vector<double> unbounded_compressed_moments(n_wl * n_px);
+    std::vector<double> unbounded_normalized_moments(n_wl * n_px);
+    std::vector<double> unbounded_mins, unbounded_maxs;
+
     unbounded_compress_moments_image(
         moments,
         n_px, 1, n_moments,
-        compressed_moments
+        unbounded_compressed_moments
     );
-#endif
 
     normalize_moment_image(
-        compressed_moments,
+        unbounded_compressed_moments,
         n_px, n_moments,
-        normalized_moments,
-        mins, maxs
+        unbounded_normalized_moments,
+        unbounded_mins, unbounded_maxs
     );
 
-    // ------------------------------------------------------------------------
-    // Eval quantization
-    // ------------------------------------------------------------------------
+    std::vector<double> unbounded_to_bounded_compressed_moments(n_wl * n_px);
+    std::vector<double> unbounded_to_bounded_normalized_moments(n_wl * n_px);
+    std::vector<double> unbounded_to_bounded_mins, unbounded_to_bounded_maxs;
 
-    std::vector<float> quantized_moments;
+    unbounded_to_bounded_compress_moments_image(
+        moments,
+        n_px, 1, n_moments,
+        unbounded_to_bounded_compressed_moments
+    );
 
-#if defined(MOMENT)
-    // ------------------------------------------------------------------------
-    // Error for quantizing a given moment
-    // ------------------------------------------------------------------------
+    normalize_moment_image(
+        unbounded_to_bounded_compressed_moments,
+        n_px, n_moments,
+        unbounded_to_bounded_normalized_moments,
+        unbounded_to_bounded_mins, unbounded_to_bounded_maxs
+    );
 
-    for (int m = 1; m < n_moments; m++) {
-        quantize_dequantize_single_image(normalized_moments, n_px, n_moments, quantized_moments, m, 8);
-        const float err = average_err(wavelengths, macbeth, n_px, n_moments, quantized_moments, mins, maxs);
-        std::cout << m << " " << err << std::endl;
-    }
+    std::vector<std::vector<int>> bounded_mutated_curves;
+    std::vector<std::vector<int>> random_curves;
 
-#elif defined(CURVES)
-    // ------------------------------------------------------------------------
-    // Determining quantization curves
-    // ------------------------------------------------------------------------
+    generate_mutated_curves(bounded_quantization_curves, 500, bounded_mutated_curves);
+    generate_random_curves(3, 16, 500, n_moments, random_curves);
 
-    for (size_t n_bits = 3; n_bits <= 12; n_bits++) {
-        std::vector<int> quantization_curve;
+    std::vector<std::pair<int, double>> error_bounded_quantization_curves;
+    std::vector<std::pair<int, double>> error_bounded_mutated_curves;
+    std::vector<std::pair<int, double>> error_bounded_random_curves;
 
-        compute_quantization_curve(
-            wavelengths,
-            macbeth,
-            n_px, n_moments,
-            normalized_moments,
-            mins, maxs,
-            n_bits,
-            quantization_curve
-        );
+    bounded_errors_for_quantization_curves(
+        wavelengths, macbeth,
+        n_px, n_moments,
+        bounded_normalized_moments, bounded_mins, bounded_maxs,
+        bounded_quantization_curves,
+        error_bounded_quantization_curves
+    );
 
-        for (size_t m = 1; m < n_moments; m++) {
-            std::cout << m << " " << quantization_curve[m] << std::endl;
-        }
+    bounded_errors_for_quantization_curves(
+        wavelengths, macbeth,
+        n_px, n_moments,
+        bounded_normalized_moments, bounded_mins, bounded_maxs,
+        bounded_mutated_curves,
+        error_bounded_mutated_curves
+    );
 
-        std::cout << std::endl << std::endl;
-    }
+    bounded_errors_for_quantization_curves(
+        wavelengths, macbeth,
+        n_px, n_moments,
+        bounded_normalized_moments, bounded_mins, bounded_maxs,
+        random_curves,
+        error_bounded_random_curves
+    );
 
-#elif defined(PARETO)
-    // ------------------------------------------------------------------------
-    // Pareto
-    // ------------------------------------------------------------------------
+    gnuplot_output_bits_errors(error_bounded_quantization_curves, f_pareto_b);
+    f_pareto_b << std::endl << std::endl;
+    gnuplot_output_bits_errors(error_bounded_mutated_curves, f_pareto_b);
+    f_pareto_b << std::endl << std::endl;
+    gnuplot_output_bits_errors(error_bounded_random_curves, f_pareto_b);
+    f_pareto_b << std::endl << std::endl;
 
-    // Optimized curves
-    std::vector<std::vector<int>> optimized_quantization_curves;
 
-    for (size_t n_bits = 3; n_bits <= 12; n_bits++) {
-        // Get the "optimal quantization curve"
-        std::vector<int> quantization_curve;
 
-        compute_quantization_curve(
-            wavelengths,
-            macbeth,
-            n_px, n_moments,
-            normalized_moments,
-            mins, maxs,
-            n_bits,
-            quantization_curve
-        );
+    std::vector<std::pair<int, double>> error_unbounded_quantization_curves;
 
-        size_t total_bits = 32; // starting at 1, first moment is 32 bits float
+    unbounded_errors_for_quantization_curves(
+        wavelengths, macbeth,
+        n_px, n_moments,
+        unbounded_normalized_moments, unbounded_mins, unbounded_maxs,
+        unbounded_quantization_curves,
+        error_unbounded_quantization_curves
+    );
 
-        for (size_t m = 1; m < n_moments; m++) {
-            total_bits += quantization_curve[m];    
-        }
+    gnuplot_output_bits_errors(error_unbounded_quantization_curves, f_pareto_b);
+    f_pareto_b << std::endl << std::endl;
 
-        float error = error_for_quantization_curve(
-            wavelengths, macbeth,
-            n_px, n_moments,
-            normalized_moments,
-            mins, maxs,
-            quantization_curve
-        );
 
-        std::cout << total_bits << " " << error << std::endl;
+    std::vector<std::pair<int, double>> error_unbounded_to_bounded_quantization_curves;
 
-        optimized_quantization_curves.push_back(quantization_curve);
-    }
+    unbounded_to_bounded_errors_for_quantization_curves(
+        wavelengths, macbeth,
+        n_px, n_moments,
+        unbounded_to_bounded_normalized_moments, unbounded_to_bounded_mins, unbounded_to_bounded_maxs,
+        unbounded_to_bounded_quantization_curves,
+        error_unbounded_to_bounded_quantization_curves
+    );
 
-    std::cout << std::endl << std::endl;
+    gnuplot_output_bits_errors(error_unbounded_to_bounded_quantization_curves, f_pareto_b);
+    f_pareto_b << std::endl << std::endl;
 
-    // Mutated curves
-    for (size_t q_idx = 0; q_idx < optimized_quantization_curves.size(); q_idx++) {
-        // Mutate the curve
-        const int n_mutations = 1000;
 
-        for (size_t i = 0; i < n_mutations; i++) {
-            size_t total_bits = 32; // starting at 1, first moment is 32 bits float
-
-            std::vector<int> mutated_curve = optimized_quantization_curves[q_idx];
-
-            for (size_t m = 1; m < n_moments; m++) {
-                const int mutation = std::round(16.f * ((float)std::rand() / (float)RAND_MAX) - 8.f);
-                mutated_curve[m] += std::max(mutated_curve[m] + mutation, 1);
-
-                total_bits += mutated_curve[m];
-            }
-
-            const float error = error_for_quantization_curve(
-                wavelengths, macbeth,
-                n_px, n_moments,
-                normalized_moments,
-                mins, maxs,
-                mutated_curve
-            );
-
-            std::cout << total_bits << " " << error << std::endl;
-        }
-    }
-
-    std::cout << std::endl << std::endl;
-
-    // Randomized curves
-    for (size_t i = 0; i < 1000; i++) {
-        for (size_t n_bits = 2; n_bits <= 12; n_bits++) {
-            // Generate a random quantization curve
-            std::vector<int> quantization_curve(n_moments);
-            
-            size_t total_bits = 32; // starting at 1, first moment is 32 bits float
-
-            // WARN: we start at 1
-            for (size_t m = 1; m < n_moments; m++) {
-                quantization_curve[m] = std::round((n_bits - 1) * (float)std::rand() / (float)RAND_MAX) + 1;
-
-                total_bits += quantization_curve[m];
-            }
-
-            const float error = error_for_quantization_curve(
-                wavelengths, macbeth,
-                n_px, n_moments,
-                normalized_moments,
-                mins, maxs,
-                quantization_curve
-            );
-
-            std::cout << total_bits << " " << error << std::endl;
-        }
-    }
-#endif
+    f_pareto_b.close();
 
     return 0;
 }
