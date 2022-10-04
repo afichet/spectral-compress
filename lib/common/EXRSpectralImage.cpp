@@ -88,7 +88,7 @@ PixelType from_Imf(Imf::PixelType pixel_type)
         case Imf::PixelType::UINT:  return PixelType::UINT;
         case Imf::PixelType::HALF:  return PixelType::HALF;
         case Imf::PixelType::FLOAT: return PixelType::FLOAT;
-        default: 
+        default:
             throw std::runtime_error("Pixel type is not handled!");
     }
 }
@@ -100,7 +100,7 @@ Imf::PixelType to_Imf(PixelType pixel_type)
         case PixelType::UINT:  return Imf::PixelType::UINT;
         case PixelType::HALF:  return Imf::PixelType::HALF;
         case PixelType::FLOAT: return Imf::PixelType::FLOAT;
-        default: 
+        default:
             throw std::runtime_error("Pixel type is not handled!");
     }
 }
@@ -110,7 +110,7 @@ char* condition_framebuffers(
     Imf::PixelType write_pixel_type,
     size_t& type_stride,
     std::vector<std::vector<uint32_t>>& framebuffers_int,
-    std::vector<std::vector<half>>& framebuffers_half) 
+    std::vector<std::vector<half>>& framebuffers_half)
 {
     char* fb_data;
 
@@ -122,7 +122,7 @@ char* condition_framebuffers(
             vec_float_to_int32(framebuffer_in, framebuffers_int.back());
             fb_data = (char*)framebuffers_int.back().data();
             break;
-        
+
         case Imf::PixelType::HALF:
             type_stride = sizeof(half);
             framebuffers_half.resize(framebuffers_half.size() + 1);
@@ -165,7 +165,7 @@ EXRSpectralImage::EXRSpectralImage(const char* filename)
         const char* attribute_name = it.name();
         const char* attribute_type = it.attribute().typeName();
 
-        if (std::strcmp(attribute_name, "channels") != 0 
+        if (std::strcmp(attribute_name, "channels") != 0
          && std::strcmp(attribute_name, "compression") != 0
          && std::strcmp(attribute_name, "lineOrder") != 0) {
             attr_stream.write(attribute_name, std::strlen(attribute_name) + 1);
@@ -186,9 +186,9 @@ EXRSpectralImage::EXRSpectralImage(const char* filename)
     // ========================================================================
     // Read framebuffers
     // =======================================================================
-    
+
     std::map<std::string, std::vector<std::pair<std::string, float>>> spectral_channels;
-    
+
     std::set<std::string> extra_channels;
     std::set<std::string> ignored_channels;
 
@@ -201,14 +201,17 @@ EXRSpectralImage::EXRSpectralImage(const char* filename)
     // ------------------------------------------------------------------------
 
     const std::string flt_comma_rgx_str = "(((\\d+(,\\d*)?)|(,\\d+))([eE][+-]?\\d+)?)";
-    
-    const std::regex expr("^(.*)((S([0-3]))|T)\\." + flt_comma_rgx_str + "(Y|Z|E|P|T|G|M|k|h|"
-    "da|d|c|m|u|n|p)?(m|Hz)$");
+
+    const std::regex expr(
+        "^(.*)((S([0-3]))|T)\\."
+        + flt_comma_rgx_str + "(Y|Z|E|P|T|G|M|k|h|da|d|c|m|u|n|p)?(m|Hz)$");
 
     for (Imf::ChannelList::ConstIterator channel = exr_channels.begin();
             channel != exr_channels.end();
             channel++) {
-        const std::string name          = channel.name();
+        const std::string name = channel.name();
+
+        std::cout << "Name: " << name << " ";
 
         // seems useless but allows to have a clean .h without any OpenEXR imclude
         const PixelType p_type = from_Imf(channel.channel().type);
@@ -219,11 +222,11 @@ EXRSpectralImage::EXRSpectralImage(const char* filename)
         if (matched) {
             const std::string root   = matches[1].str();
             const std::string prefix = root + matches[2].str();
-            
+
             if (spectral_channels[prefix].size() == 0) {
                 ignored_channels.insert(root + "R");
                 ignored_channels.insert(root + "G");
-                ignored_channels.insert(root + "B");                
+                ignored_channels.insert(root + "B");
             }
 
             const double value_nm = to_nm(
@@ -235,9 +238,13 @@ EXRSpectralImage::EXRSpectralImage(const char* filename)
             spectral_channels[prefix].push_back(std::make_pair(channel.name(), value_nm));
 
             channel_type[prefix] = p_type;
+
+            std::cout << "Spectral with prefix: " << prefix << std::endl;
         } else {
             extra_channels.insert(name);
             channel_type[name] = p_type;
+
+            std::cout << "Grey" << std::endl;
         }
     }
 
@@ -272,7 +279,7 @@ EXRSpectralImage::EXRSpectralImage(const char* filename)
                 &(fb->image_data[wl_idx]),
                 exr_header.dataWindow(),
                 x_stride, y_stride);
-            
+
             exr_framebuffer.insert(layer_name, slice);
 
             fb->wavelengths_nm.push_back(wavelength_nm);
@@ -283,7 +290,7 @@ EXRSpectralImage::EXRSpectralImage(const char* filename)
 
     for (const auto& name: extra_channels) {
         GreyFramebuffer* fb = new GreyFramebuffer;
-        
+
         fb->layer_name = name;
         fb->image_data.resize(_width * _height);
         fb->pixel_type = channel_type[name];
@@ -292,7 +299,7 @@ EXRSpectralImage::EXRSpectralImage(const char* filename)
             Imf::FLOAT,
             fb->image_data.data(),
             exr_header.dataWindow());
-            
+
         exr_framebuffer.insert(name, slice);
 
         _extra_framebuffers.push_back(fb);
@@ -306,7 +313,7 @@ EXRSpectralImage::EXRSpectralImage(const char* filename)
 EXRSpectralImage::EXRSpectralImage(uint32_t width, uint32_t height)
     : _width(width)
     , _height(height)
-{   
+{
 }
 
 
@@ -350,7 +357,7 @@ void EXRSpectralImage::appendSpectralFramebuffer(
     }
 
     SpectralFramebuffer* fb = new SpectralFramebuffer;
-    
+
     fb->root_name      = prefix;
     fb->wavelengths_nm = wavelengths_nm;
     fb->image_data     = framebuffer;
@@ -431,7 +438,7 @@ void EXRSpectralImage::write(const char* filename) const
                 attr_stream.read(&c, 1);
                 attribute_type_stream << c;
             } while (c != 0);
-            
+
             const std::string attribute_name = attribute_name_stream.str();
             const std::string attribute_type = attribute_type_stream.str();
 
@@ -486,9 +493,9 @@ void EXRSpectralImage::write(const char* filename) const
             const std::string layer_name = root_name + "." + wl_nm;
 
             exr_channels.insert(layer_name, Imf::Channel(pixel_type));
-            
+
             exr_framebuffer.insert(
-                layer_name, 
+                layer_name,
                 Imf::Slice(
                     pixel_type,
                     &fb_data[type_stride * i],
@@ -532,14 +539,14 @@ void EXRSpectralImage::write(const char* filename) const
                 int_fb_data,
                 half_fb_data
                 );
-                
+
             const char* RGB[3] = {"R", "G", "B"};
 
             for (int c = 0; c < 3; c++) {
                 exr_channels.insert(RGB[c], Imf::Channel(pixel_type));
 
                 exr_framebuffer.insert(
-                    RGB[c], 
+                    RGB[c],
                     Imf::Slice(
                         pixel_type,
                         &fb_data[c * type_stride],
@@ -553,7 +560,7 @@ void EXRSpectralImage::write(const char* filename) const
     // Gray framebuffers
     for (const GreyFramebuffer* framebuffer: _extra_framebuffers) {
         const Imf::PixelType pixel_type = to_Imf(framebuffer->pixel_type);
-        
+
         size_t type_stride;
 
         char* fb_data = condition_framebuffers(
@@ -563,12 +570,12 @@ void EXRSpectralImage::write(const char* filename) const
             int_fb_data,
             half_fb_data
         );
-        
+
         const size_t x_stride = type_stride;
         const size_t y_stride = x_stride * _width;
 
         exr_channels.insert(framebuffer->layer_name, Imf::Channel(pixel_type));
-        
+
         exr_framebuffer.insert(
             framebuffer->layer_name,
             Imf::Slice(
@@ -587,7 +594,7 @@ void EXRSpectralImage::write(const char* filename) const
 double EXRSpectralImage::to_nm(
     const std::string& value,
     const std::string& prefix,
-    const std::string& units) 
+    const std::string& units)
 {
     std::string centralValueStr(value);
     std::replace(
@@ -649,32 +656,149 @@ uint32_t EXRSpectralImage::width()  const
 }
 
 
-uint32_t EXRSpectralImage::height() const 
-{ 
+uint32_t EXRSpectralImage::height() const
+{
     return _height;
 }
 
 
-std::vector<SpectralFramebuffer*>& EXRSpectralImage::getSpectralFramebuffers() 
+std::vector<SpectralFramebuffer*>& EXRSpectralImage::getSpectralFramebuffers()
 {
     return _spectral_framebuffers;
 }
 
 
-std::vector<GreyFramebuffer*>& EXRSpectralImage::getExtraFramebuffers() 
+std::vector<GreyFramebuffer*>& EXRSpectralImage::getExtraFramebuffers()
 {
     return _extra_framebuffers;
 }
 
 
-void EXRSpectralImage::setAttributesData(const std::vector<uint8_t>& data) 
-{ 
-    _attributes_data = data; 
+void EXRSpectralImage::setAttributesData(const std::vector<uint8_t>& data)
+{
+    _attributes_data = data;
 }
 
 
-const std::vector<uint8_t>& EXRSpectralImage::getAttributesData() const 
-{ 
-    return _attributes_data; 
+const std::vector<uint8_t>& EXRSpectralImage::getAttributesData() const
+{
+    return _attributes_data;
 }
 
+
+void EXRSpectralImage::dump(const char* filename) const
+{
+    FILE* f = std::fopen(filename, "wb");
+
+    if (!f) {
+        std::cerr << "Could not create an EXRSpectralImage dump file" << std::endl;
+        return;
+    }
+
+    std::fwrite(&_width, sizeof(uint32_t), 1, f);
+    std::fwrite(&_height, sizeof(uint32_t), 1, f);
+
+    const uint32_t n_spectral_fb    = _spectral_framebuffers.size();
+    const uint32_t n_gray_fb        = _extra_framebuffers.size();
+    const uint32_t n_attribute_data = _attributes_data.size();
+
+    std::fwrite(&n_spectral_fb, sizeof(uint32_t), 1, f);
+    std::fwrite(&n_gray_fb, sizeof(uint32_t), 1, f);
+    std::fwrite(&n_attribute_data, sizeof(uint32_t), 1, f);
+
+    for (const SpectralFramebuffer* fb: _spectral_framebuffers) {
+        const uint32_t len_root_name = fb->root_name.size();
+        const uint32_t n_wavelengths = fb->wavelengths_nm.size();
+
+        std::fwrite(&len_root_name, sizeof(uint32_t), 1, f);
+        std::fwrite(&n_wavelengths, sizeof(uint32_t), 1, f);
+
+        std::fwrite(fb->root_name.data(), sizeof(uint8_t), len_root_name, f);
+        std::fwrite(fb->wavelengths_nm.data(), sizeof(float), n_wavelengths, f);
+        std::fwrite(fb->image_data.data(), sizeof(float), n_wavelengths * _width * _height, f);
+        std::fwrite(&(fb->pixel_type), sizeof(PixelType), 1, f);
+    }
+
+    for (const GreyFramebuffer* fb: _extra_framebuffers) {
+        const uint32_t len_layer_name = fb->layer_name.size();
+
+        std::fwrite(&len_layer_name, sizeof(uint32_t), 1, f);
+        std::fwrite(fb->layer_name.data(), sizeof(uint8_t), len_layer_name, f);
+        std::fwrite(fb->image_data.data(), sizeof(float), _width * _height, f);
+        std::fwrite(&(fb->pixel_type), sizeof(PixelType), 1, f);
+    }
+
+    std::fwrite(_attributes_data.data(), sizeof(uint8_t), n_attribute_data, f);
+
+    std::fclose(f);
+}
+
+
+EXRSpectralImage* EXRSpectralImage::read_dump(const char* filename)
+{
+    FILE* f = std::fopen(filename, "rb");
+
+    if (!f) {
+        std::cerr << "Could not read EXRSpectralImage file dump" << std::endl;
+    }
+
+    EXRSpectralImage* exr = new EXRSpectralImage(0, 0);
+
+    std::fread(&(exr->_width), sizeof(uint32_t), 1, f);
+    std::fread(&(exr->_height), sizeof(uint32_t), 1, f);
+
+    uint32_t n_spectral_fb;
+    uint32_t n_gray_fb;
+    uint32_t n_attribute_data;
+
+    std::fread(&n_spectral_fb, sizeof(uint32_t), 1, f);
+    std::fread(&n_gray_fb, sizeof(uint32_t), 1, f);
+    std::fread(&n_attribute_data, sizeof(uint32_t), 1, f);
+
+    exr->_spectral_framebuffers.resize(n_spectral_fb);
+    exr->_extra_framebuffers.resize(n_gray_fb);
+    exr->_attributes_data.resize(n_attribute_data);
+
+    for (size_t i = 0; i < n_spectral_fb; i++) {
+        uint32_t len_root_name;
+        uint32_t n_wavelengths;
+
+        std::fread(&len_root_name, sizeof(uint32_t), 1, f);
+        std::fread(&n_wavelengths, sizeof(uint32_t), 1, f);
+
+        SpectralFramebuffer* fb = new SpectralFramebuffer;
+        fb->root_name.resize(len_root_name);
+        fb->wavelengths_nm.resize(n_wavelengths);
+        fb->image_data.resize(exr->_width * exr->_height * n_wavelengths);
+
+        std::fread(&(fb->root_name[0]), sizeof(uint8_t), len_root_name, f);
+        std::fread(fb->wavelengths_nm.data(), sizeof(float), n_wavelengths, f);
+        std::fread(fb->image_data.data(), sizeof(float), n_wavelengths * exr->_width * exr->_height, f);
+        std::fread(&(fb->pixel_type), sizeof(PixelType), 1, f);
+
+        exr->_spectral_framebuffers[i] = fb;
+    }
+
+    for (size_t i = 0; i < n_gray_fb; i++) {
+        uint32_t len_layer_name;
+
+        std::fread(&len_layer_name, sizeof(uint32_t), 1, f);
+
+        GreyFramebuffer* fb = new GreyFramebuffer;
+
+        fb->layer_name.resize(len_layer_name);
+        fb->image_data.resize(exr->_width * exr->_height);
+
+        std::fread(&(fb->layer_name[0]), sizeof(uint8_t), len_layer_name, f);
+        std::fread(fb->image_data.data(), sizeof(float), exr->_width * exr->_height, f);
+        std::fread(&(fb->pixel_type), sizeof(PixelType), 1, f);
+
+        exr->_extra_framebuffers[i] = fb;
+    }
+
+    std::fread(exr->_attributes_data.data(), sizeof(uint8_t), n_attribute_data, f);
+
+    std::fclose(f);
+
+    return exr;
+}

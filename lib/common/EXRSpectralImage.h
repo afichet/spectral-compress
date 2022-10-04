@@ -46,7 +46,7 @@ enum PixelType {
     N_PIXEL_TYPES
 };
 
-struct SpectralFramebuffer 
+struct SpectralFramebuffer
 {
     std::string root_name;
     std::vector<float> wavelengths_nm;
@@ -113,6 +113,18 @@ public:
         const std::string& value,
         const std::string& prefix,
         const std::string& units);
+
+    /**
+     * @brief Dumps the data to a file
+     *
+     * This produces a raw file, not an OpenEXR, with a dump of the content of
+     * the class
+     *
+     * @param filename Filename to dump the data to
+     */
+    void dump(const char* filename) const;
+
+    static EXRSpectralImage* read_dump(const char* filename);
 
 protected:
     uint32_t _width, _height;

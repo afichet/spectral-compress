@@ -55,7 +55,7 @@ public:
     JXLFramebuffer(
         uint32_t width, uint32_t height,
         uint32_t n_color_channels = 1,
-        uint32_t n_bits_per_sample = 32, 
+        uint32_t n_bits_per_sample = 32,
         uint32_t n_exponent_bits_per_sample = 8,
         uint32_t downsampling_factor = 1,
         const char* name = nullptr);
@@ -63,7 +63,7 @@ public:
     JXLFramebuffer(
         const std::vector<float>& framebuffer,
         uint32_t n_color_channels = 1,
-        uint32_t n_bits_per_sample = 32, 
+        uint32_t n_bits_per_sample = 32,
         uint32_t n_exponent_bits_per_sample = 8,
         uint32_t downsampling_factor = 1,
         const char* name = nullptr);
@@ -87,6 +87,10 @@ public:
     size_t getSizeBytes() const {
         return _pixel_data.size() * sizeof(float);
     }
+
+    void dump(FILE* stream) const;
+
+    static JXLFramebuffer* read_dump(FILE* stream);
 
 protected:
     char* _name;
@@ -127,7 +131,7 @@ public:
     uint32_t height() const { return _height; }
 
     size_t n_framebuffers() const { return _framebuffers.size(); }
-    
+
     const std::vector<float>& getFramebufferDataConst(size_t index) const
     {
         return _framebuffers[index]->getPixelDataConst();
@@ -150,6 +154,10 @@ public:
     const std::vector<JXLFramebuffer*>& getFramebuffersConst() const {
         return _framebuffers;
     }
+
+    void dump(const char* filename) const;
+
+    static JXLImage* read_dump(const char* filename);
 
 protected:
     uint32_t _width;

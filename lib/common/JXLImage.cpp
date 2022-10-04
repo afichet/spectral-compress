@@ -37,22 +37,28 @@
 #include <vector>
 #include <cstring>
 #include <cassert>
+#include <stdexcept>
+#include <sstream>
 
 // ----------------------------------------------------------------------------
 
 #define CHECK_JXL_ENC_STATUS(status)                                          \
-    if (JXL_ENC_SUCCESS != status) {                                          \
-        std::cerr << "[ERR] At: "                                             \
-                  << __FILE__  << ":" << __LINE__                             \
-                  << " " << status << std::endl;                              \
+    if (JXL_ENC_SUCCESS != (status)) {                                        \
+        std::stringstream err_msg;                                            \
+        err_msg << "[ERR] JXL_ENCODER: "                                      \
+                << __FILE__ << ":" << __LINE__                                \
+                << "> " << status;                                            \
+        throw std::runtime_error(err_msg.str());                              \
     }                                                                         \
 
 
 #define CHECK_JXL_DEC_STATUS(status)                                          \
-    if (JXL_DEC_SUCCESS != status) {                                          \
-        std::cerr << "[ERR] At: "                                             \
-                  << __FILE__  << ":" << __LINE__                             \
-                  << " " << status << std::endl;                              \
+    if (JXL_DEC_SUCCESS != (status)) {                                        \
+        std::stringstream err_msg;                                            \
+        err_msg << "[ERR] JXL_DECODER: "                                      \
+                << __FILE__ << ":" << __LINE__                                \
+                << "> " << status;                                            \
+        throw std::runtime_error(err_msg.str());                              \
     }                                                                         \
 
 // ----------------------------------------------------------------------------
@@ -60,7 +66,7 @@
 JXLFramebuffer::JXLFramebuffer(
     uint32_t width, uint32_t height,
     uint32_t n_color_channels,
-    uint32_t n_bits_per_sample, 
+    uint32_t n_bits_per_sample,
     uint32_t n_exponent_bits_per_sample,
     uint32_t downsampling_factor,
     const char* name)
@@ -85,7 +91,7 @@ JXLFramebuffer::JXLFramebuffer(
 JXLFramebuffer::JXLFramebuffer(
     const std::vector<float>& framebuffer,
     uint32_t n_color_channels,
-    uint32_t n_bits_per_sample, 
+    uint32_t n_bits_per_sample,
     uint32_t n_exponent_bits_per_sample,
     uint32_t downsampling_factor,
     const char* name)
@@ -124,10 +130,56 @@ void JXLFramebuffer::setName(const char* name) {
 }
 
 
+void JXLFramebuffer::dump(FILE* stream) const
+{
+    const uint32_t len_name = (_name) ? std::strlen(_name) : 0;
+    std::fwrite(&len_name, sizeof(uint32_t), 1, stream);
+
+    if (len_name > 0) {
+        std::fwrite(_name, sizeof(char), len_name, stream);
+    }
+
+    std::fwrite(&_n_bits_per_sample, sizeof(uint32_t), 1, stream);
+    std::fwrite(&_n_exponent_bits_per_sample, sizeof(uint32_t), 1, stream);
+    std::fwrite(&_downsampling_factor, sizeof(uint32_t), 1, stream);
+    std::fwrite(&_pixel_format, sizeof(JxlPixelFormat), 1, stream);
+
+    const uint32_t n_pixels = _pixel_data.size();
+    std::fwrite(&n_pixels, sizeof(uint32_t), 1, stream);
+    std::fwrite(_pixel_data.data(), sizeof(float), n_pixels, stream);
+}
+
+
+JXLFramebuffer* JXLFramebuffer::read_dump(FILE* stream)
+{
+    JXLFramebuffer* fb = new JXLFramebuffer(1, 1);
+
+    uint32_t len_name;
+    std::fread(&len_name, sizeof(uint32_t), 1, stream);
+
+    if (len_name > 0) {
+        fb->_name = new char[len_name + 1];
+        std::fread(fb->_name, sizeof(char), len_name, stream);
+    } else {
+        fb->_name = nullptr;
+    }
+
+    std::fread(&(fb->_n_bits_per_sample), sizeof(uint32_t), 1, stream);
+    std::fread(&(fb->_n_exponent_bits_per_sample), sizeof(uint32_t), 1, stream);
+    std::fread(&(fb->_downsampling_factor), sizeof(uint32_t), 1, stream);
+    std::fread(&(fb->_pixel_format), sizeof(JxlPixelFormat), 1, stream);
+
+    uint32_t n_pixels;
+
+    std::fread(&n_pixels, sizeof(uint32_t), 1, stream);
+    fb->_pixel_data.resize(n_pixels);
+    std::fread(fb->_pixel_data.data(), sizeof(float), n_pixels, stream);
+
+    return fb;
+}
+
 // ===========================================================================
 
-// TODO: remove
-#include <iostream>
 
 JXLImage::JXLImage(uint32_t width, uint32_t height)
     : _width(width)
@@ -138,7 +190,7 @@ JXLImage::JXLImage(uint32_t width, uint32_t height)
 JXLImage::JXLImage(const char* filename)
 {
     JxlDecoderStatus status;
-    
+
     std::vector<uint8_t> jxl_data;
 
     JxlDecoderPtr              dec;
@@ -151,7 +203,7 @@ JXLImage::JXLImage(const char* filename)
     fseek(file, 0, SEEK_END);
     const long file_size = ftell(file);
     fseek(file, 0, SEEK_SET);
-    
+
     jxl_data.resize(file_size);
 
     fread(jxl_data.data(), 1, file_size, file);
@@ -162,27 +214,27 @@ JXLImage::JXLImage(const char* filename)
     runner = JxlThreadParallelRunnerMake(nullptr, JxlThreadParallelRunnerDefaultNumWorkerThreads());
 
     status = JxlDecoderSetParallelRunner(
-        dec.get(), 
-        JxlThreadParallelRunner, 
+        dec.get(),
+        JxlThreadParallelRunner,
         runner.get()
     );
 
     CHECK_JXL_DEC_STATUS(status);
 
     status = JxlDecoderSubscribeEvents(
-        dec.get(), 
+        dec.get(),
         JXL_DEC_BASIC_INFO |
         JXL_DEC_BOX |
-        // JXL_DEC_COLOR_ENCODING | 
+        // JXL_DEC_COLOR_ENCODING |
         JXL_DEC_FULL_IMAGE);
-    
+
     CHECK_JXL_DEC_STATUS(status);
 
     JxlDecoderSetInput(dec.get(), jxl_data.data(), jxl_data.size());
 
-    for (JxlDecoderStatus status_process = JXL_DEC_NEED_MORE_INPUT; 
-        status_process != JXL_DEC_FULL_IMAGE; 
-        status_process = JxlDecoderProcessInput(dec.get())) 
+    for (JxlDecoderStatus status_process = JXL_DEC_NEED_MORE_INPUT;
+        status_process != JXL_DEC_FULL_IMAGE;
+        status_process = JxlDecoderProcessInput(dec.get()))
     {
         switch (status_process) {
             case JXL_DEC_BASIC_INFO:
@@ -233,7 +285,7 @@ JXLImage::JXLImage(const char* filename)
                     JxlPixelFormat format = _framebuffers[0]->getPixelFormat();
 
                     status = JxlDecoderSetImageOutBuffer(
-                        dec.get(), 
+                        dec.get(),
                         &format,
                         _framebuffers[0]->getPixelData().data(),
                         _framebuffers[0]->getSizeBytes()
@@ -258,13 +310,13 @@ JXLImage::JXLImage(const char* filename)
             case JXL_DEC_BOX:
                 {
                     JxlBoxType box_type;
-                    
+
                     status = JxlDecoderGetBoxType(dec.get(), box_type, JXL_TRUE);
                     CHECK_JXL_DEC_STATUS(status);
 
-                    if (box_type[0] == 's' 
-                     && box_type[1] == 'g' 
-                     && box_type[2] == 'e' 
+                    if (box_type[0] == 's'
+                     && box_type[1] == 'g'
+                     && box_type[2] == 'e'
                      && box_type[3] == 'g') {
                         uint64_t box_size;
                         status = JxlDecoderGetBoxSizeRaw(dec.get(), &box_size);
@@ -280,14 +332,15 @@ JXLImage::JXLImage(const char* filename)
                 CHECK_JXL_DEC_STATUS(status_process);
                 break;
             default:
-                std::cout << "Unknown decoder status: "
-                          << status_process << std::endl;
+                std::stringstream err_msg;
+                err_msg << "Unknown decoder status: " << status_process;
+                throw std::runtime_error(err_msg.str());
                 break;
         }
     }
 
     JxlDecoderReleaseInput(dec.get());
-    
+
     _sgeg_box = SGEGBox(box_raw_sgeg);
 
     CHECK_JXL_DEC_STATUS(status);
@@ -318,7 +371,7 @@ size_t JXLImage::appendFramebuffer(
     assert(framebuffer.size() == n_channels * _width * _height);
 
     JXLFramebuffer *fb = new JXLFramebuffer(
-        framebuffer, 
+        framebuffer,
         n_channels,
         enc_bits_per_sample,
         enc_exponent_bits_per_sample,
@@ -339,9 +392,9 @@ void JXLImage::write(const char* filename) const {
     JxlThreadParallelRunnerPtr runner;
     JxlBasicInfo               basic_info;
     JxlColorEncoding           color_encoding;
-    
+
     runner = JxlThreadParallelRunnerMake(
-            nullptr, 
+            nullptr,
             JxlThreadParallelRunnerDefaultNumWorkerThreads()
         );
 
@@ -365,9 +418,9 @@ void JXLImage::write(const char* filename) const {
 
     std::vector<uint8_t> raw_box;
     _sgeg_box.getRaw(raw_box);
-    
+
     status = JxlEncoderAddBox(enc.get(), tp, raw_box.data(), raw_box.size(), JXL_FALSE);
-    
+
     CHECK_JXL_ENC_STATUS(status);
 
     JxlEncoderCloseBoxes(enc.get());
@@ -421,8 +474,7 @@ void JXLImage::write(const char* filename) const {
             color_encoding.color_space = JXL_COLOR_SPACE_RGB;
             break;
         default:
-            std::cerr << "Unknown color space matching number of channels" << std::endl;
-            assert(0);
+            throw std::runtime_error("Unknown color space matching number of channels");
             break;
     }
 
@@ -441,7 +493,7 @@ void JXLImage::write(const char* filename) const {
     const size_t data_size      = _framebuffers[0]->getPixelData().size() * sizeof(float);
 
     status = JxlEncoderAddImageFrame(
-        frame_settings, 
+        frame_settings,
         &format,
         _framebuffers[0]->getPixelData().data(),
         data_size
@@ -482,8 +534,8 @@ void JXLImage::write(const char* filename) const {
         }
 
         status = JxlEncoderSetExtraChannelBuffer(
-            frame_settings, 
-            &format, 
+            frame_settings,
+            &format,
             fb->getPixelDataConst().data(),
             data_size,
             i - 1);
@@ -499,7 +551,7 @@ void JXLImage::write(const char* filename) const {
 
     uint8_t* next_out = compressed.data();
     size_t avail_out = compressed.size() - (next_out - compressed.data());
-    
+
     status = JXL_ENC_NEED_MORE_OUTPUT;
 
     // for (status = JXL_ENC_NEED_MORE_OUTPUT ;; status == JXL_ENC_NEED_MORE_OUTPUT) {
@@ -516,7 +568,7 @@ void JXLImage::write(const char* filename) const {
     }
 
     CHECK_JXL_ENC_STATUS(status);
-    
+
     compressed.resize(next_out - compressed.data());
 
     // Write file
@@ -525,6 +577,71 @@ void JXLImage::write(const char* filename) const {
     fclose(file);
 }
 
+
+void JXLImage::dump(const char* filename) const
+{
+    FILE* f = std::fopen(filename, "wb");
+
+    if (!f) {
+        throw std::runtime_error("Could not create an JXLImage dump file");
+        return;
+    }
+
+    std::fwrite(&_width, sizeof(uint32_t), 1, f);
+    std::fwrite(&_height, sizeof(uint32_t), 1, f);
+
+    std::vector<uint8_t> sgeg_data;
+    _sgeg_box.getRaw(sgeg_data);
+    const uint32_t sgeg_data_size = sgeg_data.size();
+    std::fwrite(&sgeg_data_size, sizeof(uint32_t), 1, f);
+    std::fwrite(sgeg_data.data(), sizeof(uint8_t), sgeg_data_size, f);
+
+    const uint32_t n_framebuffers = _framebuffers.size();
+    std::fwrite(&n_framebuffers, sizeof(uint32_t), 1, f);
+
+    for (const JXLFramebuffer* fb: _framebuffers) {
+        fb->dump(f);
+    }
+
+    std::fclose(f);
+}
+
+
+JXLImage* JXLImage::read_dump(const char* filename)
+{
+    FILE *f = std::fopen(filename, "rb");
+
+    if (!f) {
+        throw std::runtime_error("Could not read JXLImage dump file");
+        return nullptr;
+    }
+
+    JXLImage* image = new JXLImage(1, 1);
+
+    std::fread(&(image->_width), sizeof(uint32_t), 1, f);
+    std::fread(&(image->_height), sizeof(uint32_t), 1, f);
+
+    uint32_t sgeg_data_size;
+    std::fread(&sgeg_data_size, sizeof(uint32_t), 1, f);
+    std::vector<uint8_t> sgeg_data(sgeg_data_size);
+    std::fread(sgeg_data.data(), sizeof(uint8_t), sgeg_data_size, f);
+
+    image->_sgeg_box = SGEGBox(sgeg_data);
+
+    uint32_t n_framebuffers;
+
+    std::fread(&n_framebuffers, sizeof(uint32_t), 1, f);
+
+    image->_framebuffers.reserve(n_framebuffers);
+
+    for (size_t i = 0; i < n_framebuffers; i++) {
+        image->_framebuffers.push_back(JXLFramebuffer::read_dump(f));
+    }
+
+    std::fclose(f);
+
+    return image;
+}
 
 // void JXLImageReader::print_basic_info() const
 // {
@@ -548,7 +665,7 @@ void JXLImage::write(const char* filename) const {
 
 //     for (uint32_t i = 0; i < _basic_info.num_extra_channels; i++) {
 //         std::cout << "\t┌ Channel #" << i << std::endl;
-//         std::cout << "\t└  name: " << _sub_framebuffers_names[i] << std::endl; 
+//         std::cout << "\t└  name: " << _sub_framebuffers_names[i] << std::endl;
 //     }
 
 //     for (uint32_t i = 0; i < _sgeg_box.n_moments; i++) {
