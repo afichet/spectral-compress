@@ -42,21 +42,21 @@ class Util
 {
 public:
     template<class Float>
-    static float interp(Float x, Float x0, Float x1, Float y0, Float y1)
+    static Float interp(Float x, Float x0, Float x1, Float y0, Float y1)
     {
         return lerp(y0, y1, alpha(x0, x1, x));
     }
 
 
     template<class Float>
-    static float alpha(Float x0, Float x1, Float x)
+    static Float alpha(Float x0, Float x1, Float x)
     {
         return (x - x0) / (x1 - x0);
     }
 
 
     template<class Float>
-    static float lerp(Float a, Float b, Float t)
+    static Float lerp(Float a, Float b, Float t)
     {
         return a + t * (b - a);
     }

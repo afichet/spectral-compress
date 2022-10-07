@@ -43,7 +43,6 @@ else()
     find_package(OpenEXR REQUIRED)
 endif()
 
-
 if (MSVC)
     target_compile_options(common PUBLIC /W3)
 else()
@@ -51,8 +50,8 @@ else()
     target_compile_options(common PUBLIC -Wall -Wextra -Wpedantic)
 endif()
 
-
-
 target_include_directories(common PUBLIC ${OpenEXR_INCLUDE_DIR})
 target_link_libraries(common PUBLIC ${OpenEXR_LIBRARIES})
 target_link_libraries(common PUBLIC jxl jxl_threads Eigen3::Eigen)
+
+
