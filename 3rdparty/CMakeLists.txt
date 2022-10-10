@@ -10,3 +10,4 @@ set(JPEGXL_ENABLE_VIEWERS   false CACHE BOOL "")
 
 add_subdirectory(libjxl)
 add_subdirectory(eigen)
+add_subdirectory(lodepng)
