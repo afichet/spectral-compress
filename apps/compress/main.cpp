@@ -51,18 +51,22 @@
 
 #include <moments.h>
 #include <moments_image.h>
+#include <quantization.h>
 
 
 void compress_spectral_framebuffer(
     const SpectralFramebuffer* framebuffer,
     std::vector<std::vector<float>>& compressed_moments,
     std::vector<float>& mins,
-    std::vector<float>& maxs)
+    std::vector<float>& maxs,
+    std::vector<int>& quantization_curve)
 {
     std::vector<double> phases;
     std::vector<double> moments_image;
     std::vector<double> compressed_moments_image;
-    
+    std::vector<double> normalized_moments_image;
+    std::vector<double> mins_d, maxs_d;
+
     const uint32_t n_moments = framebuffer->wavelengths_nm.size();
     const uint32_t n_pixels = framebuffer->image_data.size() / framebuffer->wavelengths_nm.size();
 
@@ -86,13 +90,19 @@ void compress_spectral_framebuffer(
         spectral_framebuffer[i] = v;
     }
 
+    // Create a quantization profil
+    unbounded_to_bounded_compute_quantization_curve(
+        spectral_wavelengths, spectral_framebuffer,
+        n_pixels, n_moments, 12, quantization_curve
+    );
+
     wavelengths_to_phases(spectral_wavelengths, phases);
-    
+
     compute_moments_image(
-        phases, 
+        phases,
         spectral_framebuffer,
-        n_pixels, 1, 
-        n_moments, 
+        n_pixels, 1,
+        n_moments,
         moments_image
     );
 
@@ -103,37 +113,30 @@ void compress_spectral_framebuffer(
         compressed_moments_image
     );
 
+    normalize_moment_image(
+        compressed_moments_image,
+        n_pixels, n_moments,
+        normalized_moments_image,
+        mins_d, maxs_d
+    );
+
+    // Copy back and implicit conversion to float
     compressed_moments.resize(n_moments);
 
-    for (size_t m = 0; m < compressed_moments.size(); m++) {
+    for (size_t m = 0; m < n_moments; m++) {
         compressed_moments[m].resize(n_pixels);
+
+        for (size_t px = 0; px < n_pixels; px++) {
+            compressed_moments[m][px] = normalized_moments_image[n_moments * px + m];
+        }
     }
 
-    // DC component does not need further modification
-    for (size_t i = 0; i < n_pixels; i++) {
-        compressed_moments[0][i] = compressed_moments_image[n_moments * i];
-    }
+    mins.resize(n_moments - 1);
+    maxs.resize(n_moments - 1);
 
-    // Rescale AC components in [0..1]
-    for (size_t m = 1; m < n_moments; m++) {
-        // Get min / max
-        double v_min = compressed_moments_image[m];
-        double v_max = compressed_moments_image[m];
-
-        for (size_t i = 0; i < n_pixels; i++) {
-            v_min = std::min(v_min, compressed_moments_image[n_moments * i + m]);
-            v_max = std::max(v_max, compressed_moments_image[n_moments * i + m]);
-        }
-
-        mins.push_back(v_min);
-        maxs.push_back(v_max);
-
-        // Now rescale moments
-        for (size_t i = 0; i < n_pixels; i++) {
-            const float v = compressed_moments_image[n_moments * i + m];
-
-            compressed_moments[m][i] = (v - v_min) / (v_max - v_min);
-        }
+    for (size_t m = 0; m < n_moments - 1; m++) {
+        mins[m] = mins_d[m];
+        maxs[m] = maxs_d[m];
     }
 }
 
@@ -162,7 +165,7 @@ void quantization_from_exr(PixelType type, size_t& n_bits, size_t& n_exponent_bi
 }
 
 
-int main(int argc, char *argv[]) 
+int main(int argc, char *argv[])
 {
     // TODO: generate a default output name and check if exists,
     // this will allow drag and drop of an EXR over the executable
@@ -177,18 +180,21 @@ int main(int argc, char *argv[])
     const char* filename_in  = argv[1];
     const char* filename_out = argv[2];
 
-    EXRSpectralImage image_in(filename_in);
+    EXRSpectralImage exr_in(filename_in);
 
-    const std::vector<SpectralFramebuffer*>& spectral_framebuffers = image_in.getSpectralFramebuffers();
-    const std::vector<GreyFramebuffer*>& extra_framebuffers = image_in.getExtraFramebuffers();
+    const std::vector<SpectralFramebuffer*>& spectral_framebuffers = exr_in.getSpectralFramebuffers();
+    const std::vector<GreyFramebuffer*>& extra_framebuffers = exr_in.getExtraFramebuffers();
 
     // get_buffers_from_exr(exr_in, spectral_framebuffers, extra_framebuffers);
 
-    JXLImage jxl_out(image_in.width(), image_in.height());
+    JXLImage jxl_out(exr_in.width(), exr_in.height());
     SGEGBox box;
 
-    box.exr_attributes = image_in.getAttributesData();
-    
+    box.exr_attributes = exr_in.getAttributesData();
+    // std::cout << "Spectral FB: " << spectral_framebuffers.size() << std::endl;
+    // std::cout << "Grey GB:     " << extra_framebuffers.size() << std::endl;
+    // // exit(0);
+
     for (const SpectralFramebuffer* fb: spectral_framebuffers) {
         SGEGSpectralGroup sg;
 
@@ -201,11 +207,10 @@ int main(int argc, char *argv[])
 
         quantization_from_exr(fb->pixel_type, main_n_bits, main_n_exponent_bits);
 
-        std::cout << main_n_bits << " " << main_n_exponent_bits << std::endl;
-
         std::vector<std::vector<float>> compressed_moments;
+        std::vector<int> quantization_curve;
 
-        compress_spectral_framebuffer(fb, compressed_moments, sg.mins, sg.maxs);
+        compress_spectral_framebuffer(fb, compressed_moments, sg.mins, sg.maxs, quantization_curve);
 
         // Now we can save to JPEG XL
         for (size_t m = 0; m < compressed_moments.size(); m++) {
@@ -216,8 +221,9 @@ int main(int argc, char *argv[])
                 n_bits          = main_n_bits;
                 n_exponent_bits = main_n_exponent_bits;
             } else {
-                n_bits          = 8;
+                n_bits          = quantization_curve[m];
                 n_exponent_bits = 0;
+                std::cout << quantization_curve[m] << std::endl;
             }
 
             const size_t idx = jxl_out.appendFramebuffer(
@@ -226,8 +232,8 @@ int main(int argc, char *argv[])
                 n_bits,
                 n_exponent_bits,
                 1,
-                fb->root_name.c_str());            
-            
+                fb->root_name.c_str());
+
             sg.layer_indices.push_back(idx);
         }
 
@@ -236,7 +242,7 @@ int main(int argc, char *argv[])
 
     for (const GreyFramebuffer* fb: extra_framebuffers) {
         SGEGGrayGroup gg;
-        
+
         gg.layer_name.resize(fb->layer_name.size() + 1);
         std::memcpy(gg.layer_name.data(), fb->layer_name.c_str(), gg.layer_name.size() * sizeof(char));
 
@@ -261,6 +267,10 @@ int main(int argc, char *argv[])
 
     jxl_out.setBox(box);
     jxl_out.write(filename_out);
+
+    // Test dump
+    jxl_out.dump("jxl_dump");
+    exr_in.dump("exr_dump");
 
     return 0;
 }
