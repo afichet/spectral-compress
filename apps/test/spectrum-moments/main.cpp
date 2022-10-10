@@ -35,15 +35,16 @@
 #include <fstream>
 #include <vector>
 #include <cstddef>
+#include <cassert>
 
 #include "moments.h"
 
-
-void linspace(float min, float max, size_t size, std::vector<float>& array)
+template<typename T>
+void linspace(T min, T max, size_t size, std::vector<T>& array)
 {
     array.resize(size);
 
-    float delta = (max - min) / float(size - 1);
+    T delta = (max - min) / T(size - 1);
 
     for (size_t i = 0; i < size; i++) {
         array[i] = min + i * delta;
@@ -63,6 +64,50 @@ void print_array(const std::vector<float>& array)
 }
 
 
+void print_array(const std::vector<double>& array)
+{
+    std::cout << "[";
+
+    for (size_t i = 0; i < array.size(); i++) {
+        printf(" %.8lf ", array[i]);
+    }
+
+    std::cout << "]" << std::endl;
+}
+
+
+double get_error(const std::vector<double>& arr1, const std::vector<double>& arr2)
+{
+    assert(arr1.size() == arr2.size());
+
+    double err = 0;
+
+    for (size_t i = 0; i < arr1.size(); i++) {
+        const double curr_err = arr1[i] - arr2[i];
+        err += curr_err * curr_err;
+    }
+
+    return err;
+}
+
+
+void dump_array(const char* filename, const std::vector<double>& array)
+{
+    FILE* f = std::fopen(filename, "wb");
+
+    if (!f) {
+        std::cerr << "Could not create file for dumping array" << std::endl;
+        return;
+    }
+
+    const uint32_t array_sz = array.size();
+    std::fwrite(&array_sz, sizeof(uint32_t), 1, f);
+    std::fwrite(array.data(), sizeof(double), array_sz, f);
+
+    std::fclose(f);
+}
+
+
 int main(int argc, char* argv[])
 {
     (void)argc;
@@ -72,10 +117,10 @@ int main(int argc, char* argv[])
     // Data
     // ------------------------------------------------------------------------
 
-    std::vector<float> reflectance_wavelength;
-    linspace(400.f, 700.f, 61, reflectance_wavelength);
+    std::vector<double> reflectance_wavelength;
+    linspace(400., 700., 61, reflectance_wavelength);
 
-    std::vector<float> reflectance = {
+    std::vector<double> reflectance = {
         0.060000000, 0.061000000, 0.061000000, 0.061000000, 0.062000000, 0.063000000, 0.064000000, 0.066000000,
         0.068000000, 0.071000000, 0.075000000, 0.079000000, 0.085000000, 0.093000000, 0.104000000, 0.118000000,
         0.135000000, 0.157000000, 0.185000000, 0.221000000, 0.269000000, 0.326000000, 0.384000000, 0.440000000,
@@ -86,10 +131,10 @@ int main(int argc, char* argv[])
         0.354000000, 0.362000000, 0.368000000, 0.375000000, 0.379000000
     };
     
-    std::vector<float> emission_wavelength;
-    linspace(312.5f, 811.5f, 999, emission_wavelength);
+    std::vector<double> emission_wavelength;
+    linspace(312.5, 811.5, 999, emission_wavelength);
 
-    std::vector<float> emission = {
+    std::vector<double> emission = {
         0.03183, 0.02949, 0.02075, 0.00807, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000,
         0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00281,
         0.00439, 0.00257, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000,
@@ -176,65 +221,78 @@ int main(int argc, char* argv[])
         0.01058, 0.02523, 0.04864
     };
 
-    const int n_moments_reflectance = 4;
-    const int n_moments_emission    = 32;
+    // // ------------------------------------------------------------------------
+    // // Test with reflectance
+    // // ------------------------------------------------------------------------
 
-    // ------------------------------------------------------------------------
-    // Test with reflectance
-    // ------------------------------------------------------------------------
+    // const int n_moments_reflectance = 4;
 
-    std::vector<float> reflectance_phases;
+    // std::vector<float> reflectance_phases;
 
-    std::vector<float> reflectance_moments;
-    std::vector<float> reflectance_compressed;
+    // std::vector<float> reflectance_moments;
+    // std::vector<float> reflectance_compressed;
 
-    std::vector<float> reflectance_inflated;
-    std::vector<float> reflectance_density;
+    // std::vector<float> reflectance_inflated;
+    // std::vector<float> reflectance_density;
 
-    wavelengths_to_phases(reflectance_wavelength, reflectance_phases);
+    // wavelengths_to_phases(reflectance_wavelength, reflectance_phases);
     
-    compute_moments(
-        reflectance_phases, 
-        reflectance, 
-        n_moments_reflectance, 
-        reflectance_moments
-    );
+    // compute_moments(
+    //     reflectance_phases, 
+    //     reflectance, 
+    //     n_moments_reflectance, 
+    //     reflectance_moments
+    // );
 
-    bounded_compress_moments(
-        reflectance_moments,
-        reflectance_compressed
-    );
+    // bounded_compress_moments(
+    //     reflectance_moments,
+    //     reflectance_compressed
+    // );
 
-    bounded_decompress_moments(
-        reflectance_compressed,
-        reflectance_inflated
-    );
+    // bounded_decompress_moments(
+    //     reflectance_compressed,
+    //     reflectance_inflated
+    // );
 
-    bounded_compute_density_lagrange(
-        reflectance_phases,
-        reflectance_inflated,
-        reflectance_density
-    );
+    // bounded_compute_density_lagrange(
+    //     reflectance_phases,
+    //     reflectance_inflated,
+    //     reflectance_density
+    // );
 
-    std::ofstream out_reflectance("reflectance.dat");
+    // std::ofstream out_reflectance("reflectance.dat");
 
-    for (size_t i = 0; i < reflectance_wavelength.size(); i++) {
-        out_reflectance << reflectance_wavelength[i] << " "
-                        << reflectance[i] << " "
-                        << reflectance_density[i] << std::endl;
-    }
+    // for (size_t i = 0; i < reflectance_wavelength.size(); i++) {
+    //     out_reflectance << reflectance_wavelength[i] << " "
+    //                     << reflectance[i] << " "
+    //                     << reflectance_density[i] << std::endl;
+    // }
 
     // ------------------------------------------------------------------------
     // Test with emission
     // ------------------------------------------------------------------------
 
-    std::vector<float> emission_phases;
+    const int n_moments_emission = emission_wavelength.size();//32;
 
-    std::vector<float> emission_moments;
-    std::vector<float> emission_compressed;
+    double max_signal = 0;
+    for (const double& v: emission) {
+        max_signal = std::max(max_signal, v);
+    }
 
-    std::vector<float> emission_inflated;
-    std::vector<float> emission_density;
+    for (double& v: emission) {
+        v /= max_signal;
+    }
+
+    std::vector<double> emission_phases;
+
+    std::vector<double> emission_moments;
+    std::vector<double> emission_compressed_bounded;
+    std::vector<double> emission_compressed_unbounded;
+
+    std::vector<double> emission_inflated_unbounded;
+    std::vector<double> emission_inflated_bounded;
+
+    std::vector<double> emission_density;
 
     wavelengths_to_phases(emission_wavelength, emission_phases);
 
@@ -245,29 +303,61 @@ int main(int argc, char* argv[])
         emission_moments
     );
 
+    // Unbounded
     unbounded_compress_moments(
         emission_moments,
-        emission_compressed
+        emission_compressed_unbounded
     );
 
     unbounded_decompress_moments(
-        emission_compressed,
-        emission_inflated
+        emission_compressed_unbounded,
+        emission_inflated_unbounded
+    );
+
+    // Bounded
+    bounded_compress_moments(
+        emission_moments,
+        emission_compressed_bounded
+    );
+
+    bounded_decompress_moments(
+        emission_compressed_bounded,
+        emission_inflated_bounded
     );
 
     compute_density(
         emission_phases,
-        emission_inflated,
+        emission_inflated_bounded,
         emission_density
     );
 
-    std::ofstream out_emission("emission.dat");
+    // std::cout << "-- Moments --" << std::endl;
+    // print_array(emission_moments);
+    // std::cout << "-- Moments compressed unbounded --" << std::endl;
+    // print_array(emission_compressed_unbounded);
+    // std::cout << "-- Moments compressed bounded--" << std::endl;
+    // print_array(emission_compressed_unbounded);
 
-    for (size_t i = 0; i < emission_wavelength.size(); i++) {
-        out_emission << emission_wavelength[i] << " "
-                     << emission[i] << " "
-                     << emission_density[i] << std::endl;
-    }
+    std::cout << "------------------------------------" << std::endl;
+    std::cout << "--   Comparison forward reverse   --" << std::endl;
+    std::cout << "------------------------------------" << std::endl;
+    std::cout << "  bounded original: " << get_error(emission_moments, emission_inflated_bounded) << std::endl;
+    std::cout << "unbounded original: " << get_error(emission_moments, emission_inflated_unbounded) << std::endl;
+
+    dump_array("phases.dat", emission_phases);
+    dump_array("moments.dat", emission_moments);
+    dump_array("c_moments_b.dat", emission_compressed_bounded);
+    dump_array("c_moments_ub.dat", emission_compressed_unbounded);
+
+    // print_array(emission_moments);
+
+    // std::ofstream out_emission("emission.dat");
+
+    // for (size_t i = 0; i < emission_wavelength.size(); i++) {
+    //     out_emission << emission_wavelength[i] << " "
+    //                  << emission[i] << " "
+    //                  << emission_density[i] << std::endl;
+    // }
 
     return 0;
 }
