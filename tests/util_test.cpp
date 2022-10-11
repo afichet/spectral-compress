@@ -1,7 +1,18 @@
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
 #include <Util.h>
 
 #include "util_test_data.h"
+
+
+TEST(Util, Interp)
+{
+    ASSERT_FLOAT_EQ(Util::interp(0., -3., 3., -10., 0.), -5.0);
+
+    ASSERT_FLOAT_EQ(Util::interp(3., 3., 10., 5., 10.), 5.0);    
+    ASSERT_FLOAT_EQ(Util::interp(10., 3., 10., 5., 10.), 10.0);    
+}
+
 
 TEST(Util, DeltaE2000)
 {
@@ -21,10 +32,40 @@ TEST(Util, DeltaE2000)
 }
 
 
-TEST(Util, Interp)
+TEST(Util, Linespace)
 {
-    ASSERT_FLOAT_EQ(Util::interp(0., -3., 3., -10., 0.), -5.0);
+    const std::vector<int> ref_idx = {1, 2, 3, 4, 5, 6, 7};
+    
+    std::vector<int> idx;
 
-    ASSERT_FLOAT_EQ(Util::interp(3., 3., 10., 5., 10.), 5.0);    
-    ASSERT_FLOAT_EQ(Util::interp(10., 3., 10., 5., 10.), 10.0);    
+    Util::linspace(1, 7, ref_idx.size(), idx);
+
+    ASSERT_EQ(ref_idx.size(), idx.size());
+
+    for (size_t i = 0; i < idx.size(); i++) {
+        EXPECT_EQ(ref_idx[i], idx[i]);
+    }
+}
+
+
+TEST(Util, SplitExntension)
+{
+    
+    std::string base, ext;
+
+    Util::split_extension(".test", base, ext);
+    EXPECT_THAT(base, ::testing::StrEq(""));
+    EXPECT_THAT(ext , ::testing::StrEq(".test"));
+
+    Util::split_extension("", base, ext);
+    EXPECT_THAT(base, ::testing::StrEq(""));
+    EXPECT_THAT(ext , ::testing::StrEq(""));
+
+    Util::split_extension("test.", base, ext);
+    EXPECT_THAT(base, ::testing::StrEq("test"));
+    EXPECT_THAT(ext , ::testing::StrEq("."));
+
+    Util::split_extension("test.jxl", base, ext);
+    EXPECT_THAT(base, ::testing::StrEq("test"));
+    EXPECT_THAT(ext , ::testing::StrEq(".jxl"));
 }

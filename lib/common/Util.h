@@ -37,6 +37,7 @@
 #include <map>
 #include <stdexcept>
 #include <cmath>
+#include <cstring>
 
 class Util
 {
@@ -59,6 +60,19 @@ public:
     static Float lerp(Float a, Float b, Float t)
     {
         return a + t * (b - a);
+    }
+
+
+    template<typename T>
+    static void linspace(T min, T max, int size, std::vector<T>& array)
+    {
+        array.resize(size);
+
+        T delta = (max - min) / T(size - 1);
+
+        for (int i = 0; i < size; i++) {
+            array[i] = min + i * delta;
+        }
     }
 
 
@@ -211,5 +225,38 @@ public:
             + delta_C_r * delta_C_r
             + delta_H_r * delta_H_r
             + R_T * delta_C_r * delta_H_r);
+    }
+
+    static void split_extension(const char* filename, std::string& base_str, std::string& extension_str)
+    {
+        std::vector<char> base, extension;
+        
+        const size_t filename_len = std::strlen(filename);
+        
+        int len_base = filename_len;
+        
+        while (len_base >= 0 && filename[len_base] != '.') {
+            --len_base;
+        }
+
+        if (len_base == -1) {
+            // No extension
+            base.resize(filename_len + 1);
+            std::memcpy(base.data(), filename, sizeof(char) * filename_len);
+            base.back() = 0;
+
+            extension.resize(1);
+            extension[0] = 0;
+        } else {
+            base.resize(len_base + 1);
+            std::memcpy(base.data(), filename, sizeof(char) * len_base);
+            base[len_base] = 0;
+
+            extension.resize(filename_len - len_base + 1);
+            std::memcpy(extension.data(), &filename[len_base], sizeof(char) * extension.size());
+        }
+
+        base_str = std::string(base.data());
+        extension_str = std::string(extension.data());
     }
 };
