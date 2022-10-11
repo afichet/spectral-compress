@@ -4,3 +4,5 @@ add_subdirectory(export-layers)
 
 add_subdirectory(stupid-compress)
 add_subdirectory(stupid-decompress)
+
+add_subdirectory(generate-macbeth-img)
