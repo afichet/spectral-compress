@@ -211,7 +211,7 @@ EXRSpectralImage::EXRSpectralImage(const char* filename)
             channel++) {
         const std::string name = channel.name();
 
-        std::cout << "Name: " << name << " ";
+        // std::cout << "Name: " << name << " ";
 
         // seems useless but allows to have a clean .h without any OpenEXR imclude
         const PixelType p_type = from_Imf(channel.channel().type);
@@ -239,12 +239,12 @@ EXRSpectralImage::EXRSpectralImage(const char* filename)
 
             channel_type[prefix] = p_type;
 
-            std::cout << "Spectral with prefix: " << prefix << std::endl;
+            // std::cout << "Spectral with prefix: " << prefix << std::endl;
         } else {
             extra_channels.insert(name);
             channel_type[name] = p_type;
 
-            std::cout << "Grey" << std::endl;
+            // std::cout << "Grey" << std::endl;
         }
     }
 

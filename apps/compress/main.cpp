@@ -223,7 +223,7 @@ int main(int argc, char *argv[])
             } else {
                 n_bits          = quantization_curve[m];
                 n_exponent_bits = 0;
-                std::cout << quantization_curve[m] << std::endl;
+                // std::cout << quantization_curve[m] << std::endl;
             }
 
             const size_t idx = jxl_out.appendFramebuffer(
