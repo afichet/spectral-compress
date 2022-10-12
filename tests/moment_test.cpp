@@ -1,9 +1,12 @@
 #include <gtest/gtest.h>
+
 #include <moments.h>
 #include <moments_image.h>
+#include <Util.h>
 
 #include <vector>
-#include "moment_test_data.h"
+
+#include "spectral_data.h"
 
 struct Spectrum {
     // const std::vector<double>& wavelengths;
@@ -22,7 +25,7 @@ protected:
         const Spectrum& s = GetParam();
         isReflective = s.isReflective;
         signal = s.values;
-        linspace(s.wavelength_start, s.wavelength_end, s.n_wavelengths, wavelengths);
+        Util::linspace(s.wavelength_start, s.wavelength_end, s.n_wavelengths, wavelengths);
         wavelengths_to_phases(wavelengths, phases);
         compute_moments(phases, s.values, phases.size(), moments);
     }
@@ -48,15 +51,41 @@ TEST_P(MomentTest, BackDensity)
 
     if (!isReflective) {
         bounded_compute_density_lagrange(phases, moments, signal_back);
+
+        ASSERT_EQ(phases.size(), signal_back.size());
+        ASSERT_EQ(signal.size(), signal_back.size());
+
+        double total_err = 0;
+        double max_v = 0;
+
+        for (size_t i = 0; i < signal.size(); i++) {
+            max_v = std::max(max_v, signal[i]);
+
+            ASSERT_GE(signal[i], 0.);
+            EXPECT_GE(signal_back[i], 0.);
+
+            const double err = signal[i] - signal_back[i];
+
+            total_err += err * err;            
+        }
+
+        total_err = std::sqrt(total_err / signal.size());
+        EXPECT_LE(total_err, max_v / 10.f);
     } else {
         compute_density(phases, moments, signal_back);
-    }
-    
-    ASSERT_EQ(phases.size(), signal_back.size());
-    ASSERT_EQ(signal.size(), signal_back.size());
 
-    for (size_t i = 0; i < signal.size(); i++) {
-        EXPECT_NEAR(signal[i], signal_back[i], 1e-1);
+        ASSERT_EQ(phases.size(), signal_back.size());
+        ASSERT_EQ(signal.size(), signal_back.size());
+
+        for (size_t i = 0; i < signal.size(); i++) {
+            ASSERT_GE(signal[i], 0.);
+            ASSERT_LE(signal[i], 1.);
+
+            EXPECT_GE(signal_back[i], 0.);
+            EXPECT_LE(signal_back[i], 1.);
+
+            EXPECT_NEAR(signal[i], signal_back[i], 1e-1);            
+        }
     }
 }
 

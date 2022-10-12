@@ -2,19 +2,6 @@
 #include <vector>
 
 
-template<typename T>
-void linspace(T min, T max, int size, std::vector<T>& array)
-{
-    array.resize(size);
-
-    T delta = (max - min) / T(size - 1);
-
-    for (int i = 0; i < size; i++) {
-        array[i] = min + i * delta;
-    }
-}
-
-
 double reflectance_start = 400.0;
 double reflectance_end = 700.0;
 int reflectance_n_samples = 61;
