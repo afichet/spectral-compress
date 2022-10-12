@@ -73,6 +73,7 @@ struct SGEGGrayGroup
 struct SGEGBox
 {
     uint32_t revision;
+    uint32_t n_parts;
 
     std::vector<SGEGSpectralGroup> spectral_groups;
     std::vector<SGEGGrayGroup> gray_groups;

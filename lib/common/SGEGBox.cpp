@@ -198,6 +198,7 @@ SGEGGrayGroup& SGEGGrayGroup::operator=(const SGEGGrayGroup& other) {
 
 SGEGBox::SGEGBox() 
     : revision(1)
+    , n_parts(1)
 {}
 
 
@@ -207,6 +208,7 @@ SGEGBox::SGEGBox(const std::vector<uint8_t> &data)
     uint32_t n_spectral_groups, n_gray_groups;
 
     offset += read_value(data.data() + offset, revision);
+    offset += read_value(data.data() + offset, n_parts);
 
     // spectral groups
     offset += read_value(data.data() + offset, n_spectral_groups);
@@ -233,6 +235,7 @@ SGEGBox::SGEGBox(const std::vector<uint8_t> &data)
 
 SGEGBox::SGEGBox(const SGEGBox& other)
     : revision(other.revision)
+    , n_parts(other.n_parts)
     , spectral_groups(other.spectral_groups)
     , gray_groups(other.gray_groups)
     , exr_attributes(other.exr_attributes)
@@ -257,6 +260,9 @@ size_t SGEGBox::getRaw(uint8_t data[]) const
 
     // revision
     offset += write_value(revision, data + offset);
+
+    // number of parts
+    offset += write_value(n_parts, data + offset);
     
     // spectral_groups
     offset += write_value(n_spectral_groups, data + offset);
@@ -283,6 +289,7 @@ size_t SGEGBox::size() const {
     size_t sz = 0;
   
     sz += sizeof(revision);
+    sz += sizeof(n_parts);
 
     sz += sizeof(uint32_t); // spectral_group array size
     
@@ -308,6 +315,7 @@ SGEGBox& SGEGBox::operator=(const SGEGBox& other)
 {        
     if (this != &other) {
         revision        = other.revision;
+        n_parts         = other.n_parts;
         spectral_groups = other.spectral_groups;
         gray_groups     = other.gray_groups;
         exr_attributes  = other.exr_attributes;
@@ -320,6 +328,7 @@ SGEGBox& SGEGBox::operator=(const SGEGBox& other)
 
 void SGEGBox::print() const {
     std::cout << "revision: " << revision << std::endl;
+    std::cout << "n_parts: " << n_parts << std::endl;
     // std::cout << "main_layer_name: " << main_layer_name.data() << std::endl;
     std::cout << "spectral_groups: " << spectral_groups.size() << std::endl;
 

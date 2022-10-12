@@ -162,6 +162,7 @@ public:
 protected:
     uint32_t _width;
     uint32_t _height;
+    uint32_t _n_parts;
 
     SGEGBox _sgeg_box;
 
