@@ -108,6 +108,23 @@ void dump_array(const char* filename, const std::vector<double>& array)
 }
 
 
+void gnuplot_export(const char* filename, const std::vector<double>& array)
+{
+    std::ofstream f_out(filename, std::ios::out);
+
+    if (!f_out.is_open()) {
+        std::cerr << "Could not open file for writing." << std::endl;
+        return;
+    }
+
+    for (size_t i = 0; i < array.size(); i++) {
+        f_out << i << " " << array[i] << std::endl;
+    }
+
+    f_out.close();
+}
+
+
 int main(int argc, char* argv[])
 {
     (void)argc;
@@ -221,6 +238,28 @@ int main(int argc, char* argv[])
         0.01058, 0.02523, 0.04864
     };
 
+    const double FL3_13_start = 380.0;
+    const double FL3_13_end = 780.0;
+    const int FL3_13_n_samples = 81;
+    const std::vector<double> FL3_13 = {2.23, 2.92, 3.91, 4.55, 5.46, 77.4, 11.25, 7.69, 8.29, 8.98, 10.01, 204.45, 13.75, 16.88, 21.73, 27.96, 34.92, 41.96, 48.62, 54.33, 59.49, 67.91, 70.01, 66.4, 62.07, 56.95, 52.7, 48.54, 44.8, 41.75, 39.77, 40.5, 59.27, 184.09, 59.06, 49.95, 50.9, 54.51, 58.33, 77.49, 85.78, 76.2, 78.73, 78.95, 81.48, 84.57, 87.75, 89.56, 91.36, 89.0, 83.67, 78.26, 73.19, 67.61, 61.42, 55.49, 49.78, 44.46, 39.13, 34.45, 30.28, 26.37, 23.88, 20.1, 17.4, 15.29, 13.62, 11.68, 10.31, 9.11, 8.03, 7.13, 6.31, 5.67, 5.11, 4.55, 9.06, 3.74, 4.04, 3.14, 2.75};
+
+    std::vector<double> FL3_13_wavelengths;
+    linspace(FL3_13_start, FL3_13_end, FL3_13_n_samples, FL3_13_wavelengths);
+
+    std::vector<double> phases;
+    std::vector<double> moments;
+    std::vector<double> signal_back;
+
+    wavelengths_to_phases(FL3_13_wavelengths, phases);
+    compute_moments(phases, FL3_13, phases.size(), moments);
+    compute_density(phases, moments, signal_back);
+
+    gnuplot_export("signal.dat", FL3_13);
+    gnuplot_export("reconst.dat", signal_back);
+    // dump_array("signal.dat", FL3_13);
+    // dump_array("reconst.dat", signal_back);
+
+
     // // ------------------------------------------------------------------------
     // // Test with reflectance
     // // ------------------------------------------------------------------------
@@ -272,64 +311,64 @@ int main(int argc, char* argv[])
     // Test with emission
     // ------------------------------------------------------------------------
 
-    const int n_moments_emission = emission_wavelength.size();//32;
+    // const int n_moments_emission = FL3_13_n_samples;
 
-    double max_signal = 0;
-    for (const double& v: emission) {
-        max_signal = std::max(max_signal, v);
-    }
+    // double max_signal = 0;
+    // for (const double& v: emission) {
+    //     max_signal = std::max(max_signal, v);
+    // }
 
-    for (double& v: emission) {
-        v /= max_signal;
-    }
+    // for (double& v: emission) {
+    //     v /= max_signal;
+    // }
 
-    std::vector<double> emission_phases;
+    // std::vector<double> emission_phases;
 
-    std::vector<double> emission_moments;
-    std::vector<double> emission_compressed_bounded;
-    std::vector<double> emission_compressed_unbounded;
+    // std::vector<double> emission_moments;
+    // std::vector<double> emission_compressed_bounded;
+    // std::vector<double> emission_compressed_unbounded;
 
-    std::vector<double> emission_inflated_unbounded;
-    std::vector<double> emission_inflated_bounded;
+    // std::vector<double> emission_inflated_unbounded;
+    // std::vector<double> emission_inflated_bounded;
 
-    std::vector<double> emission_density;
+    // std::vector<double> emission_density;
 
-    wavelengths_to_phases(emission_wavelength, emission_phases);
+    // wavelengths_to_phases(emission_wavelength, emission_phases);
 
-    compute_moments(
-        emission_phases, 
-        emission, 
-        n_moments_emission, 
-        emission_moments
-    );
+    // compute_moments(
+    //     emission_phases, 
+    //     emission, 
+    //     n_moments_emission, 
+    //     emission_moments
+    // );
 
-    // Unbounded
-    unbounded_compress_moments(
-        emission_moments,
-        emission_compressed_unbounded
-    );
+    // // Unbounded
+    // unbounded_compress_moments(
+    //     emission_moments,
+    //     emission_compressed_unbounded
+    // );
 
-    unbounded_decompress_moments(
-        emission_compressed_unbounded,
-        emission_inflated_unbounded
-    );
+    // unbounded_decompress_moments(
+    //     emission_compressed_unbounded,
+    //     emission_inflated_unbounded
+    // );
 
-    // Bounded
-    bounded_compress_moments(
-        emission_moments,
-        emission_compressed_bounded
-    );
+    // // Bounded
+    // bounded_compress_moments(
+    //     emission_moments,
+    //     emission_compressed_bounded
+    // );
 
-    bounded_decompress_moments(
-        emission_compressed_bounded,
-        emission_inflated_bounded
-    );
+    // bounded_decompress_moments(
+    //     emission_compressed_bounded,
+    //     emission_inflated_bounded
+    // );
 
-    compute_density(
-        emission_phases,
-        emission_inflated_bounded,
-        emission_density
-    );
+    // compute_density(
+    //     emission_phases,
+    //     emission_inflated_bounded,
+    //     emission_density
+    // );
 
     // std::cout << "-- Moments --" << std::endl;
     // print_array(emission_moments);
@@ -338,16 +377,16 @@ int main(int argc, char* argv[])
     // std::cout << "-- Moments compressed bounded--" << std::endl;
     // print_array(emission_compressed_unbounded);
 
-    std::cout << "------------------------------------" << std::endl;
-    std::cout << "--   Comparison forward reverse   --" << std::endl;
-    std::cout << "------------------------------------" << std::endl;
-    std::cout << "  bounded original: " << get_error(emission_moments, emission_inflated_bounded) << std::endl;
-    std::cout << "unbounded original: " << get_error(emission_moments, emission_inflated_unbounded) << std::endl;
+    // std::cout << "------------------------------------" << std::endl;
+    // std::cout << "--   Comparison forward reverse   --" << std::endl;
+    // std::cout << "------------------------------------" << std::endl;
+    // std::cout << "  bounded original: " << get_error(emission_moments, emission_inflated_bounded) << std::endl;
+    // std::cout << "unbounded original: " << get_error(emission_moments, emission_inflated_unbounded) << std::endl;
 
-    dump_array("phases.dat", emission_phases);
-    dump_array("moments.dat", emission_moments);
-    dump_array("c_moments_b.dat", emission_compressed_bounded);
-    dump_array("c_moments_ub.dat", emission_compressed_unbounded);
+    // dump_array("phases.dat", emission_phases);
+    // dump_array("moments.dat", emission_moments);
+    // dump_array("c_moments_b.dat", emission_compressed_bounded);
+    // dump_array("c_moments_ub.dat", emission_compressed_unbounded);
 
     // print_array(emission_moments);
 

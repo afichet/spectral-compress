@@ -8,6 +8,10 @@
 
 #include "spectral_data.h"
 
+// TODO:
+// - Test if average is kept between various conversion on 0th moment
+// - Test if renormalization is consistent with unbounded_to_bounded
+
 struct Spectrum {
     // const std::vector<double>& wavelengths;
     bool isReflective;
