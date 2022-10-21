@@ -110,7 +110,8 @@ double unbounded_average_err(
         }
     }
 
-    return err;
+    return err / norm_noments[0];
+    // return std::sqrt(err) / norm_noments[0];
 }
 
 
@@ -160,7 +161,8 @@ double bounded_average_err(
         }
     }
 
-    return err;
+    return err / norm_noments[0];
+    // return std::sqrt(err) / norm_noments[0];
 }
 
 
@@ -210,7 +212,8 @@ double unbounded_to_bounded_average_err(
         }
     }
 
-    return err;
+    return err / norm_noments[0];
+    // return std::sqrt(err) / norm_noments[0];
 }
 
 
