@@ -6,3 +6,5 @@ add_subdirectory(stupid-compress)
 add_subdirectory(stupid-decompress)
 
 add_subdirectory(generate-macbeth-img)
+
+add_subdirectory(quantization-from-image)

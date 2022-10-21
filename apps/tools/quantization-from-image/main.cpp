@@ -43,6 +43,7 @@
 #include <quantization.h>
 #include <Util.h>
 #include <SpectrumConverter.h>
+#include <EXRSpectralImage.h>
 
 #include "macbeth_data.h"
 
@@ -65,7 +66,7 @@ void bounded_generate_quantization_curves(
 {
     optimized_quantization_curves.clear();
 
-    for (size_t n_bits = 3; n_bits <= 12; n_bits++) {
+    for (size_t n_bits = 8; n_bits <= 12; n_bits++) {
         optimized_quantization_curves.resize(optimized_quantization_curves.size() + 1);
 
         std::vector<int>& quantization_curve = optimized_quantization_curves.back();
@@ -89,7 +90,7 @@ void unbounded_generate_quantization_curves(
 {
     optimized_quantization_curves.clear();
 
-    for (size_t n_bits = 3; n_bits <= 12; n_bits++) {
+    for (size_t n_bits = 8; n_bits <= 12; n_bits++) {
         optimized_quantization_curves.resize(optimized_quantization_curves.size() + 1);
 
         std::vector<int>& quantization_curve = optimized_quantization_curves.back();
@@ -113,7 +114,7 @@ void unbounded_to_bounded_generate_quantization_curves(
 {
     optimized_quantization_curves.clear();
 
-    for (size_t n_bits = 3; n_bits <= 12; n_bits++) {
+    for (size_t n_bits = 8; n_bits <= 12; n_bits++) {
         optimized_quantization_curves.resize(optimized_quantization_curves.size() + 1);
 
         std::vector<int>& quantization_curve = optimized_quantization_curves.back();
@@ -303,6 +304,25 @@ void gnuplot_output_quantization_curves(
 }
 
 
+void gnuplot_output_quantization_curves(
+    const std::vector<std::vector<int>>& quantization_curves,
+    const char* filename)
+{
+    std::ofstream file(filename);
+    
+    if (file.is_open()) {
+        gnuplot_output_quantization_curves(
+            quantization_curves,
+            file
+        );
+
+        file.close();
+    } else {
+        std::cerr << "Could not open " << filename << " for writing" << std::endl;
+    }
+}
+
+
 void gnuplot_output_bits_errors(
     const std::vector<std::pair<int, double>> errors,
     std::ostream& output)
@@ -312,27 +332,88 @@ void gnuplot_output_bits_errors(
     }
 }
 
+
+void gnuplot_output_bits_errors(
+    const std::vector<std::pair<int, double>> errors_generated_curves,
+    const std::vector<std::pair<int, double>> errors_mutated_curves,
+    const std::vector<std::pair<int, double>> errors_random_curves,
+    const char* filename)
+{
+    std::ofstream file(filename);
+
+    if (file.is_open()) {
+        gnuplot_output_bits_errors(errors_generated_curves, file);
+        file << std::endl << std::endl;
+
+        gnuplot_output_bits_errors(errors_mutated_curves, file);
+        file << std::endl << std::endl;
+
+        gnuplot_output_bits_errors(errors_random_curves, file);
+        file << std::endl << std::endl;
+
+        file.close();
+    } else {
+        std::cerr << "Could not open " << filename << " for writing" << std::endl;
+    }
+}
+
+
 // ----------------------------------------------------------------------------
 
 int main(int argc, char* argv[])
 {
     (void)argc; (void)argv;
 
-    const size_t n_wl = 36;
-    const size_t n_px = 24;
+    if (argc < 2) {
+        std::cout << "Usage:" << std::endl
+                  << "------" << std::endl
+                  << argv[0] << " <exr_spectral_image>" << std::endl;
+
+        exit(0);
+    }
+
+    EXRSpectralImage image(argv[1]);
+
+    const std::vector<SpectralFramebuffer*>& framebuffers = image.getSpectralFramebuffers();
+    const SpectralFramebuffer* main_fb = framebuffers.front();
+
+    std::cout << "Opened " << argv[1] << std::endl;
+    std::cout << "Found: " << framebuffers.size() << " spectral framebuffer(s)." << std::endl;
+    std::cout << "Using: " << main_fb->root_name << std::endl;
+
+    const size_t n_wl = main_fb->wavelengths_nm.size();
+    const size_t n_px = image.width() * image.height();
     const size_t n_moments = n_wl;
 
     std::vector<double> wavelengths(n_wl);
     for (size_t i = 0; i < n_wl; i++) {
-        wavelengths[i] = macbeth_wavelengths[i];
+        wavelengths[i] = main_fb->wavelengths_nm[i];
     }
 
-    std::vector<double> macbeth(n_wl * n_px);
+    std::vector<double> spectral_image(n_wl * n_px);
     for (size_t wl = 0; wl < n_wl; wl++) {
         for (size_t px = 0; px < n_px; px++) {
-            macbeth[px * n_wl + wl] = macbeth_patches[px][wl];
+            spectral_image[px * n_wl + wl] = main_fb->image_data[px * n_wl + wl];
         }
     }
+    
+    // Hard coded version
+
+    // const size_t n_wl = 36;
+    // const size_t n_px = 24;
+    // const size_t n_moments = n_wl;
+
+    // std::vector<double> wavelengths(n_wl);
+    // for (size_t i = 0; i < n_wl; i++) {
+    //     wavelengths[i] = macbeth_wavelengths[i];
+    // }
+
+    // std::vector<double> spectral_image(n_wl * n_px);
+    // for (size_t wl = 0; wl < n_wl; wl++) {
+    //     for (size_t px = 0; px < n_px; px++) {
+    //         spectral_image[px * n_wl + wl] = macbeth_patches[px][wl];
+    //     }
+    // }
 
     // ------------------------------------------------------------------------
     // Error for quantizing a given moment
@@ -351,55 +432,45 @@ int main(int argc, char* argv[])
     std::vector<std::vector<int>> bounded_quantization_curves;
 
     bounded_generate_quantization_curves(
-        wavelengths, macbeth,
+        wavelengths, spectral_image,
         n_px, n_moments,
         bounded_quantization_curves
     );
 
-    const std::string filename_quantization_bounded = "q_curves_bounded.dat";
-    std::ofstream f_quantization_b(filename_quantization_bounded);
-
-    if (!f_quantization_b.is_open()) {
-        std::cerr << "Could not open " << filename_quantization_bounded
-                  << " for writing" << std::endl;
-
-        return -1;
-    }
-
-    gnuplot_output_quantization_curves(bounded_quantization_curves, f_quantization_b);
-
-    f_quantization_b.close();
-
+    gnuplot_output_quantization_curves(
+        bounded_quantization_curves, 
+        "q_curves_bounded.dat"
+    );
 
     std::vector<std::vector<int>> unbounded_quantization_curves;
 
     unbounded_generate_quantization_curves(
-        wavelengths, macbeth,
+        wavelengths, spectral_image,
         n_px, n_moments,
         unbounded_quantization_curves
+    );
+
+    gnuplot_output_quantization_curves(
+        unbounded_quantization_curves, 
+        "q_curves_unbounded.dat"
     );
 
     std::vector<std::vector<int>> unbounded_to_bounded_quantization_curves;
 
     unbounded_to_bounded_generate_quantization_curves(
-        wavelengths, macbeth,
+        wavelengths, spectral_image,
         n_px, n_moments,
         unbounded_to_bounded_quantization_curves
+    );
+
+    gnuplot_output_quantization_curves(
+        unbounded_to_bounded_quantization_curves, 
+        "q_curves_unbounded_to_bounded.dat"
     );
 
     // ------------------------------------------------------------------------
     // Pareto
     // ------------------------------------------------------------------------
-
-    const std::string filename_pareto_bounded = "pareto_bounded.dat";
-
-    std::ofstream f_pareto_b(filename_pareto_bounded);
-
-    if (!f_pareto_b.is_open()) {
-        std::cerr << "Could not open " << filename_pareto_bounded
-                  << " for writing" << std::endl;
-        return -1;
-    }
 
     std::vector<double> phases(n_wl);
 
@@ -408,7 +479,7 @@ int main(int argc, char* argv[])
     std::vector<double> moments(n_wl * n_px);
 
     compute_moments_image(
-        phases, macbeth,
+        phases, spectral_image,
         n_px, 1, n_moments,
         moments
     );
@@ -429,7 +500,6 @@ int main(int argc, char* argv[])
         bounded_normalized_moments,
         bounded_mins, bounded_maxs
     );
-
 
     std::vector<double> unbounded_compressed_moments(n_wl * n_px);
     std::vector<double> unbounded_normalized_moments(n_wl * n_px);
@@ -465,18 +535,19 @@ int main(int argc, char* argv[])
         unbounded_to_bounded_mins, unbounded_to_bounded_maxs
     );
 
+    // Bounded
     std::vector<std::vector<int>> bounded_mutated_curves;
-    std::vector<std::vector<int>> random_curves;
+    std::vector<std::vector<int>> bounded_random_curves;
 
     generate_mutated_curves(bounded_quantization_curves, 500, bounded_mutated_curves);
-    generate_random_curves(3, 16, 500, n_moments, random_curves);
+    generate_random_curves(3, 16, 500, n_moments, bounded_random_curves);
 
     std::vector<std::pair<int, double>> error_bounded_quantization_curves;
     std::vector<std::pair<int, double>> error_bounded_mutated_curves;
     std::vector<std::pair<int, double>> error_bounded_random_curves;
 
     bounded_errors_for_quantization_curves(
-        wavelengths, macbeth,
+        wavelengths, spectral_image,
         n_px, n_moments,
         bounded_normalized_moments, bounded_mins, bounded_maxs,
         bounded_quantization_curves,
@@ -484,7 +555,7 @@ int main(int argc, char* argv[])
     );
 
     bounded_errors_for_quantization_curves(
-        wavelengths, macbeth,
+        wavelengths, spectral_image,
         n_px, n_moments,
         bounded_normalized_moments, bounded_mins, bounded_maxs,
         bounded_mutated_curves,
@@ -492,51 +563,103 @@ int main(int argc, char* argv[])
     );
 
     bounded_errors_for_quantization_curves(
-        wavelengths, macbeth,
+        wavelengths, spectral_image,
         n_px, n_moments,
         bounded_normalized_moments, bounded_mins, bounded_maxs,
-        random_curves,
+        bounded_random_curves,
         error_bounded_random_curves
     );
 
-    gnuplot_output_bits_errors(error_bounded_quantization_curves, f_pareto_b);
-    f_pareto_b << std::endl << std::endl;
-    gnuplot_output_bits_errors(error_bounded_mutated_curves, f_pareto_b);
-    f_pareto_b << std::endl << std::endl;
-    gnuplot_output_bits_errors(error_bounded_random_curves, f_pareto_b);
-    f_pareto_b << std::endl << std::endl;
+    gnuplot_output_bits_errors(
+        error_bounded_quantization_curves,
+        error_bounded_mutated_curves,
+        error_bounded_random_curves,
+        "pareto_bounded.dat"
+    );
 
+    // Unbounded
+    std::vector<std::vector<int>> unbounded_mutated_curves;
+    std::vector<std::vector<int>> unbounded_random_curves;
 
+    generate_mutated_curves(unbounded_quantization_curves, 500, unbounded_mutated_curves);
+    generate_random_curves(3, 16, 500, n_moments, unbounded_random_curves);
 
     std::vector<std::pair<int, double>> error_unbounded_quantization_curves;
+    std::vector<std::pair<int, double>> error_unbounded_mutated_curves;
+    std::vector<std::pair<int, double>> error_unbounded_random_curves;
 
     unbounded_errors_for_quantization_curves(
-        wavelengths, macbeth,
+        wavelengths, spectral_image,
         n_px, n_moments,
         unbounded_normalized_moments, unbounded_mins, unbounded_maxs,
         unbounded_quantization_curves,
         error_unbounded_quantization_curves
     );
 
-    gnuplot_output_bits_errors(error_unbounded_quantization_curves, f_pareto_b);
-    f_pareto_b << std::endl << std::endl;
+    unbounded_errors_for_quantization_curves(
+        wavelengths, spectral_image,
+        n_px, n_moments,
+        unbounded_normalized_moments, unbounded_mins, unbounded_maxs,
+        unbounded_mutated_curves,
+        error_unbounded_mutated_curves
+    );
+    
+    unbounded_errors_for_quantization_curves(
+        wavelengths, spectral_image,
+        n_px, n_moments,
+        unbounded_normalized_moments, unbounded_mins, unbounded_maxs,
+        unbounded_random_curves,
+        error_unbounded_random_curves
+    );
 
+    gnuplot_output_bits_errors(
+        error_unbounded_quantization_curves,
+        error_unbounded_mutated_curves,
+        error_unbounded_random_curves,
+        "pareto_unbounded.dat"
+    );
+
+    // Unbounded to bounded
+    std::vector<std::vector<int>> unbounded_to_bounded_mutated_curves;
+    std::vector<std::vector<int>> unbounded_to_bounded_random_curves;
+
+    generate_mutated_curves(unbounded_to_bounded_quantization_curves, 500, unbounded_to_bounded_mutated_curves);
+    generate_random_curves(3, 16, 500, n_moments, unbounded_to_bounded_random_curves);
 
     std::vector<std::pair<int, double>> error_unbounded_to_bounded_quantization_curves;
+    std::vector<std::pair<int, double>> error_unbounded_to_bounded_mutated_curves;
+    std::vector<std::pair<int, double>> error_unbounded_to_bounded_random_curves;
 
     unbounded_to_bounded_errors_for_quantization_curves(
-        wavelengths, macbeth,
+        wavelengths, spectral_image,
         n_px, n_moments,
         unbounded_to_bounded_normalized_moments, unbounded_to_bounded_mins, unbounded_to_bounded_maxs,
         unbounded_to_bounded_quantization_curves,
         error_unbounded_to_bounded_quantization_curves
     );
 
-    gnuplot_output_bits_errors(error_unbounded_to_bounded_quantization_curves, f_pareto_b);
-    f_pareto_b << std::endl << std::endl;
+    unbounded_to_bounded_errors_for_quantization_curves(
+        wavelengths, spectral_image,
+        n_px, n_moments,
+        unbounded_to_bounded_normalized_moments, unbounded_to_bounded_mins, unbounded_to_bounded_maxs,
+        unbounded_to_bounded_mutated_curves,
+        error_unbounded_to_bounded_mutated_curves
+    );
 
+    unbounded_to_bounded_errors_for_quantization_curves(
+        wavelengths, spectral_image,
+        n_px, n_moments,
+        unbounded_to_bounded_normalized_moments, unbounded_to_bounded_mins, unbounded_to_bounded_maxs,
+        unbounded_to_bounded_random_curves,
+        error_unbounded_to_bounded_random_curves
+    );
 
-    f_pareto_b.close();
+    gnuplot_output_bits_errors(
+        error_unbounded_to_bounded_quantization_curves,
+        error_unbounded_to_bounded_mutated_curves,
+        error_unbounded_to_bounded_random_curves,
+        "pareto_unbounded_to_bounded.dat"
+    );
 
     return 0;
 }
