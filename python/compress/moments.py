@@ -27,7 +27,6 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-from black import target_version_option_callback
 import numpy as np
 import scipy
 
