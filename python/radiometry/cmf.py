@@ -98,7 +98,7 @@ class CMF:
         interp_image_f = scipy.interpolate.interp1d(image_wl, spectral_image, bounds_error=False, fill_value=(0, 0))
         interp_image = np.maximum(interp_image_f(self.wl), 0)
 
-        Y_illu = np.sum(illu_values * self.y_bar[:, 1], axis=-1) * delta
+        Y_illu = np.trapz(illu_values * self.y_bar[:, 1], x=self.wl)
 
         s_x = np.trapz(interp_image * illu_values * self.x_bar[:, 1], x=self.wl) / Y_illu
         s_y = np.trapz(interp_image * illu_values * self.y_bar[:, 1], x=self.wl) / Y_illu
