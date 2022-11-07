@@ -129,7 +129,8 @@ class SpectralEXR:
         wl_nm = [[], [], [], []]
         idx = [[], [], [], []]
 
-        regex = r'^S([0-3])\.*(\d*,?\d*([eE][-+]?\d+)?)(Y|Z|E|P|T|G|M|k|h|da|d|c|m|u|n|p|f|a|z|y)?(m|Hz)$'
+        # regex = r'^S([0-3])\.*(\d*,?\d*([eE][-+]?\d+)?)(Y|Z|E|P|T|G|M|k|h|da|d|c|m|u|n|p|f|a|z|y)?(m|Hz)$'
+        regex = r'^S([0-3])\.*(((\d+(,\d*)?)|(,\d+))([eE][+-]?\d+)?)(Y|Z|E|P|T|G|M|k|h|da|d|c|m|u|n|p|f|a|z|y)?(m|Hz)$'
         p = re.compile(regex)
         channels = im.spec().channelnames
 
@@ -139,7 +140,7 @@ class SpectralEXR:
             if m:
                 stokes_component = int(m.group(1))
                 value = m.group(2)
-                multiplier, units = m.group(4, 5)
+                multiplier, units = m.group(8, 9)
 
                 value = SpectralEXR.str_to_nm(value, multiplier, units)
 
@@ -153,7 +154,7 @@ class SpectralEXR:
         wl_nm = []
         idx = []
 
-        regex = r'^T\.*(\d*,?\d*([eE][-+]?\d+)?)(Y|Z|E|P|T|G|M|k|h|da|d|c|m|u|n|p|f|a|z|y)?(m|Hz)$'
+        regex = r'^T\.*(((\d+(,\d*)?)|(,\d+))([eE][+-]?\d+)?)(Y|Z|E|P|T|G|M|k|h|da|d|c|m|u|n|p|f|a|z|y)?(m|Hz)$'
 
         p = re.compile(regex)
         channels = im.spec().channelnames
@@ -163,7 +164,7 @@ class SpectralEXR:
 
             if m:
                 value = m.group(1)
-                multiplier, units = m.group(3, 4)
+                multiplier, units = m.group(7, 8)
 
                 value = SpectralEXR.str_to_nm(value, multiplier, units)
 
