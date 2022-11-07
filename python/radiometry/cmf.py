@@ -48,6 +48,17 @@ class CMF:
         return spectrum_x, spectrum_y, spectrum_z
 
 
+    def get_sRGB_lin_emissive(self, spectrum_wl, spectrum_values):
+        xyz = self.get_xyz_emissive(spectrum_wl, spectrum_values)
+
+        mat_sRGB = [
+            [ 3.2404542, -0.9692660,  0.0556434],
+            [-1.5371385,  1.8760108, -0.2040259],
+            [-0.4985314,  0.0415560,  1.0572252]]
+
+        return xyz @ mat_sRGB
+
+
     def get_xyz_emissive_img(self, spectrum_wl, spectral_image):
         interp_image_f = scipy.interpolate.interp1d(spectrum_wl, spectral_image, bounds_error=False, fill_value=(0, 0), )
         interp_image = np.maximum(interp_image_f(self.wl), 0)
@@ -59,6 +70,17 @@ class CMF:
         s_z = np.sum(interp_image * self.z_bar[:, 1], axis=-1) * delta
 
         return np.dstack((s_x, s_y, s_z))
+
+
+    def get_sRGB_lin_emissive_img(self, spectrum_wl, spectral_image):
+        image_xyz = self.get_xyz_emissive_img(spectrum_wl, spectral_image)
+
+        mat_sRGB = [
+            [ 3.2404542, -0.9692660,  0.0556434],
+            [-1.5371385,  1.8760108, -0.2040259],
+            [-0.4985314,  0.0415560,  1.0572252]]
+
+        return image_xyz @ mat_sRGB
 
 
     def get_xyz_reflective_img(self, wavelength_illu, spectrum_illu, image_wl, spectral_image):
@@ -87,3 +109,14 @@ class CMF:
         s_z = np.sum(interp_image * illu_values * self.z_bar[:, 1], axis=-1) / Y_illu * delta
 
         return np.dstack((s_x, s_y, s_z))
+
+
+    def get_sRGB_lin_reflective_img(self, wavelength_illu, spectrum_illu, image_wl, spectral_image):
+        image_xyz = self.get_xyz_reflective_img(wavelength_illu, spectrum_illu, image_wl, spectral_image)
+
+        mat_sRGB = [
+            [ 3.2404542, -0.9692660,  0.0556434],
+            [-1.5371385,  1.8760108, -0.2040259],
+            [-0.4985314,  0.0415560,  1.0572252]]
+
+        return image_xyz @ mat_sRGB
