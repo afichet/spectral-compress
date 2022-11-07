@@ -63,11 +63,9 @@ class CMF:
         interp_image_f = scipy.interpolate.interp1d(spectrum_wl, spectral_image, bounds_error=False, fill_value=(0, 0), )
         interp_image = np.maximum(interp_image_f(self.wl), 0)
 
-        delta = self.wl[1] - self.wl[0]
-
-        s_x = np.sum(interp_image * self.x_bar[:, 1], axis=-1) * delta
-        s_y = np.sum(interp_image * self.y_bar[:, 1], axis=-1) * delta
-        s_z = np.sum(interp_image * self.z_bar[:, 1], axis=-1) * delta
+        s_x = np.trapz(interp_image * self.x_bar[:, 1], x=self.wl)
+        s_y = np.trapz(interp_image * self.y_bar[:, 1], x=self.wl)
+        s_z = np.trapz(interp_image * self.z_bar[:, 1], x=self.wl)
 
         return np.dstack((s_x, s_y, s_z))
 
@@ -100,13 +98,11 @@ class CMF:
         interp_image_f = scipy.interpolate.interp1d(image_wl, spectral_image, bounds_error=False, fill_value=(0, 0))
         interp_image = np.maximum(interp_image_f(self.wl), 0)
 
-        delta = self.wl[1] - self.wl[0]
-
         Y_illu = np.sum(illu_values * self.y_bar[:, 1], axis=-1) * delta
 
-        s_x = np.sum(interp_image * illu_values * self.x_bar[:, 1], axis=-1) / Y_illu * delta
-        s_y = np.sum(interp_image * illu_values * self.y_bar[:, 1], axis=-1) / Y_illu * delta
-        s_z = np.sum(interp_image * illu_values * self.z_bar[:, 1], axis=-1) / Y_illu * delta
+        s_x = np.trapz(interp_image * illu_values * self.x_bar[:, 1], x=self.wl) / Y_illu
+        s_y = np.trapz(interp_image * illu_values * self.y_bar[:, 1], x=self.wl) / Y_illu
+        s_z = np.trapz(interp_image * illu_values * self.z_bar[:, 1], x=self.wl) / Y_illu
 
         return np.dstack((s_x, s_y, s_z))
 
