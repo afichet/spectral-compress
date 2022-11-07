@@ -286,10 +286,10 @@ def unbounded_to_bounded_decompress_real_trigonometric_moments(compressed_m):
     return moments
 
 
-def bounded_forward(base: np.array, moment_image: np.array):
+def bounded_forward(moment_image: np.array):
     w, h, n_moments = moment_image.shape
 
-    moments = np.real(moment_image.reshape((w * h, n_moments)) @ base)
+    moments = np.real(moment_image.reshape((w * h, n_moments)))
 
     compressed_moments  = np.zeros_like(moments)
 
@@ -301,10 +301,10 @@ def bounded_forward(base: np.array, moment_image: np.array):
     return normalized_moments.reshape((w, h, n_moments)), mins, maxs
 
 
-def unbounded_forward(base: np.array, moment_image: np.array):
+def unbounded_forward(moment_image: np.array):
     w, h, n_moments = moment_image.shape
 
-    moments = np.real(moment_image.reshape((w * h, n_moments)) @ base)
+    moments = np.real(moment_image.reshape((w * h, n_moments)))
 
     compressed_moments  = np.zeros_like(moments)
 
@@ -316,10 +316,10 @@ def unbounded_forward(base: np.array, moment_image: np.array):
     return normalized_moments.reshape((w, h, n_moments)), mins, maxs
 
 
-def unbounded_to_bounded_forward(base: np.array, moment_image: np.array):
+def unbounded_to_bounded_forward(moment_image: np.array):
     w, h, n_moments = moment_image.shape
 
-    moments = np.real(moment_image.reshape((w * h, n_moments)) @ base)
+    moments = np.real(moment_image.reshape((w * h, n_moments)))
 
     compressed_moments  = np.zeros_like(moments)
 
