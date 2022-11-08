@@ -286,10 +286,10 @@ def unbounded_to_bounded_decompress_real_trigonometric_moments(compressed_m):
     return moments
 
 
-def bounded_forward(moment_image: np.array):
-    w, h, n_moments = moment_image.shape
+def bounded_forward(basis: np.array, spectral_image: np.array):
+    w, h, n_moments = spectral_image.shape
 
-    moments = np.real(moment_image.reshape((w * h, n_moments)))
+    moments = np.real(spectral_image.reshape((w * h, n_moments)) @ basis)
 
     compressed_moments  = np.zeros_like(moments)
 
@@ -301,10 +301,10 @@ def bounded_forward(moment_image: np.array):
     return normalized_moments.reshape((w, h, n_moments)), mins, maxs
 
 
-def unbounded_forward(moment_image: np.array):
-    w, h, n_moments = moment_image.shape
+def unbounded_forward(basis: np.array, spectral_image: np.array):
+    w, h, n_moments = spectral_image.shape
 
-    moments = np.real(moment_image.reshape((w * h, n_moments)))
+    moments = np.real(spectral_image.reshape((w * h, n_moments)) @ basis)
 
     compressed_moments  = np.zeros_like(moments)
 
@@ -316,10 +316,10 @@ def unbounded_forward(moment_image: np.array):
     return normalized_moments.reshape((w, h, n_moments)), mins, maxs
 
 
-def unbounded_to_bounded_forward(moment_image: np.array):
-    w, h, n_moments = moment_image.shape
+def unbounded_to_bounded_forward(basis: np.array, spectral_image: np.array):
+    w, h, n_moments = spectral_image.shape
 
-    moments = np.real(moment_image.reshape((w * h, n_moments)))
+    moments = np.real(spectral_image.reshape((w * h, n_moments)) @ basis)
 
     compressed_moments  = np.zeros_like(moments)
 
