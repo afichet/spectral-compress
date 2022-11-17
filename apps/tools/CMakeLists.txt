@@ -8,3 +8,5 @@ add_subdirectory(stupid-decompress)
 add_subdirectory(generate-macbeth-img)
 
 add_subdirectory(quantization-from-image)
+
+add_subdirectory(cave-to-exr)
