@@ -286,6 +286,11 @@ def unbounded_to_bounded_decompress_real_trigonometric_moments(compressed_m):
     return moments
 
 
+# =============================================================================
+# Forward transforms
+# =============================================================================
+
+
 def bounded_forward(basis: np.array, spectral_image: np.array):
     w, h, n_moments = spectral_image.shape
 
@@ -332,6 +337,52 @@ def unbounded_to_bounded_forward(basis: np.array, spectral_image: np.array):
     normalized_moments, mins, maxs = util.normalize(compressed_moments)
 
     return normalized_moments.reshape((w, h, n_moments)), mins, maxs
+
+
+def bounded_w_upper_forward(basis, spectral_image):
+    # TODO: Handle case where there is only zeros!
+
+    w, h, n_moments = spectral_image.shape
+    spectrum = spectral_image.reshape((w * h, n_moments))
+    moments = np.real(spectrum @ basis)
+
+    # 1. Get the max value over all wavelengths & all pixels
+    global_max = np.max(spectral_image)
+
+    # 2. Get a scaling for each pixel relative to the global max
+    relative_scale = np.zeros((w * h, 1), dtype=np.uint8)
+    # relative_scale = np.zeros((w * h, 1))
+
+    for i in range(w * h):
+        local_max = np.max(spectrum[i])
+        rel_scale = local_max / global_max
+
+        # Quantize the relative scale
+        relative_scale[i] = np.ceil(rel_scale * 255)
+    
+    # 3. Now we can rescale AC components
+    scaled_moments = np.zeros_like(moments)
+    compressed_scaled_moments = np.zeros_like(moments)
+
+    for i in range(w * h):
+        m0 = moments[i, 0]
+        scale = global_max * (relative_scale[i] / 255.)
+        scaled_moments[i]  = moments[i] / scale
+        compressed_scaled_moments[i] = bounded_compress_real_trigonometric_moments(scaled_moments[i])
+        moments[i, 0] = m0
+        
+    # 4. Scaling to make AC components fit in [0..1]
+    normalized_scaled_moments, mins, maxs = util.normalize(compressed_scaled_moments)
+    
+    normalized_scaled_moments = normalized_scaled_moments.reshape((w, h, n_moments))
+    relative_scale = relative_scale.reshape((w, h, 1))
+
+    return normalized_scaled_moments, relative_scale, mins, maxs, global_max
+
+
+# =============================================================================
+# Backward transforms
+# =============================================================================
 
 
 def bounded_backward(inv_base: np.array, normalized_moments_image: np.array, mins: np.array, maxs: np.array) -> np.array:
@@ -384,3 +435,31 @@ def unbounded_to_bounded_backward(inv_base: np.array, normalized_moments_image: 
     signals = moments @ inv_base
 
     return np.real(signals.reshape((w, h, n_moments)))
+
+
+def bounded_w_upper_backward(
+    inv_basis,
+    compressed_moments: np.array,
+    relative_scale: np.array,
+    mins:np.array, maxs: np.array, global_max: float):
+
+    w, h, n_moments = compressed_moments.shape
+
+    compressed_scaled_moments = compressed_moments.reshape((w * h, n_moments))
+    
+    compressed_scaled_moments = util.denormalize(compressed_scaled_moments, mins, maxs)
+
+    relative_scale_l = relative_scale.reshape((w * h, 1))
+    moments = np.zeros((w * h, n_moments))
+
+    for i in range(w * h):
+        scale = global_max * (relative_scale_l[i] / 255.)
+        moments[i, 0] = moments[i, 0] / scale
+        moments[i] = bounded_decompress_real_trigonometric_moments(compressed_scaled_moments[i])
+        moments[i] = moments[i] * scale
+
+    signal = moments @ inv_basis
+
+    spectral_image = signal.reshape((w, h, n_moments))
+
+    return spectral_image

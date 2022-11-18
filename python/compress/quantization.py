@@ -269,5 +269,85 @@ def unbounded_to_bounded_err_for_curve(wavelengths: np.array, ref: np.array, cur
     return total_bits, err
 
 
+# =============================================================================
+# Unbounded with max value
+# =============================================================================
 
 
+def bounded_w_upper_get_error_progressive_quantization(wavelengths: np.array, ref: np.array, n_bits: int, err_fun=rrmse) -> np.array:
+    phases = moments.wavelengths_to_phase(wavelengths)
+    
+    signal_to_moments = moments.get_basis_signal_to_moments(phases)
+    moments_to_signal = np.linalg.inv(signal_to_moments)
+
+    norm_moments, relative_scale, mins, maxs, global_max = moments.bounded_w_upper_forward(signal_to_moments, ref)
+
+    err = np.zeros((ref.shape[2], ))
+
+    for i in range(1, norm_moments.shape[2]):
+        q_norm_moments = quantize_dequantize(norm_moments, i, n_bits)
+        backward_signal = moments.bounded_w_upper_backward(moments_to_signal, q_norm_moments, relative_scale, mins, maxs, global_max)
+
+        err[i] = err_fun(wavelengths, ref, backward_signal)
+
+    return err
+
+
+def bounded_w_upper_generate_quantization_curve(wavelengths: np.array, ref: np.array, n_bits: int, err_fun=rrmse) -> np.array:
+    _, _, n_moments = ref.shape
+
+    phases = moments.wavelengths_to_phase(wavelengths)
+
+    signal_to_moments = moments.get_basis_signal_to_moments(phases)
+    moments_to_signal = np.linalg.inv(signal_to_moments)
+
+    norm_moments, relative_scale, mins, maxs, global_max = moments.bounded_w_upper_forward(signal_to_moments, ref)
+
+    bits = np.zeros((n_moments,), dtype=np.uint8)
+
+    bits[0] = 16
+    bits[1] = n_bits
+
+    # Determine error baseline
+    q_norm_moments  = quantize_dequantize(norm_moments, 1, n_bits)
+    backward_signal = moments.bounded_w_upper_backward(moments_to_signal, q_norm_moments, relative_scale, mins, maxs, global_max)
+
+    err_init = err_fun(wavelengths, ref, backward_signal)
+
+    for i in range(2, n_moments):
+        bits[i] = bits[i - 1]
+        
+        for b in range(bits[i], 0, -1):
+            # Decrease bitrate while keeping the error bellow our threshold
+            q_norm_moments = quantize_dequantize(norm_moments, i, b)
+            backward_signal = moments.bounded_w_upper_backward(moments_to_signal, q_norm_moments, relative_scale, mins, maxs, global_max)
+
+            err = err_fun(wavelengths, ref, backward_signal)
+
+            if err >= err_init:
+                break
+                
+            bits[i] = b
+    
+    return bits
+
+
+def bounded_w_upper_err_for_curve(wavelengths: np.array, ref: np.array, curve: np.array, err_fun=rrmse):
+    phases = moments.wavelengths_to_phase(wavelengths)
+
+    signal_to_moments = moments.get_basis_signal_to_moments(phases)
+    moments_to_signal = np.linalg.inv(signal_to_moments)
+
+    norm_moments, relative_scale, mins, maxs, global_max = moments.bounded_w_upper_forward(signal_to_moments, ref)
+
+    quantized_norm_moments = norm_moments.copy()
+    
+    for i in range(1, norm_moments.shape[2]):
+        quantized_norm_moments = quantize_dequantize(quantized_norm_moments, i, curve[i])
+
+    backward_signal = moments.bounded_w_upper_backward(moments_to_signal, quantized_norm_moments, relative_scale, mins, maxs, global_max)
+
+    total_bits = np.sum(curve)
+    err = err_fun(wavelengths, ref, backward_signal)
+
+    return total_bits, err
