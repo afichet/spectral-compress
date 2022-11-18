@@ -38,28 +38,31 @@
 #include <cstddef>
 
 
-void unbounded_compute_quantization_curve(
+double unbounded_compute_quantization_curve(
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,
     size_t n_px, size_t n_moments,
     int n_bits_start,
-    std::vector<int>& quantization_curve);
+    std::vector<int>& quantization_curve,
+    int n_bits_0 = 32);
 
 
-void bounded_compute_quantization_curve(
+double bounded_compute_quantization_curve(
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,
     size_t n_px, size_t n_moments,
     int n_bits_start,
-    std::vector<int>& quantization_curve);
+    std::vector<int>& quantization_curve,
+    int n_bits_0 = 32);
 
 
-void unbounded_to_bounded_compute_quantization_curve(
+double unbounded_to_bounded_compute_quantization_curve(
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,
     size_t n_px, size_t n_moments,
     int n_bits_start,
-    std::vector<int>& quantization_curve);
+    std::vector<int>& quantization_curve,
+    int n_bits_0 = 32);
 
 
 double unbounded_error_for_quantization_curve(

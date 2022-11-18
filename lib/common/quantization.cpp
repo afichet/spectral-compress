@@ -104,13 +104,29 @@ double unbounded_average_err(
     );
 
     for (size_t p = 0; p < n_px; p++) {
-        for (size_t i = 0; i < n_wl; i++) {
-            const double q = reconst_signal[p * n_wl + i] - spectral_image[p * n_wl + i];
-            err += q * q;
+        double px_err = 0;
+
+        if (norm_noments[p * n_wl] > 0) {
+            for (size_t i = 0; i < n_wl; i++) {
+                const double q = reconst_signal[p * n_wl + i] - spectral_image[p * n_wl + i];
+                px_err += q * q;
+            }
+
+            px_err = std::sqrt(px_err) / norm_noments[p * n_wl];
         }
+
+        err += px_err;
     }
 
-    return err / norm_noments[0];
+    return err / (double)n_px;
+    // for (size_t p = 0; p < n_px; p++) {
+    //     for (size_t i = 0; i < n_wl; i++) {
+    //         const double q = reconst_signal[p * n_wl + i] - spectral_image[p * n_wl + i];
+    //         err += q * q;
+    //     }
+    // }
+
+    // return err / norm_noments[0];
     // return std::sqrt(err) / norm_noments[0];
 }
 
@@ -155,13 +171,29 @@ double bounded_average_err(
     );
 
     for (size_t p = 0; p < n_px; p++) {
-        for (size_t i = 0; i < n_wl; i++) {
-            const double q = reconst_signal[p * n_wl + i] - spectral_image[p * n_wl + i];
-            err += q * q;
+        double px_err = 0;
+
+        if (norm_noments[p * n_wl] > 0) {
+            for (size_t i = 0; i < n_wl; i++) {
+                const double q = reconst_signal[p * n_wl + i] - spectral_image[p * n_wl + i];
+                px_err += q * q;
+            }
+
+            px_err = std::sqrt(px_err) / norm_noments[p * n_wl];
         }
+
+        err += px_err;
     }
 
-    return err / norm_noments[0];
+    return err / (double)n_px;
+    // for (size_t p = 0; p < n_px; p++) {
+    //     for (size_t i = 0; i < n_wl; i++) {
+    //         const double q = reconst_signal[p * n_wl + i] - spectral_image[p * n_wl + i];
+    //         err += q * q;
+    //     }
+    // }
+
+    // return err / norm_noments[0];
     // return std::sqrt(err) / norm_noments[0];
 }
 
@@ -206,23 +238,33 @@ double unbounded_to_bounded_average_err(
     );
 
     for (size_t p = 0; p < n_px; p++) {
-        for (size_t i = 0; i < n_wl; i++) {
-            const double q = reconst_signal[p * n_wl + i] - spectral_image[p * n_wl + i];
-            err += q * q;
+        double px_err = 0;
+
+        if (norm_noments[p * n_wl] > 0) {
+            for (size_t i = 0; i < n_wl; i++) {
+                const double q = reconst_signal[p * n_wl + i] - spectral_image[p * n_wl + i];
+                px_err += q * q;
+            }
+
+            px_err = std::sqrt(px_err) / norm_noments[p * n_wl];
         }
+
+        err += px_err;
     }
 
-    return err / norm_noments[0];
+    return err / (double)n_px;
+    // return err / norm_noments[0];
     // return std::sqrt(err) / norm_noments[0];
 }
 
 
-void unbounded_compute_quantization_curve(
+double unbounded_compute_quantization_curve(
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,
     size_t n_px, size_t n_moments,
     int n_bits_start,
-    std::vector<int>& quantization_curve)
+    std::vector<int>& quantization_curve,
+    int n_bits_0)
 {
     std::vector<double> phases;
     std::vector<double> moments;
@@ -255,7 +297,7 @@ void unbounded_compute_quantization_curve(
 
     quantization_curve.resize(n_moments);
 
-    quantization_curve[0] = 32; // TODO: remove
+    quantization_curve[0] = n_bits_0;
     quantization_curve[1] = n_bits_start;
 
     std::vector<double> quantized_moments;
@@ -302,15 +344,25 @@ void unbounded_compute_quantization_curve(
             quantization_curve[m] = n_bits;
         }
     }
+
+    return unbounded_error_for_quantization_curve(
+        wavelengths,
+        spectral_image,
+        n_px, n_moments,
+        norm_moments,
+        mins, maxs,
+        quantization_curve
+    );
 }
 
 
-void bounded_compute_quantization_curve(
+double bounded_compute_quantization_curve(
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,
     size_t n_px, size_t n_moments,
     int n_bits_start,
-    std::vector<int>& quantization_curve)
+    std::vector<int>& quantization_curve,
+    int n_bits_0)
 {
     std::vector<double> phases;
     std::vector<double> moments;
@@ -342,7 +394,7 @@ void bounded_compute_quantization_curve(
 
     quantization_curve.resize(n_moments);
 
-    quantization_curve[0] = 32; // TODO: remove
+    quantization_curve[0] = n_bits_0;
     quantization_curve[1] = n_bits_start;
 
     std::vector<double> quantized_moments;
@@ -389,15 +441,25 @@ void bounded_compute_quantization_curve(
             quantization_curve[m] = n_bits;
         }
     }
+
+    return bounded_error_for_quantization_curve(
+        wavelengths,
+        spectral_image,
+        n_px, n_moments,
+        norm_moments,
+        mins, maxs,
+        quantization_curve
+    );
 }
 
 
-void unbounded_to_bounded_compute_quantization_curve(
+double unbounded_to_bounded_compute_quantization_curve(
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,
     size_t n_px, size_t n_moments,
     int n_bits_start,
-    std::vector<int>& quantization_curve)
+    std::vector<int>& quantization_curve,
+    int n_bits_0)
 {
     std::vector<double> phases;
     std::vector<double> moments;
@@ -429,7 +491,7 @@ void unbounded_to_bounded_compute_quantization_curve(
 
     quantization_curve.resize(n_moments);
 
-    quantization_curve[0] = 32; // TODO: remove
+    quantization_curve[0] = n_bits_0;
     quantization_curve[1] = n_bits_start;
 
     std::vector<double> quantized_moments;
@@ -475,6 +537,16 @@ void unbounded_to_bounded_compute_quantization_curve(
             quantization_curve[m] = n_bits;
         }
     }
+
+
+    return unbounded_to_bounded_error_for_quantization_curve(
+        wavelengths,
+        spectral_image,
+        n_px, n_moments,
+        norm_moments,
+        mins, maxs,
+        quantization_curve
+    );
 }
 
 
