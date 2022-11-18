@@ -10,7 +10,8 @@ set(CMAKE_CXX_STANDARD 11)
 
 add_subdirectory(3rdparty)
 
-set(ENABLE_TEST YES)
+set(ENABLE_TEST NO)
+# set(ENABLE_TEST YES)
 
 # Add flags to the compiler in case we want coverage report
 if (ENABLE_TEST)

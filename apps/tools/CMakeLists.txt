@@ -12,6 +12,7 @@ add_subdirectory(generate-macbeth-img)
 
 # Evaluation tools
 add_subdirectory(quantization-from-image)
+add_subdirectory(eval-quantization)
 
 # Image conversion tools
 add_subdirectory(cave-to-exr)
