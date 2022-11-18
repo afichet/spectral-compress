@@ -47,7 +47,8 @@ class SpectralEXR:
         channels = ['R', 'G', 'B']
 
         # Create the RGB framebuffer
-        cmf = CMF(os.path.join('data', 'cmf', 'ciexyz06_2deg.csv'))
+        base = os.path.abspath(os.path.dirname(__file__))
+        cmf = CMF(os.path.join(base, '..', '..', 'data', 'cmf', 'ciexyz06_2deg.csv'))
 
         mat_sRGB = [[ 3.2404542, -0.9692660, 0.0556434],
                     [-1.5371385, 1.8760108, -0.2040259],
