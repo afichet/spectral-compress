@@ -46,9 +46,7 @@
 
 #include <EXRSpectralImage.h>
 
-// TEMP
-// #include <fstream>
-
+// TODO: accept 8bit PNGs. One of the CAVE image is saved in 8bpp instead of 16bpp...
 
 // https://stackoverflow.com/questions/1001307/detecting-endianness-programmatically-in-a-c-program
 bool is_big_endian(void)
@@ -153,6 +151,7 @@ int main(int argc, char* argv[])
         std::cout << "Usage:" << std::endl
                   << "------" << std::endl
                   << argv[0] << " <path_first_image> <spectral_exr_out>" << std::endl;
+        return 0;
     }
 
     const std::string path_first_image  = argv[1];
