@@ -37,12 +37,8 @@
 #include <cstring>
 #include <Eigen/Core>
 
-/******************************************************************************
- * C interface
- *****************************************************************************/
 
-extern "C" {
-
+extern "C"
 void compute_moments_image(
     const double phases[],
     size_t n_phases,
@@ -82,7 +78,30 @@ void compute_moments_image(
     }
 }
 
+void compute_moments_image(
+    const std::vector<double>& phases,
+    const std::vector<double>& spectral_image,
+    size_t width, size_t height,
+    size_t n_moments,
+    std::vector<double>& moments_image)
+{
+    moments_image.resize(width * height * n_moments);
 
+    compute_moments_image(
+        phases.data(),
+        phases.size(),
+        spectral_image.data(),
+        width, height,
+        n_moments,
+        moments_image.data());
+}
+
+
+/*****************************************************************************/
+/* Compression                                                               */
+/*****************************************************************************/
+
+extern "C"
 void unbounded_compress_moments_image(
     const double moments_image[],
     size_t width, size_t height,
@@ -99,7 +118,24 @@ void unbounded_compress_moments_image(
     }
 }
 
+void unbounded_compress_moments_image(
+    const std::vector<double>& moments_image,
+    size_t width, size_t height,
+    size_t n_moments,
+    std::vector<double>& compressed_moments_image)
+{
+    compressed_moments_image.resize(moments_image.size());
 
+    unbounded_compress_moments_image(
+        moments_image.data(), 
+        width, height, 
+        n_moments, 
+        compressed_moments_image.data()
+    );
+}
+
+
+extern "C"
 void bounded_compress_moments_image(
     const double moments_image[],
     size_t width, size_t height,
@@ -116,7 +152,24 @@ void bounded_compress_moments_image(
     }
 }
 
+void bounded_compress_moments_image(
+    const std::vector<double>& moments_image,
+    size_t width, size_t height,
+    size_t n_moments,
+    std::vector<double>& compressed_moments_image)
+{
+    compressed_moments_image.resize(moments_image.size());
 
+    bounded_compress_moments_image(
+        moments_image.data(), 
+        width, height, 
+        n_moments, 
+        compressed_moments_image.data()
+    );
+}
+
+
+extern "C"
 void unbounded_to_bounded_compress_moments_image(
     const double moments_image[],
     size_t width, size_t height,
@@ -133,7 +186,27 @@ void unbounded_to_bounded_compress_moments_image(
     }
 }
 
+void unbounded_to_bounded_compress_moments_image(
+    const std::vector<double>& moments_image,
+    size_t width, size_t height,
+    size_t n_moments,
+    std::vector<double>& compressed_moments_image)
+{
+    compressed_moments_image.resize(moments_image.size());
 
+    unbounded_to_bounded_compress_moments_image(
+        moments_image.data(),
+        width, height,
+        n_moments,
+        compressed_moments_image.data()
+    );
+}
+
+/*****************************************************************************/
+/* Decompression                                                             */
+/*****************************************************************************/
+
+extern "C"
 void unbounded_decompress_moments_image(
     const double compressed_moments_image[],
     size_t width, size_t height,
@@ -150,7 +223,24 @@ void unbounded_decompress_moments_image(
     }
 }
 
+void unbounded_decompress_moments_image(
+    const std::vector<double>& compressed_moments_image,
+    size_t width, size_t height,
+    size_t n_moments,
+    std::vector<double>& moments_image)
+{
+    moments_image.resize(compressed_moments_image.size());
 
+    unbounded_decompress_moments_image(
+        compressed_moments_image.data(),
+        width, height,
+        n_moments,
+        moments_image.data()
+    );
+}
+
+
+extern "C"
 void bounded_decompress_moments_image(
     const double compressed_moments_image[],
     size_t width, size_t height,
@@ -167,7 +257,24 @@ void bounded_decompress_moments_image(
     }
 }
 
+void bounded_decompress_moments_image(
+    const std::vector<double>& compressed_moments_image,
+    size_t width, size_t height,
+    size_t n_moments,
+    std::vector<double>& moments_image)
+{
+    moments_image.resize(compressed_moments_image.size());
 
+    bounded_decompress_moments_image(
+        compressed_moments_image.data(),
+        width, height,
+        n_moments,
+        moments_image.data()
+    );
+}
+
+
+extern "C"
 void unbounded_to_bounded_decompress_moments_image(
     const double compressed_moments_image[],
     size_t width, size_t height,
@@ -184,7 +291,26 @@ void unbounded_to_bounded_decompress_moments_image(
     }
 }
 
+void unbounded_to_bounded_decompress_moments_image(
+    const std::vector<double>& compressed_moments_image,
+    size_t width, size_t height,
+    size_t n_moments,
+    std::vector<double>& moments_image)
+{
+    moments_image.resize(compressed_moments_image.size());
 
+    unbounded_to_bounded_decompress_moments_image(
+        compressed_moments_image.data(),
+        width, height,
+        n_moments,
+        moments_image.data()
+    );
+}
+
+
+/*****************************************************************************/
+
+extern "C"
 void compute_density_image(
     const double phases[],
     size_t n_phases,
@@ -225,7 +351,27 @@ void compute_density_image(
     }
 }
 
+void compute_density_image(
+    const std::vector<double>& phases,
+    const std::vector<double>& moments_image,
+    size_t width, size_t height,
+    size_t n_moments,
+    std::vector<double>& density_image)
+{
+    density_image.resize(phases.size() * width * height);
 
+    compute_density_image(
+        phases.data(),
+        phases.size(),
+        moments_image.data(),
+        width, height,
+        n_moments,
+        density_image.data()
+    );
+}
+
+
+extern "C"
 void bounded_compute_density_lagrange_image(
     const double phases[],
     size_t n_phases,
@@ -246,7 +392,27 @@ void bounded_compute_density_lagrange_image(
     }
 }
 
+void bounded_compute_density_lagrange_image(
+    const std::vector<double>& phases,
+    const std::vector<double>& moments_image,
+    size_t width, size_t height,
+    size_t n_moments,
+    std::vector<double>& density_image)
+{
+    density_image.resize(phases.size() * width * height);
 
+    bounded_compute_density_lagrange_image(
+        phases.data(),
+        phases.size(),
+        moments_image.data(),
+        width, height,
+        n_moments,
+        density_image.data()
+    );
+}
+
+
+extern "C"
 void normalize_moment_image(
     const double src[],
     size_t n_px, size_t n_moments,
@@ -284,7 +450,28 @@ void normalize_moment_image(
     }
 }
 
+void normalize_moment_image(
+    const std::vector<double>& src,
+    size_t n_px, size_t n_moments,
+    std::vector<double>& dest,
+    std::vector<double>& mins,
+    std::vector<double>& maxs)
+{
+    dest.resize(src.size());
+    mins.resize(n_px * (n_moments - 1));
+    maxs.resize(n_px * (n_moments - 1));
 
+    normalize_moment_image(
+        src.data(),
+        n_px, n_moments,
+        dest.data(),
+        mins.data(),
+        maxs.data()
+    );
+}
+
+
+extern "C"
 void denormalize_moment_image(
     const double src[],
     size_t n_px, size_t n_moments,
@@ -306,195 +493,6 @@ void denormalize_moment_image(
         }
     }
 }
-
-} // extern "C"
-
-
-/******************************************************************************
- * C++ interface
- *****************************************************************************/
-
-void compute_moments_image(
-    const std::vector<double>& phases,
-    const std::vector<double>& spectral_image,
-    size_t width, size_t height,
-    size_t n_moments,
-    std::vector<double>& moments_image)
-{
-    moments_image.resize(width * height * n_moments);
-
-    compute_moments_image(
-        phases.data(),
-        phases.size(),
-        spectral_image.data(),
-        width, height,
-        n_moments,
-        moments_image.data());
-}
-
-
-void unbounded_compress_moments_image(
-    const std::vector<double>& moments_image,
-    size_t width, size_t height,
-    size_t n_moments,
-    std::vector<double>& compressed_moments_image)
-{
-    compressed_moments_image.resize(moments_image.size());
-
-    unbounded_compress_moments_image(
-        moments_image.data(), 
-        width, height, 
-        n_moments, 
-        compressed_moments_image.data()
-    );
-}
-
-
-void bounded_compress_moments_image(
-    const std::vector<double>& moments_image,
-    size_t width, size_t height,
-    size_t n_moments,
-    std::vector<double>& compressed_moments_image)
-{
-    compressed_moments_image.resize(moments_image.size());
-
-    bounded_compress_moments_image(
-        moments_image.data(), 
-        width, height, 
-        n_moments, 
-        compressed_moments_image.data()
-    );
-}
-
-
-void unbounded_to_bounded_compress_moments_image(
-    const std::vector<double>& moments_image,
-    size_t width, size_t height,
-    size_t n_moments,
-    std::vector<double>& compressed_moments_image)
-{
-    compressed_moments_image.resize(moments_image.size());
-
-    unbounded_to_bounded_compress_moments_image(
-        moments_image.data(),
-        width, height,
-        n_moments,
-        compressed_moments_image.data()
-    );
-}
-
-
-void unbounded_decompress_moments_image(
-    const std::vector<double>& compressed_moments_image,
-    size_t width, size_t height,
-    size_t n_moments,
-    std::vector<double>& moments_image)
-{
-    moments_image.resize(compressed_moments_image.size());
-
-    unbounded_decompress_moments_image(
-        compressed_moments_image.data(),
-        width, height,
-        n_moments,
-        moments_image.data()
-    );
-}
-
-
-void bounded_decompress_moments_image(
-    const std::vector<double>& compressed_moments_image,
-    size_t width, size_t height,
-    size_t n_moments,
-    std::vector<double>& moments_image)
-{
-    moments_image.resize(compressed_moments_image.size());
-
-    bounded_decompress_moments_image(
-        compressed_moments_image.data(),
-        width, height,
-        n_moments,
-        moments_image.data()
-    );
-}
-
-
-void unbounded_to_bounded_decompress_moments_image(
-    const std::vector<double>& compressed_moments_image,
-    size_t width, size_t height,
-    size_t n_moments,
-    std::vector<double>& moments_image)
-{
-    moments_image.resize(compressed_moments_image.size());
-
-    unbounded_to_bounded_decompress_moments_image(
-        compressed_moments_image.data(),
-        width, height,
-        n_moments,
-        moments_image.data()
-    );
-}
-
-
-void compute_density_image(
-    const std::vector<double>& phases,
-    const std::vector<double>& moments_image,
-    size_t width, size_t height,
-    size_t n_moments,
-    std::vector<double>& density_image)
-{
-    density_image.resize(phases.size() * width * height);
-
-    compute_density_image(
-        phases.data(),
-        phases.size(),
-        moments_image.data(),
-        width, height,
-        n_moments,
-        density_image.data()
-    );
-}
-
-
-void bounded_compute_density_lagrange_image(
-    const std::vector<double>& phases,
-    const std::vector<double>& moments_image,
-    size_t width, size_t height,
-    size_t n_moments,
-    std::vector<double>& density_image)
-{
-    density_image.resize(phases.size() * width * height);
-
-    bounded_compute_density_lagrange_image(
-        phases.data(),
-        phases.size(),
-        moments_image.data(),
-        width, height,
-        n_moments,
-        density_image.data()
-    );
-}
-
-
-void normalize_moment_image(
-    const std::vector<double>& src,
-    size_t n_px, size_t n_moments,
-    std::vector<double>& dest,
-    std::vector<double>& mins,
-    std::vector<double>& maxs)
-{
-    dest.resize(src.size());
-    mins.resize(n_px * (n_moments - 1));
-    maxs.resize(n_px * (n_moments - 1));
-
-    normalize_moment_image(
-        src.data(),
-        n_px, n_moments,
-        dest.data(),
-        mins.data(),
-        maxs.data()
-    );
-}
-
 
 void denormalize_moment_image(
     const std::vector<double>& src,

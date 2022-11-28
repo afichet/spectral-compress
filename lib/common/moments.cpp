@@ -48,8 +48,7 @@
  * C interface
  *****************************************************************************/
 
-extern "C" {
-
+extern "C"
 void wavelengths_to_phases(
     const double wavelengths[],
     size_t n_wavelengths,
@@ -63,7 +62,16 @@ void wavelengths_to_phases(
     }
 }
 
+void wavelengths_to_phases(
+    const std::vector<double>& wavelengths, 
+    std::vector<double>& phases) 
+{
+    phases.resize(wavelengths.size());
+    wavelengths_to_phases(wavelengths.data(), wavelengths.size(), phases.data());
+}
 
+
+extern "C"
 void compute_basis_signal_to_moments(
     const double phases[],
     size_t n_phases,
@@ -85,7 +93,20 @@ void compute_basis_signal_to_moments(
     }
 }
 
+void compute_basis_signal_to_moments(
+    const std::vector<double>& phases,
+    std::vector<double>& basis)
+{
+    basis.resize(phases.size() * phases.size());
 
+    compute_basis_signal_to_moments(
+        phases.data(), phases.size(),
+        basis.data()
+    );
+}
+
+
+extern "C"
 void compute_basis_moments_to_signal(
     const double phases[],
     size_t n_phases,
@@ -96,7 +117,20 @@ void compute_basis_moments_to_signal(
     transform = transform.inverse();
 }
 
+void compute_basis_moments_to_signal(
+    const std::vector<double>& phases,
+    std::vector<double>& basis)
+{
+    basis.resize(phases.size() * phases.size());
 
+    compute_basis_moments_to_signal(
+        phases.data(), phases.size(),
+        basis.data()
+    );
+}
+
+
+extern "C"
 void compute_moments(
     const double og_phases[],
     size_t n_phases,
@@ -180,7 +214,26 @@ void compute_moments(
     }
 }
 
+void compute_moments(
+    const std::vector<double>& phases, 
+    const std::vector<double>& signal, 
+    size_t n_moments, 
+    std::vector<double>& moments)
+{
+    assert(phases.size() == signal.size());
 
+    moments.resize(n_moments);
+
+    compute_moments(
+        phases.data(),
+        phases.size(),
+        signal.data(),
+        n_moments,
+        moments.data());
+}
+
+
+extern "C"
 void compute_density(
     const double phases[],
     size_t n_phases,
@@ -220,7 +273,23 @@ void compute_density(
     }
 }
 
+void compute_density(
+    const std::vector<double>& phases, 
+    const std::vector<double>& moments,
+    std::vector<double>& density)
+{
+    density.resize(phases.size());
 
+    compute_density(
+        phases.data(), 
+        phases.size(), 
+        moments.data(), 
+        moments.size(), 
+        density.data());
+}
+
+
+extern "C"
 void bounded_compute_density_lagrange(
     const double phases[],
     size_t n_phases,
@@ -268,7 +337,28 @@ void bounded_compute_density_lagrange(
     }
 }
 
+void bounded_compute_density_lagrange(
+    const std::vector<double>& phases,
+    const std::vector<double>& moments,
+    std::vector<double>& density)
+{
+    density.resize(phases.size());
 
+    bounded_compute_density_lagrange(
+        phases.data(),
+        phases.size(),
+        moments.data(),
+        moments.size(),
+        density.data()
+    );
+}
+
+
+/*****************************************************************************/
+/* Compression                                                               */
+/*****************************************************************************/
+
+extern "C"
 void unbounded_compress_moments(
     const double moments[],
     size_t n_moments,
@@ -284,7 +374,16 @@ void unbounded_compress_moments(
     }
 }
 
+void unbounded_compress_moments(
+    const std::vector<double>& moments,
+    std::vector<double>& compressed_moments)
+{
+    dot_levinson(moments, compressed_moments);
+    compressed_moments[0] = moments[0];
+}
 
+
+extern "C"
 void bounded_compress_moments(
     const double moments[],
     size_t n_moments,
@@ -324,7 +423,21 @@ void bounded_compress_moments(
     }
 }
 
+void bounded_compress_moments(
+    const std::vector<double>& moments,
+    std::vector<double>& compressed_moments)
+{
+    compressed_moments.resize(moments.size());
 
+    bounded_compress_moments(
+        moments.data(),
+        moments.size(),
+        compressed_moments.data()
+    );
+}
+
+
+extern "C"
 void unbounded_to_bounded_compress_moments(
     const double moments[],
     size_t n_moments,
@@ -369,7 +482,25 @@ void unbounded_to_bounded_compress_moments(
     }
 }
 
+void unbounded_to_bounded_compress_moments(
+    const std::vector<double>& moments,
+    std::vector<double>& compressed_moments)
+{
+    compressed_moments.resize(moments.size());
 
+    unbounded_to_bounded_compress_moments(
+        moments.data(),
+        moments.size(),
+        compressed_moments.data()
+    );
+}
+
+
+/*****************************************************************************/
+/* Decompression                                                             */
+/*****************************************************************************/
+
+extern "C"
 void unbounded_decompress_moments(
     const double compressed_moments[],
     size_t n_compressed_moments,
@@ -384,7 +515,16 @@ void unbounded_decompress_moments(
     }
 }
 
+void unbounded_decompress_moments(
+    const std::vector<double>& compressed_moments,
+    std::vector<double>& moments)
+{
+    levinson_from_dot(compressed_moments, moments);
+}
 
+
+
+extern "C"
 void bounded_decompress_moments(
     const double compressed_moments[],
     size_t n_compressed_moments,
@@ -419,7 +559,20 @@ void bounded_decompress_moments(
     }
 }
 
+void bounded_decompress_moments(
+    const std::vector<double>& compressed_moments,
+    std::vector<double>& moments)
+{
+    moments.resize(compressed_moments.size());
+    bounded_decompress_moments(
+        compressed_moments.data(),
+        compressed_moments.size(),
+        moments.data()
+    );
+}
 
+
+extern "C"
 void unbounded_to_bounded_decompress_moments(
     const double compressed_moments[],
     size_t n_compressed_moments,
@@ -460,11 +613,25 @@ void unbounded_to_bounded_decompress_moments(
     }
 }
 
+void unbounded_to_bounded_decompress_moments(
+    const std::vector<double>& compressed_moments,
+    std::vector<double>& moments)
+{
+    moments.resize(compressed_moments.size());
 
-/* ----------------------------------------------------------------------------
-   Utility functions
-   ------------------------------------------------------------------------- */
+    unbounded_to_bounded_decompress_moments(
+        compressed_moments.data(),
+        compressed_moments.size(),
+        moments.data()
+    );
+}
 
+
+/*****************************************************************************/
+/* Utility functions                                                         */
+/*****************************************************************************/
+
+extern "C"
 void solve_levinson(
     const double first_column[],
     size_t size,
@@ -491,7 +658,16 @@ void solve_levinson(
     }
 }
 
+void solve_levinson(
+    const std::vector<double>& first_column,
+    std::vector<double>& solution)
+{
+    solution.resize(first_column.size());
+    solve_levinson(first_column.data(), first_column.size(), solution.data());
+}
 
+
+extern "C"
 void dot_levinson(
     const double first_column[],
     size_t size,
@@ -519,7 +695,17 @@ void dot_levinson(
     }
 }
 
+void dot_levinson(
+    const std::vector<double>& first_column,
+    std::vector<double>& dot_product)
+{
+    dot_product.resize(first_column.size());
+    dot_levinson(first_column.data(), first_column.size(), dot_product.data());
+}
 
+
+
+extern "C"
 void levinson_from_dot(
     const double dot_product[],
     size_t size,
@@ -549,183 +735,12 @@ void levinson_from_dot(
     }
 }
 
-} // extern "C"
-
-
-/******************************************************************************
- * C++ interface
- *****************************************************************************/
-
-void wavelengths_to_phases(
-    const std::vector<double>& wavelengths, 
-    std::vector<double>& phases) 
+void levinson_from_dot(
+    const std::vector<double>& dot_product,
+    std::vector<double>& first_column)
 {
-    phases.resize(wavelengths.size());
-    wavelengths_to_phases(wavelengths.data(), wavelengths.size(), phases.data());
-}
-
-
-void compute_basis_signal_to_moments(
-    const std::vector<double>& phases,
-    std::vector<double>& basis)
-{
-    basis.resize(phases.size() * phases.size());
-
-    compute_basis_signal_to_moments(
-        phases.data(), phases.size(),
-        basis.data()
-    );
-}
-
-
-void compute_basis_moments_to_signal(
-    const std::vector<double>& phases,
-    std::vector<double>& basis)
-{
-    basis.resize(phases.size() * phases.size());
-
-    compute_basis_moments_to_signal(
-        phases.data(), phases.size(),
-        basis.data()
-    );
-}
-
-
-void compute_moments(
-    const std::vector<double>& phases, 
-    const std::vector<double>& signal, 
-    size_t n_moments, 
-    std::vector<double>& moments)
-{
-    assert(phases.size() == signal.size());
-
-    moments.resize(n_moments);
-
-    compute_moments(
-        phases.data(),
-        phases.size(),
-        signal.data(),
-        n_moments,
-        moments.data());
-}
-
-
-void compute_density(
-    const std::vector<double>& phases, 
-    const std::vector<double>& moments,
-    std::vector<double>& density)
-{
-    density.resize(phases.size());
-
-    compute_density(
-        phases.data(), 
-        phases.size(), 
-        moments.data(), 
-        moments.size(), 
-        density.data());
-}
-
-
-void bounded_compute_density_lagrange(
-    const std::vector<double>& phases,
-    const std::vector<double>& moments,
-    std::vector<double>& density)
-{
-    density.resize(phases.size());
-
-    bounded_compute_density_lagrange(
-        phases.data(),
-        phases.size(),
-        moments.data(),
-        moments.size(),
-        density.data()
-    );
-}
-
-
-void unbounded_compress_moments(
-    const std::vector<double>& moments,
-    std::vector<double>& compressed_moments)
-{
-    dot_levinson(moments, compressed_moments);
-    compressed_moments[0] = moments[0];
-}
-
-
-void bounded_compress_moments(
-    const std::vector<double>& moments,
-    std::vector<double>& compressed_moments)
-{
-    compressed_moments.resize(moments.size());
-
-    bounded_compress_moments(
-        moments.data(),
-        moments.size(),
-        compressed_moments.data()
-    );
-}
-
-
-void unbounded_to_bounded_compress_moments(
-    const std::vector<double>& moments,
-    std::vector<double>& compressed_moments)
-{
-    compressed_moments.resize(moments.size());
-
-    unbounded_to_bounded_compress_moments(
-        moments.data(),
-        moments.size(),
-        compressed_moments.data()
-    );
-}
-
-
-void unbounded_decompress_moments(
-    const std::vector<double>& compressed_moments,
-    std::vector<double>& moments)
-{
-    levinson_from_dot(compressed_moments, moments);
-}
-
-
-void bounded_decompress_moments(
-    const std::vector<double>& compressed_moments,
-    std::vector<double>& moments)
-{
-    moments.resize(compressed_moments.size());
-    bounded_decompress_moments(
-        compressed_moments.data(),
-        compressed_moments.size(),
-        moments.data()
-    );
-}
-
-
-void unbounded_to_bounded_decompress_moments(
-    const std::vector<double>& compressed_moments,
-    std::vector<double>& moments)
-{
-    moments.resize(compressed_moments.size());
-
-    unbounded_to_bounded_decompress_moments(
-        compressed_moments.data(),
-        compressed_moments.size(),
-        moments.data()
-    );
-}
-
-
-
-/* ----------------------------------------------------------------------------
-   Utility functions
-   ------------------------------------------------------------------------- */
-
-void solve_levinson(
-    const std::vector<double>& first_column,
-    std::vector<double>& solution)
-{
-    solution.resize(first_column.size());
-    solve_levinson(first_column.data(), first_column.size(), solution.data());
+    first_column.resize(dot_product.size());
+    levinson_from_dot(dot_product.data(), dot_product.size(), first_column.data());
 }
 
 
@@ -757,15 +772,6 @@ void solve_levinson(
 
 
 void dot_levinson(
-    const std::vector<double>& first_column,
-    std::vector<double>& dot_product)
-{
-    dot_product.resize(first_column.size());
-    dot_levinson(first_column.data(), first_column.size(), dot_product.data());
-}
-
-
-void dot_levinson(
     const std::vector<std::complex<double>>& first_column,
     std::vector<std::complex<double>>& dot_product)
 {
@@ -791,15 +797,6 @@ void dot_levinson(
 
         solution = temp_s;
     }
-}
-
-
-void levinson_from_dot(
-    const std::vector<double>& dot_product,
-    std::vector<double>& first_column)
-{
-    first_column.resize(dot_product.size());
-    levinson_from_dot(dot_product.data(), dot_product.size(), first_column.data());
 }
 
 
