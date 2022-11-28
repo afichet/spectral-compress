@@ -69,8 +69,8 @@ void compute_moments_image(
         #pragma omp parallel for
         for (size_t i = 0; i < width * height; i++) {
             compute_moments(
-                phases, 
-                n_phases, 
+                phases,
+                n_phases,
                 &(spectral_image[n_phases * i]),
                 n_moments,
                 &(moments_image[(n_moments + 1) * i]));
@@ -127,9 +127,9 @@ void unbounded_compress_moments_image(
     compressed_moments_image.resize(moments_image.size());
 
     unbounded_compress_moments_image(
-        moments_image.data(), 
-        width, height, 
-        n_moments, 
+        moments_image.data(),
+        width, height,
+        n_moments,
         compressed_moments_image.data()
     );
 }
@@ -161,9 +161,9 @@ void bounded_compress_moments_image(
     compressed_moments_image.resize(moments_image.size());
 
     bounded_compress_moments_image(
-        moments_image.data(), 
-        width, height, 
-        n_moments, 
+        moments_image.data(),
+        width, height,
+        n_moments,
         compressed_moments_image.data()
     );
 }
@@ -201,6 +201,7 @@ void unbounded_to_bounded_compress_moments_image(
         compressed_moments_image.data()
     );
 }
+
 
 /*****************************************************************************/
 /* Decompression                                                             */
@@ -419,7 +420,7 @@ void normalize_moment_image(
     double dest[],
     double mins[],
     double maxs[])
-{    
+{
     // Initialize vectors
     for (size_t m = 1; m < n_moments; m++) {
         mins[m - 1] = src[m];

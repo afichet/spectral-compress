@@ -42,13 +42,13 @@
 
 /**
  * @brief Computes moments image from a spectral image
- * 
+ *
  * @param phases            Phases at which the signal was sampled.
  * @param n_phases          Number of samples.
  * @param spectral_image    Spectral image.
  * @param width             Width of the spectral image.
  * @param height            Height of the spectral image
- * @param n_moments         Number of moments to use for the moment 
+ * @param n_moments         Number of moments to use for the moment
  *                          representation.
  * @param moments_image     Computed moments image. Must be allocated with
  *                          `width` * `height` * `n_moments` elements.
@@ -78,13 +78,13 @@ void compute_moments_image(
 
 /**
  * @brief Compress a moment image
- * 
+ *
  * @param moments_image     The moments image to be compressed.
  * @param width             Width of the moments image.
  * @param height            Height of the moments image.
  * @param n_moments         Number of moments.
  * @param compressed_moments_image Computed compressed moments image. Must be
- *                          allocated with 
+ *                          allocated with
  *                          `width` * `height` * `n_moments` elements.
  */
 extern "C"
@@ -97,7 +97,7 @@ void unbounded_compress_moments_image(
 #ifdef __cplusplus
 void unbounded_compress_moments_image(
     const std::vector<double>& moments_image,
-    size_t width, size_t height, 
+    size_t width, size_t height,
     size_t n_moments,
     std::vector<double>& compressed_moments_image);
 #endif // __cplusplus
@@ -105,13 +105,13 @@ void unbounded_compress_moments_image(
 
 /**
  * @brief Compress a moment image for bounded signals (reflectance)
- * 
+ *
  * @param moments_image     The moments image to be compressed.
  * @param width             Width of the moments image.
  * @param height            Height of the moments image.
  * @param n_moments         Number of moments.
  * @param compressed_moments_image Computed compressed moments image. Must be
- *                          allocated with 
+ *                          allocated with
  *                          `width` * `height` * `n_moments` elements.
  */
 extern "C"
@@ -124,7 +124,7 @@ void bounded_compress_moments_image(
 #ifdef __cplusplus
 void bounded_compress_moments_image(
     const std::vector<double>& moments_image,
-    size_t width, size_t height, 
+    size_t width, size_t height,
     size_t n_moments,
     std::vector<double>& compressed_moments_image);
 #endif // __cplusplus
@@ -132,16 +132,16 @@ void bounded_compress_moments_image(
 
 /**
  * @brief Compress a moment image
- * 
+ *
  * This uses zeroth moment to rescale the other moment in order to
  * use the bounded compression method
- * 
+ *
  * @param moments_image     The moments image to be compressed.
  * @param width             Width of the moments image.
  * @param height            Height of the moments image.
  * @param n_moments         Number of moments.
  * @param compressed_moments_image Computed compressed moments image. Must be
- *                          allocated with 
+ *                          allocated with
  *                          `width` * `height` * `n_moments` elements.
  */
 extern "C"
@@ -160,25 +160,15 @@ void unbounded_to_bounded_compress_moments_image(
 #endif // __cplusplus
 
 
-void upperbound_compress_moment_image(
-    const double moments_image[],
-    size_t width, size_t height,
-    size_t n_moments,
-    double compressed_moments_image[],
-    double& global_max,
-    double rel_scales[]
-);
 
-#ifdef __cplusplus
 
-#endif // __cplusplus
 /*****************************************************************************/
 /* Decompression                                                             */
 /*****************************************************************************/
 
 /**
  * @brief Decompress a compressed moment image
- * 
+ *
  * @param compressed_moments_image The compressed moment image to process.
  * @param width                    Width of the compressed moment image.
  * @param height                   Height of the compressed moment image.
@@ -198,15 +188,15 @@ void unbounded_decompress_moments_image(
 #ifdef __cplusplus
 void unbounded_decompress_moments_image(
     const std::vector<double>& compressed_moments_image,
-    size_t width, size_t height, 
+    size_t width, size_t height,
     size_t n_moments,
     std::vector<double>& moments_image);
 #endif // __cplusplus
 
 /**
- * @brief Decompress a compressed moment image for bounded signals 
+ * @brief Decompress a compressed moment image for bounded signals
  * (reflectance)
- * 
+ *
  * @param compressed_moments_image The compressed moment image to process.
  * @param width                    Width of the compressed moment image.
  * @param height                   Height of the compressed moment image.
@@ -226,14 +216,14 @@ void bounded_decompress_moments_image(
 #ifdef __cplusplus
 void bounded_decompress_moments_image(
     const std::vector<double>& compressed_moments_image,
-    size_t width, size_t height, 
+    size_t width, size_t height,
     size_t n_moments,
     std::vector<double>& moments_image);
 #endif // __cplusplus
 
 /**
  * @brief Decompress a compressed moment image
- * 
+ *
  * @param compressed_moments_image The compressed moment image to process.
  * @param width                    Width of the compressed moment image.
  * @param height                   Height of the compressed moment image.
@@ -262,7 +252,7 @@ void unbounded_to_bounded_decompress_moments_image(
 
 /**
  * @brief Computes a density image matching the given moments.
- * 
+ *
  * @param phases         Phases where the density shall be computed.
  * @param n_phases       Size of phases array.
  * @param moments_image  Moments image to compute the density from.
@@ -292,7 +282,7 @@ void compute_density_image(
 
 /**
  * @brief Computes a bounded density image matching the given moments.
- * 
+ *
  * @param phases         Phases where the density shall be computed.
  * @param n_phases       Size of phases array.
  * @param moments_image  Moments image to compute the density from.
