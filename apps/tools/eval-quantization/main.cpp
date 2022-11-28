@@ -5,7 +5,105 @@
 #include <sstream>
 #include <fstream>
 
-int main(int argc, char* argv[]) 
+
+void run_for_bounded(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& image_data,
+    int n_pixels, int n_bands,
+    int bits, int start_n_bits,
+    const std::string& output_prefix)
+{
+    std::vector<int> quantization_curve_b;
+
+    double err_utb = bounded_compute_quantization_curve(
+        wavelengths,
+        image_data,
+        n_pixels, n_bands,
+        bits,
+        quantization_curve_b,
+        start_n_bits
+    );
+
+    // Save data
+    std::stringstream output_file;
+    output_file << output_prefix << "_b_" << bits << ".txt";
+
+    std::ofstream out_b(output_file.str());
+
+    for (size_t i = 0; i < quantization_curve_b.size(); i++) {
+        out_b << quantization_curve_b[i] << " ";
+    }
+
+    out_b << std::endl << err_utb;
+}
+
+
+
+void run_for_unbounded(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& image_data,
+    int n_pixels, int n_bands,
+    int bits, int start_n_bits,
+    const std::string& output_prefix)
+{
+    std::vector<int> quantization_curve_u;
+
+    double err_utb = unbounded_compute_quantization_curve(
+        wavelengths,
+        image_data,
+        n_pixels, n_bands,
+        bits,
+        quantization_curve_u,
+        start_n_bits
+    );
+
+    // Save data
+    std::stringstream output_file;
+    output_file << output_prefix << "_u_" << bits << ".txt";
+
+    std::ofstream out_u(output_file.str());
+
+    for (size_t i = 0; i < quantization_curve_u.size(); i++) {
+        out_u << quantization_curve_u[i] << " ";
+    }
+
+    out_u << std::endl << err_utb;
+}
+
+
+void run_for_unbounded_to_bounded(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& image_data,
+    int n_pixels, int n_bands,
+    int bits, int start_n_bits,
+    const std::string& output_prefix)
+{
+    std::vector<int> quantization_curve_utb;
+
+    double err_utb = unbounded_to_bounded_compute_quantization_curve(
+        wavelengths,
+        image_data,
+        n_pixels, n_bands,
+        bits,
+        quantization_curve_utb,
+        start_n_bits
+    );
+
+    // Save data
+    std::stringstream output_file;
+    output_file << output_prefix << "_utb_" << bits << ".txt";
+
+    std::ofstream out_utb(output_file.str());
+
+    for (size_t i = 0; i < quantization_curve_utb.size(); i++) {
+        out_utb << quantization_curve_utb[i] << " ";
+    }
+
+    out_utb << std::endl << err_utb;
+}
+
+
+int main(int argc, char* argv[])
 {
     if (argc < 3) {
         std::cout << "Usage:" << std::endl
@@ -27,11 +125,10 @@ int main(int argc, char* argv[])
     for (SpectralFramebuffer* fb: image.getSpectralFramebuffers()) {
         for (int bits: n_bits) {
             const int n_bands = fb->wavelengths_nm.size();
-            std::vector<int> quantization_curve_b;
 
             std::vector<double> wavelengths(n_bands);
             std::vector<double> image_data(n_pixels * n_bands);
-            
+
             // Cast to double
             for (int i = 0; i < n_bands; i++) {
                 wavelengths[i] = (double)fb->wavelengths_nm[i];
@@ -43,29 +140,34 @@ int main(int argc, char* argv[])
 
             int start_n_bits = fb->pixel_type == PixelType::HALF ? 16 : 32;
 
-            double err_utb = bounded_compute_quantization_curve(
+            run_for_bounded(
                 wavelengths,
                 image_data,
-                n_pixels, n_bands, 
-                bits, 
-                quantization_curve_b,
-                start_n_bits
+                n_pixels, n_bands,
+                bits,
+                start_n_bits,
+                output_prefix
             );
 
-            // Save data
-            std::stringstream output_file;
-            output_file << output_prefix << "_b_" << bits << ".txt";
+            run_for_unbounded(
+                wavelengths,
+                image_data,
+                n_pixels, n_bands,
+                bits,
+                start_n_bits,
+                output_prefix
+            );
 
-            std::ofstream out_utb(output_file.str());
-
-            for (int i = 0; i < quantization_curve_b.size(); i++) {
-                out_utb << quantization_curve_b[i] << " ";
-            }
-
-            out_utb << std::endl << err_utb;
+            run_for_unbounded_to_bounded(
+                wavelengths,
+                image_data,
+                n_pixels, n_bands,
+                bits,
+                start_n_bits,
+                output_prefix
+            );
         }
     }
-
 
     return 0;
 }
