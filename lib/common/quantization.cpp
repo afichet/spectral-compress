@@ -196,7 +196,7 @@ double unbounded_compute_quantization_curve(
     std::vector<double> norm_moments;
     std::vector<double> mins, maxs;
 
-    bounded_compress_spectral_image(
+    unbounded_compress_spectral_image(
         wavelengths, spectral_image,
         n_px, n_moments,
         norm_moments,
