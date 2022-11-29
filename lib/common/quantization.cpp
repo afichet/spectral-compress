@@ -425,6 +425,68 @@ double unbounded_to_bounded_compute_quantization_curve(
 }
 
 
+double upperbound_compute_quantization_curve(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    size_t n_px, size_t n_moments,
+    int n_bits_start,
+    std::vector<int>& quantization_curve,
+    int n_bits_0)
+{
+    std::vector<double> phases;
+    std::vector<double> moments;
+    std::vector<double> compressed_moments;
+    std::vector<double> norm_moments;
+    std::vector<double> mins, maxs;
+
+    const size_t n_bands = wavelengths.size();
+
+    // Find global max
+    double global_max = 0;
+
+    for (int i = 0; i < n_px * n_bands; i++) {
+        global_max = std::max(global_max, spectral_image[i]);
+    }
+
+    // Compute relative maximas
+    std::vector<uint8_t> relative_scale(n_px);
+
+    for (size_t i = 0; i < n_px; i++) {
+        double local_max = 0;
+
+        for (size_t j = 0; j < n_bands; j++) {
+            local_max = std::max(local_max, spectral_image[i * n_bands + j]);
+        }
+
+        relative_scale[i] = std::ceil(255.f * (local_max / global_max));
+    }
+
+    // Rescale AC components
+    std::vector<double> scaled_moments(n_px * n_moments);
+
+    wavelengths_to_phases(wavelengths, phases);
+
+    compute_moments_image(
+        phases,
+        spectral_image,
+        n_px,
+        n_moments,
+        moments
+    );
+
+    for (size_t i = 0; i < n_px; i++) {
+        const double scale = global_max * (double)relative_scale[i] / 255.f;
+
+        for (size_t j = 0; j < n_moments; j++) {
+            scaled_moments[i * n_moments + j] = moments[i * n_moments + j] / scale;
+        }
+
+        // TODO
+
+        scaled_moments[i * n_moments] = moments[i * n_moments];
+    }
+}
+
 /*****************************************************************************/
 /* Error for a quantization curve                                            */
 /*****************************************************************************/

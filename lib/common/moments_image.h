@@ -378,6 +378,18 @@ void unbounded_to_bounded_compress_spectral_image(
     std::vector<double>& mins,
     std::vector<double>& maxs);
 
+
+void upperbound_compress_spectral_image(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    size_t n_pixels,
+    size_t n_moments,
+    std::vector<double>& normalized_moments_image,
+    std::vector<double>& mins,
+    std::vector<double>& maxs,
+    std::vector<uint8_t>& relative_scales,
+    double& global_max);
+
 // Decompress (compressed_moments -> spectral_image)
 
 void bounded_decompress_spectral_image(
@@ -405,6 +417,18 @@ void unbounded_to_bounded_decompress_spectral_image(
     const std::vector<double>& normalized_moment_image,
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
+    size_t n_pixels,
+    size_t n_moments,
+    std::vector<double>& spectral_image);
+
+
+void upperbound_decompress_spectral_image(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& normalize_moment_image,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
+    const std::vector<uint8_t>& relative_scales,
+    double global_max,
     size_t n_pixels,
     size_t n_moments,
     std::vector<double>& spectral_image);
