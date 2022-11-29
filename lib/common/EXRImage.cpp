@@ -50,9 +50,9 @@ EXRFramebuffer::EXRFramebuffer(
     uint32_t width, uint32_t height,
     const char* name)
     : _pixel_data(width * height)
-    , _name(new char[std::strlen(name) + 1])
+    , _name(std::strlen(name) + 1)
 {
-    std::strcpy(_name, name);
+    memcpy(_name.data(), name, std::strlen(name));
     _name[strlen(name)] = 0;
 }
 
@@ -61,16 +61,15 @@ EXRFramebuffer::EXRFramebuffer(
     const std::vector<float>& framebuffer,
     const char* name)
     : _pixel_data(framebuffer)
-    , _name(new char[std::strlen(name) + 1])
+    , _name(std::strlen(name) + 1)
 {
-    std::strcpy(_name, name);
+    memcpy(_name.data(), name, std::strlen(name));
     _name[strlen(name)] = 0;
 }
 
 
 EXRFramebuffer::~EXRFramebuffer()
 {
-    delete[] _name;
 }
 
 // ----------------------------------------------------------------------------
@@ -93,7 +92,7 @@ EXRImage::EXRImage(const char* filename)
         const char* attribute_name = it.name();
         const char* attribute_type = it.attribute().typeName();
 
-        if (std::strcmp(attribute_name, "channels") != 0 
+        if (std::strcmp(attribute_name, "channels") != 0
          && std::strcmp(attribute_name, "compression") != 0
          && std::strcmp(attribute_name, "lineOrder") != 0) {
             attr_stream.write(attribute_name, std::strlen(attribute_name) + 1);
@@ -119,7 +118,7 @@ EXRImage::EXRImage(const char* filename)
 
     for (Imf::ChannelList::ConstIterator channel = exr_channels.begin();
         channel != exr_channels.end();
-        channel++) {        
+        channel++) {
         EXRFramebuffer *fb = new EXRFramebuffer(_width, _height, channel.name());
 
         Imf::Slice slice = Imf::Slice::Make(
@@ -127,7 +126,7 @@ EXRImage::EXRImage(const char* filename)
             fb->getPixelData().data(),
             exr_header.dataWindow(),
             x_stride, y_stride);
-            
+
         exr_framebuffer.insert(channel.name(), slice);
 
         _framebuffers.push_back(fb);
@@ -141,7 +140,7 @@ EXRImage::EXRImage(const char* filename)
 EXRImage::EXRImage(uint32_t width, uint32_t height)
     : _width(width)
     , _height(height)
-{   
+{
 }
 
 
@@ -189,7 +188,7 @@ void EXRImage::write(const char* filename) const
                 attr_stream.read(&c, 1);
                 attribute_type_stream << c;
             } while (c != 0);
-            
+
             const std::string attribute_name = attribute_name_stream.str();
             const std::string attribute_type = attribute_type_stream.str();
 
@@ -215,12 +214,12 @@ void EXRImage::write(const char* filename) const
 
     for (EXRFramebuffer* fb: _framebuffers) {
         exr_channels.insert(fb->getName(), Imf::Channel(Imf::FLOAT));
-        
+
         exr_framebuffer.insert(
-            fb->getName(), 
+            fb->getName(),
             Imf::Slice(
                 Imf::FLOAT,
-                (char*)fb->getPixelData().data(), 
+                (char*)fb->getPixelData().data(),
                 x_stride, y_stride)
         );
     }

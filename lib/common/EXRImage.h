@@ -53,13 +53,13 @@ public:
 
     virtual ~EXRFramebuffer();
 
-    const char* getName() const { return _name; }
+    const char* getName() const { return _name.data(); }
     const std::vector<float>& getPixelDataConst() const { return _pixel_data; }
     std::vector<float>& getPixelData() { return _pixel_data; }
 
 protected:
     std::vector<float> _pixel_data;
-    char* _name;
+    std::vector<char> _name;
 };
 
 
@@ -90,7 +90,7 @@ public:
     const std::vector<EXRFramebuffer*>& getFramebuffersConst() const {
         return _framebuffers;
     }
-    
+
     void setAttributesData(const std::vector<uint8_t>& data) { _attributes_data = data; }
 
     const std::vector<uint8_t>& getAttributesData() const { return _attributes_data; }
