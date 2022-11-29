@@ -512,3 +512,243 @@ void denormalize_moment_image(
         dest.data()
     );
 }
+
+
+
+
+/*****************************************************************************/
+/* Full pipeline                                                             */
+/*****************************************************************************/
+
+void bounded_compress_spectral_image(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    size_t n_pixels,
+    size_t n_moments,
+    std::vector<double>& normalized_moments_image,
+    std::vector<double>& mins,
+    std::vector<double>& maxs)
+{
+    const size_t n_bands = wavelengths.size();
+
+    std::vector<double> phases;
+    std::vector<double> moments_image;
+    std::vector<double> compressed_moments_image;
+
+    wavelengths_to_phases(wavelengths, phases);
+
+    compute_moments_image(
+        phases,
+        spectral_image,
+        n_pixels, n_moments,
+        moments_image
+    );
+
+    bounded_compress_moments_image(
+        moments_image,
+        n_pixels, n_moments,
+        compressed_moments_image
+    );
+
+    normalize_moment_image(
+        compressed_moments_image,
+        n_pixels, n_moments,
+        normalized_moments_image,
+        mins, maxs
+    );
+}
+
+
+void unbounded_compress_spectral_image(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    size_t n_pixels,
+    size_t n_moments,
+    std::vector<double>& normalized_moments_image,
+    std::vector<double>& mins,
+    std::vector<double>& maxs)
+{
+    const size_t n_bands = wavelengths.size();
+
+    std::vector<double> phases;
+    std::vector<double> moments_image;
+    std::vector<double> compressed_moments_image;
+
+    wavelengths_to_phases(wavelengths, phases);
+
+    compute_moments_image(
+        phases,
+        spectral_image,
+        n_pixels, n_moments,
+        moments_image
+    );
+
+    unbounded_compress_moments_image(
+        moments_image,
+        n_pixels, n_moments,
+        compressed_moments_image
+    );
+
+    normalize_moment_image(
+        compressed_moments_image,
+        n_pixels, n_moments,
+        normalized_moments_image,
+        mins, maxs
+    );
+}
+
+
+void unbounded_to_bounded_compress_spectral_image(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    size_t n_pixels,
+    size_t n_moments,
+    std::vector<double>& normalized_moments_image,
+    std::vector<double>& mins,
+    std::vector<double>& maxs)
+{
+    const size_t n_bands = wavelengths.size();
+
+    std::vector<double> phases;
+    std::vector<double> moments_image;
+    std::vector<double> compressed_moments_image;
+
+    wavelengths_to_phases(wavelengths, phases);
+
+    compute_moments_image(
+        phases,
+        spectral_image,
+        n_pixels, n_moments,
+        moments_image
+    );
+
+    unbounded_to_bounded_compress_moments_image(
+        moments_image,
+        n_pixels, n_moments,
+        compressed_moments_image
+    );
+
+    normalize_moment_image(
+        compressed_moments_image,
+        n_pixels, n_moments,
+        normalized_moments_image,
+        mins, maxs
+    );
+}
+
+
+void bounded_decompress_spectral_image(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& normalized_moments_image,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
+    size_t n_pixels,
+    size_t n_moments,
+    std::vector<double>& spectral_image)
+{
+    std::vector<double> phases;
+    std::vector<double> compressed_moments_image;
+    std::vector<double> moments_image;
+
+    wavelengths_to_phases(wavelengths, phases);
+
+    denormalize_moment_image(
+        normalized_moments_image,
+        n_pixels,
+        n_moments,
+        mins, maxs,
+        compressed_moments_image
+    );
+
+    bounded_decompress_moments_image(
+        compressed_moments_image,
+        n_pixels, n_moments,
+        moments_image
+    );
+
+    compute_density_image(
+        phases,
+        moments_image,
+        n_pixels,
+        n_moments,
+        spectral_image
+    );
+}
+
+
+void unbounded_decompress_spectral_image(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& normalized_moments_image,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
+    size_t n_pixels,
+    size_t n_moments,
+    std::vector<double>& spectral_image)
+{
+    std::vector<double> phases;
+    std::vector<double> compressed_moments_image;
+    std::vector<double> moments_image;
+
+    wavelengths_to_phases(wavelengths, phases);
+
+    denormalize_moment_image(
+        normalized_moments_image,
+        n_pixels,
+        n_moments,
+        mins, maxs,
+        compressed_moments_image
+    );
+
+    unbounded_decompress_moments_image(
+        compressed_moments_image,
+        n_pixels, n_moments,
+        moments_image
+    );
+
+    compute_density_image(
+        phases,
+        moments_image,
+        n_pixels,
+        n_moments,
+        spectral_image
+    );
+}
+
+
+void unbounded_to_bounded_decompress_spectral_image(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& normalized_moments_image,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
+    size_t n_pixels,
+    size_t n_moments,
+    std::vector<double>& spectral_image)
+{
+    std::vector<double> phases;
+    std::vector<double> compressed_moments_image;
+    std::vector<double> moments_image;
+
+    wavelengths_to_phases(wavelengths, phases);
+
+    denormalize_moment_image(
+        normalized_moments_image,
+        n_pixels,
+        n_moments,
+        mins, maxs,
+        compressed_moments_image
+    );
+
+    unbounded_to_bounded_decompress_moments_image(
+        compressed_moments_image,
+        n_pixels, n_moments,
+        moments_image
+    );
+
+    compute_density_image(
+        phases,
+        moments_image,
+        n_pixels,
+        n_moments,
+        spectral_image
+    );
+}
