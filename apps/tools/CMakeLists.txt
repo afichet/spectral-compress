@@ -2,6 +2,7 @@
 add_subdirectory(exr-dump-extract)
 add_subdirectory(jxl-dump-extract)
 add_subdirectory(export-layers)
+add_subdirectory(validate-image)
 
 # Direct lossy compression without further processing to have a baseline
 add_subdirectory(stupid-compress)
