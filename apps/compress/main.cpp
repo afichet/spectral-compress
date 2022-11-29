@@ -101,14 +101,14 @@ void compress_spectral_framebuffer(
     compute_moments_image(
         phases,
         spectral_framebuffer,
-        n_pixels, 1,
+        n_pixels,
         n_moments,
         moments_image
     );
 
     unbounded_to_bounded_compress_moments_image(
         moments_image,
-        n_pixels, 1,
+        n_pixels,
         n_moments,
         compressed_moments_image
     );

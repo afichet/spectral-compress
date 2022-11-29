@@ -38,7 +38,6 @@ void run_for_bounded(
 }
 
 
-
 void run_for_unbounded(
     const std::vector<double>& wavelengths,
     const std::vector<double>& image_data,
@@ -120,7 +119,8 @@ int main(int argc, char* argv[])
 
     const int n_pixels = image.width() * image.height();
 
-    const int n_bits[] = {12, 10, 8};
+    // const int n_bits[] = {12, 10, 8};
+    const int n_bits[] = {8};
 
     for (SpectralFramebuffer* fb: image.getSpectralFramebuffers()) {
         for (int bits: n_bits) {

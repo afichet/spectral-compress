@@ -309,7 +309,7 @@ void gnuplot_output_quantization_curves(
     const char* filename)
 {
     std::ofstream file(filename);
-    
+
     if (file.is_open()) {
         gnuplot_output_quantization_curves(
             quantization_curves,
@@ -396,7 +396,7 @@ int main(int argc, char* argv[])
             spectral_image[px * n_wl + wl] = main_fb->image_data[px * n_wl + wl];
         }
     }
-    
+
     // Hard coded version
 
     // const size_t n_wl = 36;
@@ -438,7 +438,7 @@ int main(int argc, char* argv[])
     );
 
     gnuplot_output_quantization_curves(
-        bounded_quantization_curves, 
+        bounded_quantization_curves,
         "q_curves_bounded.dat"
     );
 
@@ -451,7 +451,7 @@ int main(int argc, char* argv[])
     );
 
     gnuplot_output_quantization_curves(
-        unbounded_quantization_curves, 
+        unbounded_quantization_curves,
         "q_curves_unbounded.dat"
     );
 
@@ -464,7 +464,7 @@ int main(int argc, char* argv[])
     );
 
     gnuplot_output_quantization_curves(
-        unbounded_to_bounded_quantization_curves, 
+        unbounded_to_bounded_quantization_curves,
         "q_curves_unbounded_to_bounded.dat"
     );
 
@@ -480,7 +480,8 @@ int main(int argc, char* argv[])
 
     compute_moments_image(
         phases, spectral_image,
-        n_px, 1, n_moments,
+        n_px,
+        n_moments,
         moments
     );
 
@@ -490,7 +491,8 @@ int main(int argc, char* argv[])
 
     bounded_compress_moments_image(
         moments,
-        n_px, 1, n_moments,
+        n_px,
+        n_moments,
         bounded_compressed_moments
     );
 
@@ -507,13 +509,15 @@ int main(int argc, char* argv[])
 
     unbounded_compress_moments_image(
         moments,
-        n_px, 1, n_moments,
+        n_px,
+        n_moments,
         unbounded_compressed_moments
     );
 
     normalize_moment_image(
         unbounded_compressed_moments,
-        n_px, n_moments,
+        n_px,
+        n_moments,
         unbounded_normalized_moments,
         unbounded_mins, unbounded_maxs
     );
@@ -524,13 +528,15 @@ int main(int argc, char* argv[])
 
     unbounded_to_bounded_compress_moments_image(
         moments,
-        n_px, 1, n_moments,
+        n_px,
+        n_moments,
         unbounded_to_bounded_compressed_moments
     );
 
     normalize_moment_image(
         unbounded_to_bounded_compressed_moments,
-        n_px, n_moments,
+        n_px,
+        n_moments,
         unbounded_to_bounded_normalized_moments,
         unbounded_to_bounded_mins, unbounded_to_bounded_maxs
     );
@@ -603,7 +609,7 @@ int main(int argc, char* argv[])
         unbounded_mutated_curves,
         error_unbounded_mutated_curves
     );
-    
+
     unbounded_errors_for_quantization_curves(
         wavelengths, spectral_image,
         n_px, n_moments,

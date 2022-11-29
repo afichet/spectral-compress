@@ -85,21 +85,24 @@ double unbounded_average_err(
 
     denormalize_moment_image(
         norm_noments,
-        n_px, n_moments,
+        n_px,
+        n_moments,
         mins, maxs,
         compressed_moments
     );
 
     unbounded_decompress_moments_image(
         compressed_moments,
-        n_px, 1, n_moments,
+        n_px,
+        n_moments,
         moments
     );
 
     compute_density_image(
         phases,
         moments,
-        n_px, 1, n_moments,
+        n_px,
+        n_moments,
         reconst_signal
     );
 
@@ -150,14 +153,16 @@ double bounded_average_err(
 
     bounded_decompress_moments_image(
         compressed_moments,
-        n_px, 1, n_moments,
+        n_px,
+        n_moments,
         moments
     );
 
     compute_density_image(
         phases,
         moments,
-        n_px, 1, n_moments,
+        n_px,
+        n_moments,
         reconst_signal
     );
 
@@ -208,14 +213,16 @@ double unbounded_to_bounded_average_err(
 
     unbounded_to_bounded_decompress_moments_image(
         compressed_moments,
-        n_px, 1, n_moments,
+        n_px,
+        n_moments,
         moments
     );
 
     compute_density_image(
         phases,
         moments,
-        n_px, 1, n_moments,
+        n_px,
+        n_moments,
         reconst_signal
     );
 
@@ -261,13 +268,15 @@ double unbounded_compute_quantization_curve(
     compute_moments_image(
         phases,
         spectral_image,
-        n_px, 1, n_moments,
+        n_px,
+        n_moments,
         moments
     );
 
     unbounded_compress_moments_image(
         moments,
-        n_px, 1, n_moments,
+        n_px,
+        n_moments,
         compressed_moments
     );
 
@@ -357,19 +366,22 @@ double bounded_compute_quantization_curve(
     compute_moments_image(
         phases,
         spectral_image,
-        n_px, 1, n_moments,
+        n_px,
+        n_moments,
         moments
     );
 
     bounded_compress_moments_image(
         moments,
-        n_px, 1, n_moments,
+        n_px,
+        n_moments,
         compressed_moments
     );
 
     normalize_moment_image(
         compressed_moments,
-        n_px, n_moments,
+        n_px,
+        n_moments,
         norm_moments,
         mins, maxs
     );
@@ -383,7 +395,8 @@ double bounded_compute_quantization_curve(
 
     quantize_dequantize_single_image(
         norm_moments,
-        n_px, n_moments,
+        n_px,
+        n_moments,
         quantized_moments,
         1, quantization_curve[1]
     );
@@ -403,7 +416,8 @@ double bounded_compute_quantization_curve(
         for (size_t n_bits = quantization_curve[m]; n_bits > 0; n_bits--) {
             quantize_dequantize_single_image(
                 norm_moments,
-                n_px, n_moments,
+                n_px,
+                n_moments,
                 quantized_moments,
                 m, n_bits
             );
@@ -411,7 +425,8 @@ double bounded_compute_quantization_curve(
             double curr_err = bounded_average_err(
                 wavelengths,
                 spectral_image,
-                n_px, n_moments,
+                n_px,
+                n_moments,
                 quantized_moments,
                 mins, maxs
             );
@@ -427,7 +442,8 @@ double bounded_compute_quantization_curve(
     return bounded_error_for_quantization_curve(
         wavelengths,
         spectral_image,
-        n_px, n_moments,
+        n_px,
+        n_moments,
         norm_moments,
         mins, maxs,
         quantization_curve
@@ -454,13 +470,15 @@ double unbounded_to_bounded_compute_quantization_curve(
     compute_moments_image(
         phases,
         spectral_image,
-        n_px, 1, n_moments,
+        n_px,
+        n_moments,
         moments
     );
 
     unbounded_to_bounded_compress_moments_image(
         moments,
-        n_px, 1, n_moments,
+        n_px,
+        n_moments,
         compressed_moments
     );
 
@@ -530,68 +548,6 @@ double unbounded_to_bounded_compute_quantization_curve(
         quantization_curve
     );
 }
-
-
-// double upperbound_compute_quantization_curve(
-//     const std::vector<double>& wavelengths,
-//     const std::vector<double>& spectral_image,
-//     size_t n_px, size_t n_moments,
-//     int n_bits_start,
-//     std::vector<int>& quantization_curve,
-//     int n_bits_0)
-// {
-//     std::vector<double> phases;
-//     std::vector<double> moments;
-//     std::vector<double> compressed_moments;
-//     std::vector<double> norm_moments;
-//     std::vector<double> mins, maxs;
-
-//     const size_t n_bands = wavelengths.size();
-
-//     // Find global max
-//     double global_max = 0;
-
-//     for (int i = 0; i < n_px * n_bands; i++) {
-//         global_max = std::max(global_max, spectral_image[i]);
-//     }
-
-//     // Compute relative maximas
-//     std::vector<uint8_t> relative_scale(n_px);
-
-//     for (int i = 0; i < n_px; i++) {
-//         double local_max = 0;
-
-//         for (int j = 0; j < n_bands; j++) {
-//             local_max = std::max(local_max, spectral_image[i * n_bands + j]);
-//         }
-
-//         relative_scale[i] = std::ceil(255.f * (local_max / global_max));
-//     }
-
-//     // Rescale AC components
-//     std::vector<double> scaled_moments(n_px * n_moments);
-
-//     wavelengths_to_phases(wavelengths, phases);
-
-//     compute_moments_image(
-//         phases,
-//         spectral_image,
-//         n_px, 1, n_moments,
-//         moments
-//     );
-
-//     for (int i = 0; i < n_px; i++) {
-//         double scale = global_max * (double)relative_scale[i] / 255.f;
-
-//         for (int j = 0; j < n_moments; j++) {
-//             scaled_moments[i * n_moments + j] = moments[i * n_moments + j] / scale;
-//         }
-
-//         // TODO
-
-//         scaled_moments[i * n_moments] = moments[i * n_moments];
-//     }
-// }
 
 
 /*****************************************************************************/

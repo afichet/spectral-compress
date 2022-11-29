@@ -65,7 +65,7 @@ void decompress_spectral_framebuffer(
 
     const size_t n_moments = compressed_moments.size();
     const size_t n_pixels = compressed_moments[0].size();
-    
+
     for (size_t i = 0; i < wavelengths.size(); i++) {
         wavelengths_d[i] = wavelengths[i];
     }
@@ -89,8 +89,20 @@ void decompress_spectral_framebuffer(
         }
     }
 
-    unbounded_to_bounded_decompress_moments_image(compressed_moments_rescaled, n_pixels, 1, n_moments, moments_image);
-    compute_density_image(phases, moments_image, n_pixels, 1, n_moments, spectral_framebuffer_d);
+    unbounded_to_bounded_decompress_moments_image(
+        compressed_moments_rescaled,
+        n_pixels,
+        n_moments,
+        moments_image
+    );
+
+    compute_density_image(
+        phases,
+        moments_image,
+        n_pixels,
+        n_moments,
+        spectral_framebuffer_d
+    );
 
     spectral_framebuffer.resize(spectral_framebuffer_d.size());
 
@@ -115,7 +127,7 @@ PixelType quantization_to_exr(size_t n_bits, size_t n_exponent_bits) {
 
 
 
-int main(int argc, char* argv[]) 
+int main(int argc, char* argv[])
 {
     if (argc < 3) {
         std::cout << "Usage:" << std::endl
@@ -152,12 +164,12 @@ int main(int argc, char* argv[])
         }
 
         decompress_spectral_framebuffer(
-            sg.wavelengths, 
-            moments, 
-            sg.mins, sg.maxs, 
+            sg.wavelengths,
+            moments,
+            sg.mins, sg.maxs,
             spectral_framebuffer
         );
-        
+
         const JXLFramebuffer* main_fb = jxl_image.getFramebuffer(sg.layer_indices[0]);
         const size_t n_bits           = main_fb->getBitsPerSample();
         const size_t n_exponent_bits  = main_fb->getExponentBitsPerSample();
@@ -178,7 +190,7 @@ int main(int argc, char* argv[])
         const PixelType pixel_type    = quantization_to_exr(n_bits, n_exponent_bits);
 
         exr_out.appendExtraFramebuffer(
-            jxl_image.getFramebufferDataConst(gg.layer_index), 
+            jxl_image.getFramebufferDataConst(gg.layer_index),
             gg.layer_name.data(),
             pixel_type
         );
