@@ -33,10 +33,13 @@
 
 #pragma once
 
-#include <stddef.h>
-
 #ifdef __cplusplus
-#include <vector>
+    #include <vector>
+    #include <cstddef>
+    #include <cstdint>
+#else
+    #include <stddef.h>
+    #include <stdint.h>
 #endif // __cplusplus
 
 
