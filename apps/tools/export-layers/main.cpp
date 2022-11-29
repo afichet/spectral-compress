@@ -4,7 +4,7 @@
 #include <cstring>
 #include <vector>
 
-#include "lodepng.h"
+#include <lodepng.h>
 
 #include <JXLImage.h>
 
@@ -69,8 +69,8 @@ int main(int argc, char* argv[])
         ss << argv[1] << "_" << layer << ".png";
 
         export_float_gray_to_png(
-            image_in.getFramebufferData(layer), 
-            width, height, 
+            image_in.getFramebufferData(layer),
+            width, height,
             ss.str().c_str());
     }
 
