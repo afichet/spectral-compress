@@ -68,54 +68,32 @@ double unbounded_average_err(
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,
     size_t n_px, size_t n_moments,
-    const std::vector<double>& norm_noments,
+    const std::vector<double>& norm_moments,
     const std::vector<double>& mins,
     const std::vector<double>& maxs)
 {
     double err = 0;
     const size_t n_wl = wavelengths.size();
 
-    std::vector<double> phases;
+    std::vector<double> reconst_spectral_image;
 
-    std::vector<double> compressed_moments;
-    std::vector<double> moments;
-    std::vector<double> reconst_signal;
-
-    wavelengths_to_phases(wavelengths, phases);
-
-    denormalize_moment_image(
-        norm_noments,
-        n_px,
-        n_moments,
+    unbounded_decompress_spectral_image(
+        wavelengths, norm_moments,
         mins, maxs,
-        compressed_moments
-    );
-
-    unbounded_decompress_moments_image(
-        compressed_moments,
-        n_px,
-        n_moments,
-        moments
-    );
-
-    compute_density_image(
-        phases,
-        moments,
-        n_px,
-        n_moments,
-        reconst_signal
+        n_px, n_moments,
+        reconst_spectral_image
     );
 
     for (size_t p = 0; p < n_px; p++) {
         double px_err = 0;
 
-        if (norm_noments[p * n_wl] > 0) {
+        if (norm_moments[p * n_wl] > 0) {
             for (size_t i = 0; i < n_wl; i++) {
-                const double q = reconst_signal[p * n_wl + i] - spectral_image[p * n_wl + i];
+                const double q = reconst_spectral_image[p * n_wl + i] - spectral_image[p * n_wl + i];
                 px_err += q * q;
             }
 
-            px_err = std::sqrt(px_err) / norm_noments[p * n_wl];
+            px_err = std::sqrt(px_err) / norm_moments[p * n_wl];
         }
 
         err += px_err;
@@ -129,53 +107,32 @@ double bounded_average_err(
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,
     size_t n_px, size_t n_moments,
-    const std::vector<double>& norm_noments,
+    const std::vector<double>& norm_moments,
     const std::vector<double>& mins,
     const std::vector<double>& maxs)
 {
     double err = 0;
     const size_t n_wl = wavelengths.size();
 
-    std::vector<double> phases;
+    std::vector<double> reconst_spectral_image;
 
-    std::vector<double> compressed_moments;
-    std::vector<double> moments;
-    std::vector<double> reconst_signal;
-
-    wavelengths_to_phases(wavelengths, phases);
-
-    denormalize_moment_image(
-        norm_noments,
-        n_px, n_moments,
+    bounded_decompress_spectral_image(
+        wavelengths, norm_moments,
         mins, maxs,
-        compressed_moments
-    );
-
-    bounded_decompress_moments_image(
-        compressed_moments,
-        n_px,
-        n_moments,
-        moments
-    );
-
-    compute_density_image(
-        phases,
-        moments,
-        n_px,
-        n_moments,
-        reconst_signal
+        n_px, n_moments,
+        reconst_spectral_image
     );
 
     for (size_t p = 0; p < n_px; p++) {
         double px_err = 0;
 
-        if (norm_noments[p * n_wl] > 0) {
+        if (norm_moments[p * n_wl] > 0) {
             for (size_t i = 0; i < n_wl; i++) {
-                const double q = reconst_signal[p * n_wl + i] - spectral_image[p * n_wl + i];
+                const double q = reconst_spectral_image[p * n_wl + i] - spectral_image[p * n_wl + i];
                 px_err += q * q;
             }
 
-            px_err = std::sqrt(px_err) / norm_noments[p * n_wl];
+            px_err = std::sqrt(px_err) / norm_moments[p * n_wl];
         }
 
         err += px_err;
@@ -189,53 +146,32 @@ double unbounded_to_bounded_average_err(
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,
     size_t n_px, size_t n_moments,
-    const std::vector<double>& norm_noments,
+    const std::vector<double>& norm_moments,
     const std::vector<double>& mins,
     const std::vector<double>& maxs)
 {
     double err = 0;
     const size_t n_wl = wavelengths.size();
 
-    std::vector<double> phases;
+    std::vector<double> reconst_spectral_image;
 
-    std::vector<double> compressed_moments;
-    std::vector<double> moments;
-    std::vector<double> reconst_signal;
-
-    wavelengths_to_phases(wavelengths, phases);
-
-    denormalize_moment_image(
-        norm_noments,
-        n_px, n_moments,
+    unbounded_to_bounded_decompress_spectral_image(
+        wavelengths, norm_moments,
         mins, maxs,
-        compressed_moments
-    );
-
-    unbounded_to_bounded_decompress_moments_image(
-        compressed_moments,
-        n_px,
-        n_moments,
-        moments
-    );
-
-    compute_density_image(
-        phases,
-        moments,
-        n_px,
-        n_moments,
-        reconst_signal
+        n_px, n_moments,
+        reconst_spectral_image
     );
 
     for (size_t p = 0; p < n_px; p++) {
         double px_err = 0;
 
-        if (norm_noments[p * n_wl] > 0) {
+        if (norm_moments[p * n_wl] > 0) {
             for (size_t i = 0; i < n_wl; i++) {
-                const double q = reconst_signal[p * n_wl + i] - spectral_image[p * n_wl + i];
+                const double q = reconst_spectral_image[p * n_wl + i] - spectral_image[p * n_wl + i];
                 px_err += q * q;
             }
 
-            px_err = std::sqrt(px_err) / norm_noments[p * n_wl];
+            px_err = std::sqrt(px_err) / norm_moments[p * n_wl];
         }
 
         err += px_err;
@@ -257,31 +193,11 @@ double unbounded_compute_quantization_curve(
     std::vector<int>& quantization_curve,
     int n_bits_0)
 {
-    std::vector<double> phases;
-    std::vector<double> moments;
-    std::vector<double> compressed_moments;
     std::vector<double> norm_moments;
     std::vector<double> mins, maxs;
 
-    wavelengths_to_phases(wavelengths, phases);
-
-    compute_moments_image(
-        phases,
-        spectral_image,
-        n_px,
-        n_moments,
-        moments
-    );
-
-    unbounded_compress_moments_image(
-        moments,
-        n_px,
-        n_moments,
-        compressed_moments
-    );
-
-    normalize_moment_image(
-        compressed_moments,
+    bounded_compress_spectral_image(
+        wavelengths, spectral_image,
         n_px, n_moments,
         norm_moments,
         mins, maxs
@@ -355,33 +271,12 @@ double bounded_compute_quantization_curve(
     std::vector<int>& quantization_curve,
     int n_bits_0)
 {
-    std::vector<double> phases;
-    std::vector<double> moments;
-    std::vector<double> compressed_moments;
     std::vector<double> norm_moments;
     std::vector<double> mins, maxs;
 
-    wavelengths_to_phases(wavelengths, phases);
-
-    compute_moments_image(
-        phases,
-        spectral_image,
-        n_px,
-        n_moments,
-        moments
-    );
-
-    bounded_compress_moments_image(
-        moments,
-        n_px,
-        n_moments,
-        compressed_moments
-    );
-
-    normalize_moment_image(
-        compressed_moments,
-        n_px,
-        n_moments,
+    bounded_compress_spectral_image(
+        wavelengths, spectral_image,
+        n_px, n_moments,
         norm_moments,
         mins, maxs
     );
@@ -459,31 +354,11 @@ double unbounded_to_bounded_compute_quantization_curve(
     std::vector<int>& quantization_curve,
     int n_bits_0)
 {
-    std::vector<double> phases;
-    std::vector<double> moments;
-    std::vector<double> compressed_moments;
     std::vector<double> norm_moments;
     std::vector<double> mins, maxs;
 
-    wavelengths_to_phases(wavelengths, phases);
-
-    compute_moments_image(
-        phases,
-        spectral_image,
-        n_px,
-        n_moments,
-        moments
-    );
-
-    unbounded_to_bounded_compress_moments_image(
-        moments,
-        n_px,
-        n_moments,
-        compressed_moments
-    );
-
-    normalize_moment_image(
-        compressed_moments,
+    unbounded_to_bounded_compress_spectral_image(
+        wavelengths, spectral_image,
         n_px, n_moments,
         norm_moments,
         mins, maxs
