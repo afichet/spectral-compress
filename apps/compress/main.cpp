@@ -62,8 +62,6 @@ void compress_spectral_framebuffer(
     std::vector<int>& quantization_curve)
 {
     std::vector<double> phases;
-    std::vector<double> moments_image;
-    std::vector<double> compressed_moments_image;
     std::vector<double> normalized_moments_image;
     std::vector<double> mins_d, maxs_d;
 
@@ -96,25 +94,8 @@ void compress_spectral_framebuffer(
         n_pixels, n_moments, 12, quantization_curve
     );
 
-    wavelengths_to_phases(spectral_wavelengths, phases);
-
-    compute_moments_image(
-        phases,
-        spectral_framebuffer,
-        n_pixels,
-        n_moments,
-        moments_image
-    );
-
-    unbounded_to_bounded_compress_moments_image(
-        moments_image,
-        n_pixels,
-        n_moments,
-        compressed_moments_image
-    );
-
-    normalize_moment_image(
-        compressed_moments_image,
+    unbounded_to_bounded_compress_spectral_image(
+        spectral_wavelengths, spectral_framebuffer,
         n_pixels, n_moments,
         normalized_moments_image,
         mins_d, maxs_d
@@ -223,7 +204,6 @@ int main(int argc, char *argv[])
             } else {
                 n_bits          = quantization_curve[m];
                 n_exponent_bits = 0;
-                // std::cout << quantization_curve[m] << std::endl;
             }
 
             const size_t idx = jxl_out.appendFramebuffer(

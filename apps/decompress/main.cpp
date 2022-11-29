@@ -57,50 +57,34 @@ void decompress_spectral_framebuffer(
     const std::vector<float>& maxs,
     std::vector<float>& spectral_framebuffer)
 {
-    // const uint32_t n_pixels = compressed_moments.size() / wavelengths.size();
-    std::vector<double> phases;
-    std::vector<double> wavelengths_d(wavelengths.size());
-    std::vector<double> moments_image;
-    std::vector<double> spectral_framebuffer_d;
-
     const size_t n_moments = compressed_moments.size();
     const size_t n_pixels = compressed_moments[0].size();
+
+    std::vector<double> wavelengths_d(wavelengths.size());
+    std::vector<double> compressed_moments_d(n_moments * n_pixels);
+    std::vector<double> mins_d(n_moments - 1), maxs_d(n_moments - 1);
+    std::vector<double> spectral_framebuffer_d;
 
     for (size_t i = 0; i < wavelengths.size(); i++) {
         wavelengths_d[i] = wavelengths[i];
     }
 
-    wavelengths_to_phases(wavelengths_d, phases);
-
-    std::vector<double> compressed_moments_rescaled(n_moments * n_pixels);
-
-    for (size_t i = 0; i < n_pixels; i++) {
-        compressed_moments_rescaled[n_moments * i] = compressed_moments[0][i];
-    }
-
-    for (size_t m = 1; m < n_moments; m++) {
-        const double v_min = mins[m - 1];
-        const double v_max = maxs[m - 1];
-
-        for (size_t i = 0; i < n_pixels; i++) {
-            const double v = compressed_moments[m][i];
-
-            compressed_moments_rescaled[n_moments * i + m] = (v_max - v_min) * v + v_min;
+    for (size_t px = 0; px < n_pixels; px++) {
+        for (size_t m = 0; m < n_moments; m++) {
+            compressed_moments_d[px * n_moments + m] = compressed_moments[m][px];
         }
     }
 
-    unbounded_to_bounded_decompress_moments_image(
-        compressed_moments_rescaled,
-        n_pixels,
-        n_moments,
-        moments_image
-    );
+    for (size_t i = 0; i < n_moments - 1; i++) {
+        mins_d[i] = mins[i];
+        maxs_d[i] = maxs[i];
+    }
 
-    compute_density_image(
-        phases,
-        moments_image,
-        n_pixels,
-        n_moments,
+    unbounded_to_bounded_decompress_spectral_image(
+        wavelengths_d,
+        compressed_moments_d,
+        mins_d, maxs_d,
+        n_pixels, n_moments,
         spectral_framebuffer_d
     );
 
