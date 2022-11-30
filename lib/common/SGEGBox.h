@@ -51,31 +51,34 @@ struct SGEGSpectralGroup
     // framebuffers exceed the 256 limit), this value can exceed 256 and is
     // refering to the n_th layer as if we've used a single file.
     std::vector<uint32_t> layer_indices;
-    
+
     // The original wavelengths the signal was sampled at
     std::vector<float> wavelengths;
-    
-    // Mins & Maxs of the moments starting from 1st moment, 
+
+    // Mins & Maxs of the moments starting from 1st moment,
     // 0th moment is not rescaled
     std::vector<float> mins;
-    std::vector<float> maxs; 
+    std::vector<float> maxs;
+
+    // Used for upperbound compression method
+    float global_max;
 
     /**
      * Get the content of this structure for serialization.
-     * @param data An array of bytes which need to be at least of `size` 
+     * @param data An array of bytes which need to be at least of `size`
      *             elements.
      * @return The number of bytes written
      */
     size_t getRaw(uint8_t data[]) const;
 
     size_t fromRaw(const uint8_t data[]);
-    
+
     /**
      * Size in bytes require to serialize this data structure i.e., the minimum
      * array size required when calling `getRaw`
      */
     size_t size() const;
-    
+
     SGEGSpectralGroup& operator=(const SGEGSpectralGroup& other);
 };
 
@@ -92,7 +95,7 @@ struct SGEGGrayGroup
 
     /**
      * Get the content of this structure for serialization.
-     * @param data An array of bytes which need to be at least of `size` 
+     * @param data An array of bytes which need to be at least of `size`
      *             elements.
      * @return The number of bytes written
      */
@@ -144,7 +147,7 @@ struct SGEGBox
 
     /**
      * Get the content of this structure for serialization.
-     * @param data An array of bytes which need to be at least of `size` 
+     * @param data An array of bytes which need to be at least of `size`
      *             elements.
      * @return The number of bytes written
      */

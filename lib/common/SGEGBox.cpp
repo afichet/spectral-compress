@@ -57,7 +57,7 @@ size_t read_value(const uint8_t data[], T& value)
 }
 
 template<typename T>
-size_t write_vector(const std::vector<T>& vec, uint8_t data[]) 
+size_t write_vector(const std::vector<T>& vec, uint8_t data[])
 {
     size_t offset = 0, write_size = 0;
     uint32_t data_len = 0;
@@ -105,6 +105,7 @@ size_t SGEGSpectralGroup::getRaw(uint8_t data[]) const
     offset += write_vector(wavelengths, data + offset);
     offset += write_vector(mins, data + offset);
     offset += write_vector(maxs, data + offset);
+    offset += write_value(global_max, data + offset);
 
     return offset;
 }
@@ -119,6 +120,7 @@ size_t SGEGSpectralGroup::fromRaw(const uint8_t data[])
     offset += read_vector(data + offset, wavelengths);
     offset += read_vector(data + offset, mins);
     offset += read_vector(data + offset, maxs);
+    offset += read_value(data + offset, global_max);
 
     return offset;
 }
@@ -136,7 +138,8 @@ size_t SGEGSpectralGroup::size() const
         + sizeof(uint32_t) // Arrays size
         + mins.size() * sizeof(float)
         + sizeof(uint32_t) // Arrays size
-        + maxs.size() * sizeof(float);
+        + maxs.size() * sizeof(float)
+        + sizeof(float);
 }
 
 
@@ -147,6 +150,7 @@ SGEGSpectralGroup& SGEGSpectralGroup::operator=(const SGEGSpectralGroup& other) 
         wavelengths   = other.wavelengths;
         mins          = other.mins;
         maxs          = other.maxs;
+        global_max    = other.global_max;
     }
 
     return *this;
@@ -196,7 +200,7 @@ SGEGGrayGroup& SGEGGrayGroup::operator=(const SGEGGrayGroup& other) {
 
 // ----------------------------------------------------------------------------
 
-SGEGBox::SGEGBox() 
+SGEGBox::SGEGBox()
     : revision(1)
     , n_parts(1)
 {}
@@ -217,7 +221,7 @@ SGEGBox::SGEGBox(const std::vector<uint8_t> &data)
 
     for (size_t i = 0; i < spectral_groups.size(); i++) {
         offset += spectral_groups[i].fromRaw(data.data() + offset);
-    } 
+    }
 
     // gray_groups
     offset += read_value(data.data() + offset, n_gray_groups);
@@ -263,7 +267,7 @@ size_t SGEGBox::getRaw(uint8_t data[]) const
 
     // number of parts
     offset += write_value(n_parts, data + offset);
-    
+
     // spectral_groups
     offset += write_value(n_spectral_groups, data + offset);
 
@@ -287,12 +291,12 @@ size_t SGEGBox::getRaw(uint8_t data[]) const
 
 size_t SGEGBox::size() const {
     size_t sz = 0;
-  
+
     sz += sizeof(revision);
     sz += sizeof(n_parts);
 
     sz += sizeof(uint32_t); // spectral_group array size
-    
+
     for (const SGEGSpectralGroup& sg: spectral_groups) {
         sz += sg.size();
     }
@@ -312,7 +316,7 @@ size_t SGEGBox::size() const {
 
 
 SGEGBox& SGEGBox::operator=(const SGEGBox& other)
-{        
+{
     if (this != &other) {
         revision        = other.revision;
         n_parts         = other.n_parts;
@@ -365,7 +369,7 @@ void SGEGBox::print() const {
             std::cout << i << ", ";
         }
 
-        std::cout << std::endl << std::endl;        
+        std::cout << std::endl << std::endl;
     }
 
     std::cout << "gray_groups: " << gray_groups.size() << std::endl;
