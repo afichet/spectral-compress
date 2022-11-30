@@ -53,6 +53,14 @@
 #include <moments_image.h>
 #include <quantization.h>
 
+/**
+ * TODO:
+ * - Add an argument
+ *    - to control the number of bits for starting the quantization curves
+ *    - to control the JXL quality factor
+ *    - to control spatial downsampling (needs as well serious work in the JXL class)
+ *    - fix runtime error when running with CAVE database
+ */
 
 void compress_spectral_framebuffer(
     const SpectralFramebuffer* framebuffer,
@@ -91,12 +99,10 @@ void compress_spectral_framebuffer(
     }
 
     // Create a quantization profil
-    // unbounded_to_bounded_compute_quantization_curve(
-    //     spectral_wavelengths, spectral_framebuffer,
-    //     n_pixels, n_moments, 12, quantization_curve
-    // );
-
-    ///////
+    upperbound_compute_quantization_curve(
+        spectral_wavelengths, spectral_framebuffer,
+        n_pixels, n_moments, 12, quantization_curve
+    );
 
     upperbound_compress_spectral_image(
         spectral_wavelengths, spectral_framebuffer,
@@ -214,14 +220,13 @@ int main(int argc, char *argv[])
             float n_bits;
             float n_exponent_bits;
 
-            // TODO
-            // if (m == 0) {
+            if (m == 0) {
                 n_bits          = main_n_bits;
                 n_exponent_bits = main_n_exponent_bits;
-            // } else {
-                // n_bits          = quantization_curve[m];
-                // n_exponent_bits = 0;
-            // }
+            } else {
+                n_bits          = quantization_curve[m];
+                n_exponent_bits = 0;
+            }
 
             const size_t idx = jxl_out.appendFramebuffer(
                 compressed_moments[m],
