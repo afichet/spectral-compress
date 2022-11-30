@@ -4,7 +4,9 @@
 #include <quantization.h>
 #include <sstream>
 #include <fstream>
+#include <chrono>
 
+#define VERBOSE
 
 void run_for_bounded(
     const std::vector<double>& wavelengths,
@@ -13,6 +15,11 @@ void run_for_bounded(
     int bits, int start_n_bits,
     const std::string& output_prefix)
 {
+#ifdef VERBOSE
+    std::cout << "Running for bounded...";
+    auto start = std::chrono::steady_clock::now();
+#endif // VERBOSE
+
     std::vector<int> quantization_curve_b;
 
     double err_utb = bounded_compute_quantization_curve(
@@ -35,6 +42,13 @@ void run_for_bounded(
     }
 
     out_b << std::endl << err_utb;
+
+#ifdef VERBOSE
+    auto end = std::chrono::steady_clock::now();
+    auto diff = end - start;
+    std::cout << "\t\t\t" << std::chrono::duration <double, std::milli> (diff).count() << " ms" << std::endl;
+    std::cout << "Writing: " << output_file.str() << std::endl;
+#endif // VERBOSE
 }
 
 
@@ -45,6 +59,11 @@ void run_for_unbounded(
     int bits, int start_n_bits,
     const std::string& output_prefix)
 {
+#ifdef VERBOSE
+    std::cout << "Running for unbounded...";
+    auto start = std::chrono::steady_clock::now();
+#endif // VERBOSE
+
     std::vector<int> quantization_curve_u;
 
     double err_utb = unbounded_compute_quantization_curve(
@@ -67,6 +86,13 @@ void run_for_unbounded(
     }
 
     out_u << std::endl << err_utb;
+
+#ifdef VERBOSE
+    auto end = std::chrono::steady_clock::now();
+    auto diff = end - start;
+    std::cout << "\t\t" << std::chrono::duration <double, std::milli> (diff).count() << " ms" << std::endl;
+    std::cout << "Writing: " << output_file.str() << std::endl;
+#endif // VERBOSE
 }
 
 
@@ -77,6 +103,11 @@ void run_for_unbounded_to_bounded(
     int bits, int start_n_bits,
     const std::string& output_prefix)
 {
+#ifdef VERBOSE
+    std::cout << "Running for unbounded to bounded...";
+    auto start = std::chrono::steady_clock::now();
+#endif // VERBOSE
+
     std::vector<int> quantization_curve_utb;
 
     double err_utb = unbounded_to_bounded_compute_quantization_curve(
@@ -99,7 +130,62 @@ void run_for_unbounded_to_bounded(
     }
 
     out_utb << std::endl << err_utb;
+
+#ifdef VERBOSE
+    auto end = std::chrono::steady_clock::now();
+    auto diff = end - start;
+    std::cout << "\t" << std::chrono::duration <double, std::milli> (diff).count() << " ms" << std::endl;
+    std::cout << "Writing: " << output_file.str() << std::endl;
+#endif // VERBOSE
 }
+
+
+void run_for_upperbound(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& image_data,
+    int n_pixels, int n_bands,
+    int bits, int start_n_bits,
+    const std::string& output_prefix)
+{
+#ifdef VERBOSE
+    std::cout << "Running for upperbound...";
+    auto start = std::chrono::steady_clock::now();
+#endif // VERBOSE
+
+    std::vector<int> quantization_curve_utb;
+
+    double err_utb = upperbound_compute_quantization_curve(
+        wavelengths,
+        image_data,
+        n_pixels, n_bands,
+        bits,
+        quantization_curve_utb,
+        start_n_bits
+    );
+
+    // Save data
+    std::stringstream output_file;
+    output_file << output_prefix << "_up_" << bits << ".txt";
+
+    std::ofstream out_utb(output_file.str());
+
+    for (size_t i = 0; i < quantization_curve_utb.size(); i++) {
+        out_utb << quantization_curve_utb[i] << " ";
+    }
+
+    // Add the relative scale memory footprint
+    out_utb << "8 ";
+
+    out_utb << std::endl << err_utb;
+
+#ifdef VERBOSE
+    auto end = std::chrono::steady_clock::now();
+    auto diff = end - start;
+    std::cout << "\t\t" << std::chrono::duration <double, std::milli> (diff).count() << " ms" << std::endl;
+    std::cout << "Writing: " << output_file.str() << std::endl;
+#endif // VERBOSE
+}
+
 
 
 int main(int argc, char* argv[])
@@ -107,23 +193,39 @@ int main(int argc, char* argv[])
     if (argc < 3) {
         std::cout << "Usage:" << std::endl
                   << "------" << std::endl
-                  << argv[0] << " <spectral exr> <output_prefix>" << std::endl;
+                  << argv[0] << " <spectral exr> <output_prefix> <run_for_bounded y/n>" << std::endl;
         return 0;
     }
 
-    // const int n_bits_1 = 10;
     const char* filename = argv[1];
     const std::string output_prefix = argv[2];
+
+#ifdef VERBOSE
+    std::cout << "Benchmarking: " << filename << std::endl;
+#endif // VERBOSE
+
+    // Optional run: not relevant for spectra with a value > 1
+    bool do_run_for_bounded = true;
+
+    if (argc == 4) {
+        if (argv[3][0] == 'n') {
+            do_run_for_bounded = false;
+        }
+    }
 
     EXRSpectralImage image(filename);
 
     const int n_pixels = image.width() * image.height();
 
     // const int n_bits[] = {12, 10, 8};
-    const int n_bits[] = {8};
+    const int n_bits[] = {6, 7, 9, 10, 11, 12, 13};
 
     for (SpectralFramebuffer* fb: image.getSpectralFramebuffers()) {
         for (int bits: n_bits) {
+            #ifdef VERBOSE
+            std::cout << "Using " << bits << "bits" << std::endl;
+            #endif // VERBOSE
+
             const int n_bands = fb->wavelengths_nm.size();
 
             std::vector<double> wavelengths(n_bands);
@@ -140,14 +242,16 @@ int main(int argc, char* argv[])
 
             int start_n_bits = fb->pixel_type == PixelType::HALF ? 16 : 32;
 
-            run_for_bounded(
-                wavelengths,
-                image_data,
-                n_pixels, n_bands,
-                bits,
-                start_n_bits,
-                output_prefix
-            );
+            if (do_run_for_bounded) {
+                run_for_bounded(
+                    wavelengths,
+                    image_data,
+                    n_pixels, n_bands,
+                    bits,
+                    start_n_bits,
+                    output_prefix
+                );
+            }
 
             run_for_unbounded(
                 wavelengths,
@@ -159,6 +263,15 @@ int main(int argc, char* argv[])
             );
 
             run_for_unbounded_to_bounded(
+                wavelengths,
+                image_data,
+                n_pixels, n_bands,
+                bits,
+                start_n_bits,
+                output_prefix
+            );
+
+            run_for_upperbound(
                 wavelengths,
                 image_data,
                 n_pixels, n_bands,

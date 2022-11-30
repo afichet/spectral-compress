@@ -16,6 +16,9 @@ u_err = []
 utb_bits = []
 utb_err = []
 
+up_bits = []
+up_err = []
+
 for f in os.listdir(path_out):
     f_path = os.path.join(path_out, f)
 
@@ -37,6 +40,10 @@ for f in os.listdir(path_out):
             elif f.find('_utb_') != -1:
                 utb_bits.append(q)
                 utb_err.append(e)
+            elif f.find('_up_') != -1:
+                up_bits.append(q)
+                up_err.append(e)
+
 
 plt.plot()
 plt.xlabel('Bits per pixel')
@@ -47,6 +54,7 @@ pt_sz = 8
 plt.scatter(b_bits, b_err, s=pt_sz, label='Bounded')
 plt.scatter(u_bits, u_err, s=pt_sz, label='Unbounded')
 plt.scatter(utb_bits, utb_err, s=pt_sz, label='Unbounded to bounded')
+plt.scatter(up_bits, up_err, s=pt_sz, label='Upperbound')
 
 plt.legend()
 plt.tight_layout()

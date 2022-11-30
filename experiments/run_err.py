@@ -10,7 +10,13 @@ if not os.path.exists(path_out):
     os.mkdir(path_out)
 
 for d in os.listdir(path_data):
-    spectral_image = os.path.join(path_data, d, 'specular.exr')
-    output_file = os.path.join(path_out, d + '_specular')
+    # run for Bonn material maps
+    for s in ['diffuse', 'specular']:
+        spectral_image = os.path.join(path_data, d, s + '.exr')
+        output_file = os.path.join(path_out, d + '_' + s)
 
-    subprocess.run([path_bin, spectral_image, output_file])
+        flag_r = 'y'
+        if s == 'specular':
+            flag_r = 'n'
+
+        subprocess.run([path_bin, spectral_image, output_file, flag_r])
