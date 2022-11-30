@@ -439,10 +439,12 @@ size_t JXLImage::appendFramebuffer(
 void JXLImage::write(const char* filename) const {
     // Currently, JXL supports up to 256 framebuffers per image
     // we may need more than that so, in such scenario, we are
-    // going to write multiple images    
+    // going to write multiple images
     std::string base, ext;
     Util::split_extension(filename, base, ext);
-    
+
+    // TODO: use parts to allow different downsampling factors
+
     for (uint32_t part = 0; part < _n_parts; part++) {
         std::string curr_filename;
 
