@@ -59,11 +59,13 @@ void compress_spectral_framebuffer(
     std::vector<std::vector<float>>& compressed_moments,
     std::vector<float>& mins,
     std::vector<float>& maxs,
+    std::vector<uint8_t>& relative_scales,
+    float& global_max,
     std::vector<int>& quantization_curve)
 {
-    std::vector<double> phases;
     std::vector<double> normalized_moments_image;
     std::vector<double> mins_d, maxs_d;
+    double global_max_d;
 
     const uint32_t n_moments = framebuffer->wavelengths_nm.size();
     const uint32_t n_pixels = framebuffer->image_data.size() / framebuffer->wavelengths_nm.size();
@@ -89,16 +91,20 @@ void compress_spectral_framebuffer(
     }
 
     // Create a quantization profil
-    unbounded_to_bounded_compute_quantization_curve(
-        spectral_wavelengths, spectral_framebuffer,
-        n_pixels, n_moments, 12, quantization_curve
-    );
+    // unbounded_to_bounded_compute_quantization_curve(
+    //     spectral_wavelengths, spectral_framebuffer,
+    //     n_pixels, n_moments, 12, quantization_curve
+    // );
 
-    unbounded_to_bounded_compress_spectral_image(
+    ///////
+
+    upperbound_compress_spectral_image(
         spectral_wavelengths, spectral_framebuffer,
         n_pixels, n_moments,
         normalized_moments_image,
-        mins_d, maxs_d
+        mins_d, maxs_d,
+        relative_scales,
+        global_max_d
     );
 
     // Copy back and implicit conversion to float
@@ -119,6 +125,8 @@ void compress_spectral_framebuffer(
         mins[m] = mins_d[m];
         maxs[m] = maxs_d[m];
     }
+
+    global_max = global_max_d;
 }
 
 
@@ -189,22 +197,31 @@ int main(int argc, char *argv[])
         quantization_from_exr(fb->pixel_type, main_n_bits, main_n_exponent_bits);
 
         std::vector<std::vector<float>> compressed_moments;
+        std::vector<uint8_t> relative_scales;
         std::vector<int> quantization_curve;
 
-        compress_spectral_framebuffer(fb, compressed_moments, sg.mins, sg.maxs, quantization_curve);
+        compress_spectral_framebuffer(
+            fb,
+            compressed_moments,
+            sg.mins, sg.maxs,
+            relative_scales,
+            sg.global_max,
+            quantization_curve
+        );
 
         // Now we can save to JPEG XL
         for (size_t m = 0; m < compressed_moments.size(); m++) {
             float n_bits;
             float n_exponent_bits;
 
-            if (m == 0) {
+            // TODO
+            // if (m == 0) {
                 n_bits          = main_n_bits;
                 n_exponent_bits = main_n_exponent_bits;
-            } else {
-                n_bits          = quantization_curve[m];
-                n_exponent_bits = 0;
-            }
+            // } else {
+                // n_bits          = quantization_curve[m];
+                // n_exponent_bits = 0;
+            // }
 
             const size_t idx = jxl_out.appendFramebuffer(
                 compressed_moments[m],
@@ -216,6 +233,17 @@ int main(int argc, char *argv[])
 
             sg.layer_indices.push_back(idx);
         }
+
+        // TODO: This is hacky
+        std::vector<float> relative_scales_f(relative_scales.size());
+
+        for (size_t i = 0; i < relative_scales.size(); i++) {
+            relative_scales_f[i] = (float)relative_scales[i] / 255.f;
+        }
+
+        const size_t idx = jxl_out.appendFramebuffer(relative_scales_f, 1, 8, 0, 1);
+
+        sg.layer_indices.push_back(idx);
 
         box.spectral_groups.push_back(sg);
     }

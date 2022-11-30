@@ -55,6 +55,8 @@ void decompress_spectral_framebuffer(
     const std::vector<std::vector<float>>& compressed_moments,
     const std::vector<float>& mins,
     const std::vector<float>& maxs,
+    const std::vector<uint8_t>& relative_scales,
+    float global_max,
     std::vector<float>& spectral_framebuffer)
 {
     const size_t n_moments = compressed_moments.size();
@@ -80,10 +82,12 @@ void decompress_spectral_framebuffer(
         maxs_d[i] = maxs[i];
     }
 
-    unbounded_to_bounded_decompress_spectral_image(
+    upperbound_decompress_spectral_image(
         wavelengths_d,
         compressed_moments_d,
         mins_d, maxs_d,
+        relative_scales,
+        global_max,
         n_pixels, n_moments,
         spectral_framebuffer_d
     );
@@ -135,22 +139,35 @@ int main(int argc, char* argv[])
 
     for (const SGEGSpectralGroup& sg: box.spectral_groups) {
         std::string root_name = sg.root_name.data();
-        const size_t n_moments = sg.layer_indices.size();
+        // 1 extra framebuffer is used to store relative max
+        const size_t n_moments = sg.layer_indices.size() - 1;
 
         assert(sg.layer_indices.size() == (sg.mins.size() + 1));
         assert(sg.mins.size() == sg.maxs.size());
 
         std::vector<std::vector<float>> moments(n_moments);
+        std::vector<float> relative_scales_f;
         std::vector<float> spectral_framebuffer;
 
         for (size_t m = 0; m < n_moments; m++) {
             moments[m] = jxl_image.getFramebufferDataConst(sg.layer_indices[m]);
         }
 
+        relative_scales_f = jxl_image.getFramebufferDataConst(sg.layer_indices.back());
+
+        // TODO: a bit hacky
+        std::vector<uint8_t> relative_scales(relative_scales_f.size());
+
+        for (size_t i = 0; i < relative_scales_f.size(); i++) {
+            relative_scales[i] = 255 * relative_scales_f[i];
+        }
+
         decompress_spectral_framebuffer(
             sg.wavelengths,
             moments,
             sg.mins, sg.maxs,
+            relative_scales,
+            sg.global_max,
             spectral_framebuffer
         );
 
