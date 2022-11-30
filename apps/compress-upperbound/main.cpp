@@ -234,11 +234,11 @@ int main(int argc, char *argv[])
             sg.layer_indices.push_back(idx);
         }
 
-        // TODO: This is hacky
+        // TODO: This is a bit hacky
         std::vector<float> relative_scales_f(relative_scales.size());
 
         for (size_t i = 0; i < relative_scales.size(); i++) {
-            relative_scales_f[i] = (float)relative_scales[i] / 255.f;
+            relative_scales_f[i] = (float)relative_scales[i] / std::numeric_limits<uint8_t>::max();
         }
 
         const size_t idx = jxl_out.appendFramebuffer(relative_scales_f, 1, 8, 0, 1);

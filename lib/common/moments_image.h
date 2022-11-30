@@ -37,6 +37,7 @@
     #include <vector>
     #include <cstddef>
     #include <cstdint>
+    #include <limits>
 #else
     #include <stddef.h>
     #include <stdint.h>
@@ -422,15 +423,42 @@ void unbounded_to_bounded_decompress_spectral_image(
     std::vector<double>& spectral_image);
 
 
+template<typename T>
 void upperbound_decompress_spectral_image(
     const std::vector<double>& wavelengths,
     const std::vector<double>& normalize_moment_image,
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
-    const std::vector<uint8_t>& relative_scales,
+    const std::vector<T>& relative_scales,
     double global_max,
     size_t n_pixels,
     size_t n_moments,
-    std::vector<double>& spectral_image);
+    std::vector<double>& spectral_image)
+{
+    const size_t n_bands = wavelengths.size();
+    std::vector<double> rescaled_spectral_image;
+
+    bounded_decompress_spectral_image(
+        wavelengths,
+        normalize_moment_image,
+        mins, maxs,
+        n_pixels, n_moments,
+        rescaled_spectral_image
+    );
+
+    // TODO: change it if the compression method is changed (handle differently
+    // DC component)
+
+    spectral_image.resize(n_pixels * n_bands);
+
+    for (size_t px = 0; px < n_pixels; px++) {
+        const double scaling = global_max * (double)relative_scales[px] / (double)std::numeric_limits<T>::max();
+
+        for (size_t b = 0; b < n_bands; b++) {
+            spectral_image[px * n_bands + b] = rescaled_spectral_image[px * n_bands + b] * scaling;
+        }
+    }
+}
+
 
 #endif // __cplusplus

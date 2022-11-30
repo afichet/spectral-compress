@@ -155,11 +155,11 @@ int main(int argc, char* argv[])
 
         relative_scales_f = jxl_image.getFramebufferDataConst(sg.layer_indices.back());
 
-        // TODO: a bit hacky
+        // TODO: This is a bit hacky
         std::vector<uint8_t> relative_scales(relative_scales_f.size());
 
         for (size_t i = 0; i < relative_scales_f.size(); i++) {
-            relative_scales[i] = 255 * relative_scales_f[i];
+            relative_scales[i] = std::numeric_limits<uint8_t>::max() * relative_scales_f[i];
         }
 
         decompress_spectral_framebuffer(
