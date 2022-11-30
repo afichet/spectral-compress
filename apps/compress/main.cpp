@@ -61,8 +61,7 @@ void compress_spectral_framebuffer(
     std::vector<float>& maxs,
     std::vector<int>& quantization_curve)
 {
-    std::vector<double> phases;
-    std::vector<double> normalized_moments_image;
+    std::vector<double> compressed_moments_d;
     std::vector<double> mins_d, maxs_d;
 
     const uint32_t n_moments = framebuffer->wavelengths_nm.size();
@@ -97,7 +96,7 @@ void compress_spectral_framebuffer(
     unbounded_to_bounded_compress_spectral_image(
         spectral_wavelengths, spectral_framebuffer,
         n_pixels, n_moments,
-        normalized_moments_image,
+        compressed_moments_d,
         mins_d, maxs_d
     );
 
@@ -108,7 +107,7 @@ void compress_spectral_framebuffer(
         compressed_moments[m].resize(n_pixels);
 
         for (size_t px = 0; px < n_pixels; px++) {
-            compressed_moments[m][px] = normalized_moments_image[n_moments * px + m];
+            compressed_moments[m][px] = compressed_moments_d[n_moments * px + m];
         }
     }
 
