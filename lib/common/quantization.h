@@ -109,3 +109,16 @@ double unbounded_to_bounded_error_for_quantization_curve(
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
     const std::vector<int>& quantization_curve);
+
+
+// TODO: template?
+double upperbound_error_for_quantization_curve(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    size_t n_px, size_t n_moments,
+    const std::vector<double>& normalized_moments,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
+    const std::vector<uint8_t>& relative_scales,
+    double global_max,
+    const std::vector<int>& quantization_curve);

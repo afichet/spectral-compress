@@ -64,6 +64,35 @@ void quantize_dequantize_single_image(
 }
 
 
+double error_images(
+    const std::vector<double>& reference,
+    const std::vector<double>& comparison,
+    size_t n_pixels,
+    size_t n_bands)
+{
+    double error = 0;
+
+    for (size_t p = 0; p < n_pixels; p++) {
+        double px_sum_err = 0;
+        double avg = 0;
+
+        for (size_t i = 0; i < n_bands; i++) {
+            const double q = reference[p * n_bands + i] - comparison[p * n_bands + i];
+            avg += reference[p * n_bands + i];
+            px_sum_err += q * q;
+        }
+
+        avg /= n_bands;
+
+        if (avg > 0) {
+            error += std::sqrt(px_sum_err) / avg;
+        }
+    }
+
+    return error / (double)n_pixels;
+}
+
+
 double unbounded_average_err(
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,
@@ -158,6 +187,49 @@ double unbounded_to_bounded_average_err(
     unbounded_to_bounded_decompress_spectral_image(
         wavelengths, norm_moments,
         mins, maxs,
+        n_px, n_moments,
+        reconst_spectral_image
+    );
+
+    for (size_t p = 0; p < n_px; p++) {
+        double px_err = 0;
+
+        if (norm_moments[p * n_wl] > 0) {
+            for (size_t i = 0; i < n_wl; i++) {
+                const double q = reconst_spectral_image[p * n_wl + i] - spectral_image[p * n_wl + i];
+                px_err += q * q;
+            }
+
+            px_err = std::sqrt(px_err) / norm_moments[p * n_wl];
+        }
+
+        err += px_err;
+    }
+
+    return err / (double)n_px;
+}
+
+template<typename T>
+double upperbound_average_err(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    size_t n_px, size_t n_moments,
+    const std::vector<double>& norm_moments,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
+    const std::vector<T>& relative_scales,
+    double global_max)
+{
+    double err = 0;
+    const size_t n_wl = wavelengths.size();
+
+    std::vector<double> reconst_spectral_image;
+
+    upperbound_decompress_spectral_image(
+        wavelengths, norm_moments,
+        mins, maxs,
+        relative_scales,
+        global_max,
         n_px, n_moments,
         reconst_spectral_image
     );
@@ -424,7 +496,7 @@ double unbounded_to_bounded_compute_quantization_curve(
     );
 }
 
-
+// TODO: use template?
 double upperbound_compute_quantization_curve(
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,
@@ -433,58 +505,85 @@ double upperbound_compute_quantization_curve(
     std::vector<int>& quantization_curve,
     int n_bits_0)
 {
-    std::vector<double> phases;
-    std::vector<double> moments;
-    std::vector<double> compressed_moments;
-    std::vector<double> norm_moments;
+    std::vector<double> normalized_moments_image;
     std::vector<double> mins, maxs;
+    std::vector<uint8_t> relative_scales;
+    double global_max;
 
-    const size_t n_bands = wavelengths.size();
-
-    // Find global max
-    double global_max = 0;
-
-    for (int i = 0; i < n_px * n_bands; i++) {
-        global_max = std::max(global_max, spectral_image[i]);
-    }
-
-    // Compute relative maximas
-    std::vector<uint8_t> relative_scale(n_px);
-
-    for (size_t i = 0; i < n_px; i++) {
-        double local_max = 0;
-
-        for (size_t j = 0; j < n_bands; j++) {
-            local_max = std::max(local_max, spectral_image[i * n_bands + j]);
-        }
-
-        relative_scale[i] = std::ceil(255.f * (local_max / global_max));
-    }
-
-    // Rescale AC components
-    std::vector<double> scaled_moments(n_px * n_moments);
-
-    wavelengths_to_phases(wavelengths, phases);
-
-    compute_moments_image(
-        phases,
+    upperbound_compress_spectral_image(
+        wavelengths,
         spectral_image,
-        n_px,
-        n_moments,
-        moments
+        n_px, n_moments,
+        normalized_moments_image,
+        mins, maxs,
+        relative_scales,
+        global_max
     );
 
-    for (size_t i = 0; i < n_px; i++) {
-        const double scale = global_max * (double)relative_scale[i] / 255.f;
+    quantization_curve.resize(n_moments);
 
-        for (size_t j = 0; j < n_moments; j++) {
-            scaled_moments[i * n_moments + j] = moments[i * n_moments + j] / scale;
+    quantization_curve[0] = n_bits_0;
+    quantization_curve[1] = n_bits_start;
+
+
+    std::vector<double> quantized_moments;
+
+    quantize_dequantize_single_image(
+        normalized_moments_image,
+        n_px, n_moments,
+        quantized_moments,
+        1, quantization_curve[1]
+    );
+
+    const double base_err = upperbound_average_err(
+        wavelengths,
+        spectral_image,
+        n_px, n_moments,
+        quantized_moments,
+        mins, maxs,
+        relative_scales,
+        global_max
+    );
+
+    for (size_t m = 2; m < n_moments; m++) {
+        quantization_curve[m] = quantization_curve[m - 1];
+
+        for (size_t n_bits = quantization_curve[m]; n_bits > 0; n_bits--) {
+            quantize_dequantize_single_image(
+                normalized_moments_image,
+                n_px, n_moments,
+                quantized_moments,
+                m, n_bits
+            );
+
+            double curr_err = upperbound_average_err(
+                wavelengths,
+                spectral_image,
+                n_px, n_moments,
+                quantized_moments,
+                mins, maxs,
+                relative_scales,
+                global_max
+            );
+
+            if (curr_err >= base_err) {
+                break;
+            }
+
+            quantization_curve[m] = n_bits;
         }
-
-        // TODO
-
-        scaled_moments[i * n_moments] = moments[i * n_moments];
     }
+
+    return upperbound_error_for_quantization_curve(
+        wavelengths,
+        spectral_image,
+        n_px, n_moments,
+        normalized_moments_image,
+        mins, maxs,
+        relative_scales,
+        global_max,
+        quantization_curve
+    );
 }
 
 /*****************************************************************************/
@@ -598,5 +697,46 @@ double unbounded_to_bounded_error_for_quantization_curve(
         n_px, n_moments,
         quantized_moments,
         mins, maxs
+    );
+}
+
+
+double upperbound_error_for_quantization_curve(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    size_t n_px, size_t n_moments,
+    const std::vector<double>& normalized_moments,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
+    const std::vector<uint8_t>& relative_scales,
+    double global_max,
+    const std::vector<int>& quantization_curve)
+{
+    assert(normalized_moments.size() == n_px * n_moments);
+
+    // Quantize & dequantize each moment of the image
+    std::vector<double> quantized_moments(normalized_moments.size());
+
+    for (size_t px = 0; px < n_px; px++) {
+        // We ignore moment 0
+        quantized_moments[px * n_moments + 0] = normalized_moments[px * n_moments + 0];
+
+        for (size_t m = 1; m < n_moments; m++) {
+            quantized_moments[px * n_moments + m] =
+                quantize_dequantize(
+                    normalized_moments[px * n_moments + m],
+                    quantization_curve[m]
+                );
+        }
+    }
+
+    return upperbound_average_err(
+        wavelengths,
+        spectral_image,
+        n_px, n_moments,
+        quantized_moments,
+        mins, maxs,
+        relative_scales,
+        global_max
     );
 }
