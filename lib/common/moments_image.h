@@ -34,13 +34,15 @@
 #pragma once
 
 #ifdef __cplusplus
-    #include <vector>
     #include <cstddef>
     #include <cstdint>
+    #include <cmath>
+    #include <vector>
     #include <limits>
 #else
     #include <stddef.h>
     #include <stdint.h>
+    #include <math.h>
 #endif // __cplusplus
 
 
@@ -380,6 +382,7 @@ void unbounded_to_bounded_compress_spectral_image(
     std::vector<double>& maxs);
 
 
+template<typename T>
 void upperbound_compress_spectral_image(
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,
@@ -388,8 +391,51 @@ void upperbound_compress_spectral_image(
     std::vector<double>& normalized_moments_image,
     std::vector<double>& mins,
     std::vector<double>& maxs,
-    std::vector<uint8_t>& relative_scales,
-    double& global_max);
+    std::vector<T>& relative_scales,
+    double& global_max)
+{
+    const size_t n_bands = wavelengths.size();
+
+    // Find global max
+    global_max = 0;
+
+    for (size_t i = 0; i < n_pixels * n_bands; i++) {
+        global_max = std::max(global_max, spectral_image[i]);
+    }
+
+    // Compute local scaling
+    relative_scales.resize(n_pixels);
+
+    for (size_t px = 0; px < n_pixels; px++) {
+        double local_max = 0;
+
+        for (size_t b = 0; b < n_bands; b++) {
+            local_max = std::max(local_max, spectral_image[px * n_bands + b]);
+        }
+
+        relative_scales[px] = (T)std::ceil((double)std::numeric_limits<T>::max() * (local_max / global_max));
+    }
+
+    // Rescale the signal
+    std::vector<double> rescaled_spectral_image(n_pixels * n_bands);
+
+    for (size_t px = 0; px < n_pixels; px++) {
+        const double scaling = global_max * (double)relative_scales[px] / (double)std::numeric_limits<T>::max();
+
+        for (size_t b = 0; b < n_bands; b++) {
+            rescaled_spectral_image[px * n_bands + b] = spectral_image[px * n_bands + b] / scaling;
+        }
+    }
+
+    // TEMP: Probably better to keep the DC component without recaling
+    bounded_compress_spectral_image(
+        wavelengths,
+        rescaled_spectral_image,
+        n_pixels, n_moments,
+        normalized_moments_image,
+        mins, maxs
+    );
+}
 
 // Decompress (compressed_moments -> spectral_image)
 
