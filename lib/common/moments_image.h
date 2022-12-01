@@ -455,14 +455,13 @@ void upperbound_compress_spectral_image(
     std::vector<double> rescaled_spectral_image(n_pixels * n_bands);
 
     for (size_t px = 0; px < n_pixels; px++) {
-        const double scaling = global_max * (double)relative_scales[px] / (double)std::numeric_limits<T>::max();
+        const double scaling = (double)std::numeric_limits<T>::max() / (global_max * (double)relative_scales[px]);
 
         for (size_t b = 0; b < n_bands; b++) {
-            rescaled_spectral_image[px * n_bands + b] = spectral_image[px * n_bands + b] / scaling;
+            rescaled_spectral_image[px * n_bands + b] = spectral_image[px * n_bands + b] * scaling;
         }
     }
 
-    // TEMP: Probably better to keep the DC component without recaling
     bounded_compress_spectral_image(
         wavelengths,
         rescaled_spectral_image,
@@ -470,6 +469,12 @@ void upperbound_compress_spectral_image(
         normalized_moments_image,
         mins, maxs
     );
+
+    // Rescale DC components to match the average / pixel for better previewing
+    for (size_t px = 0; px < n_pixels; px++) {
+        const double scaling = (global_max * (double)relative_scales[px]) / (double)std::numeric_limits<T>::max();
+        normalized_moments_image[px * n_moments] *= scaling;
+    }
 }
 
 // Decompress (compressed_moments -> spectral_image)
@@ -507,7 +512,7 @@ void unbounded_to_bounded_decompress_spectral_image(
 template<typename T>
 void upperbound_decompress_spectral_image(
     const std::vector<double>& wavelengths,
-    const std::vector<double>& normalize_moment_image,
+    const std::vector<double>& normalized_moments_image,
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
     const std::vector<T>& relative_scales,
@@ -517,18 +522,21 @@ void upperbound_decompress_spectral_image(
     std::vector<double>& spectral_image)
 {
     const size_t n_bands = wavelengths.size();
+    std::vector<double> normalized_moments_image_dc(normalized_moments_image);
     std::vector<double> rescaled_spectral_image;
+
+    for (size_t px = 0; px < n_pixels; px++) {
+        const double scaling = (double)std::numeric_limits<T>::max() / (global_max * (double)relative_scales[px]);
+        normalized_moments_image_dc[px * n_moments] *= scaling;
+    }
 
     bounded_decompress_spectral_image(
         wavelengths,
-        normalize_moment_image,
+        normalized_moments_image_dc,
         mins, maxs,
         n_pixels, n_moments,
         rescaled_spectral_image
     );
-
-    // TODO: change it if the compression method is changed (handle differently
-    // DC component)
 
     spectral_image.resize(n_pixels * n_bands);
 
@@ -540,6 +548,5 @@ void upperbound_decompress_spectral_image(
         }
     }
 }
-
 
 #endif // __cplusplus
