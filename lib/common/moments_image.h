@@ -308,6 +308,26 @@ void bounded_compute_density_lagrange_image(
 #endif // __cplusplus
 
 
+/**
+ * @brief Rescale AC components of the image in [0, 1]
+ *
+ * For each AC component, rescale those to ensure all components are within
+ * [0, 1]. The scaling factors are then populated in `mins[]` and `maxs[]`.
+ *
+ * Moments are scaled with:
+ *  dest[px * n_moments + m] = (src[px * n_moments + m] - mins[m]) / (maxs[m] - mins[m])
+ *
+ * for all m > 0.
+ *
+ * @param src       Source array to rescale of size `n_pixel * n_moments`.
+ * @param n_pixels  Number of the pixels in the image.
+ * @param n_moments Number of moments per pixel.
+ * @param dest      Destination array containig rescaled values for
+ *                  moments > 0. Must be initialized with size
+ *                  `n_pixel * n_moments`.
+ * @param mins      Lower bound for a given moment over all pixels.
+ * @param maxs      Upper bound for a given moment over all pixels.
+ */
 extern "C"
 void normalize_moment_image(
     const double src[],
@@ -326,6 +346,21 @@ void normalize_moment_image(
 #endif // __cplusplus
 
 
+/**
+ * @brief Revert a rescaed vector.
+ *
+ * For each AC component (moment > 0), the destination is computed as follows:
+ *  dest[px * n_moments + m] = src[x * n_moments + m] * (maxs[m] - mins[m]) + mins[m]
+ *
+ * @param src       Source array to rescale of size `n_pixel * n_moments`.
+ * @param n_pixels  Number of the pixels in the image.
+ * @param n_moments Number of moments per pixel.
+ * @param mins      Lower bound for a given moment over all pixels.
+ * @param maxs      Upper bound for a given moment over all pixels.
+ * @param dest      Destination array containig rescaled values for
+ *                  moments > 0. Must be initialized with size
+ *                  `n_pixel * n_moments`.
+ */
 extern "C"
 void denormalize_moment_image(
     const double src[],
