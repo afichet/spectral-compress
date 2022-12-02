@@ -70,6 +70,8 @@ class EXRSpectralImage
 public:
     EXRSpectralImage(const char *filename);
 
+    EXRSpectralImage(const std::string& filename);
+
     EXRSpectralImage(uint32_t width, uint32_t height);
 
     virtual ~EXRSpectralImage();
@@ -98,6 +100,8 @@ public:
 
     void write(const char* filename) const;
 
+    void write(const std::string& filename) const;
+
     uint32_t width()  const;
     uint32_t height() const;
 
@@ -124,9 +128,13 @@ public:
      */
     void dump(const char* filename) const;
 
+    void dump(const std::string& filename) const;
+
     static EXRSpectralImage* read_dump(const char* filename);
 
 protected:
+    void load(const char* filename);
+
     uint32_t _width, _height;
 
     std::vector<SpectralFramebuffer*> _spectral_framebuffers;

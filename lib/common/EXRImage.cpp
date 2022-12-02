@@ -76,64 +76,13 @@ EXRFramebuffer::~EXRFramebuffer()
 
 EXRImage::EXRImage(const char* filename)
 {
-    Imf::InputFile exr_in(filename);
+    load(filename);
+}
 
-    const Imf::Header&  exr_header       = exr_in.header();
-    const Imath::Box2i& exr_datawindow   = exr_header.dataWindow();
-    const Imf::ChannelList &exr_channels = exr_header.channels();
 
-    _width  = exr_datawindow.max.x - exr_datawindow.min.x + 1;
-    _height = exr_datawindow.max.y - exr_datawindow.min.y + 1;
-
-    // Read attributes
-    EXRArrayStream attr_stream;
-
-    for (Imf::Header::ConstIterator it = exr_header.begin(); it != exr_header.end(); it++) {
-        const char* attribute_name = it.name();
-        const char* attribute_type = it.attribute().typeName();
-
-        if (std::strcmp(attribute_name, "channels") != 0
-         && std::strcmp(attribute_name, "compression") != 0
-         && std::strcmp(attribute_name, "lineOrder") != 0) {
-            attr_stream.write(attribute_name, std::strlen(attribute_name) + 1);
-            attr_stream.write(attribute_type, std::strlen(attribute_type) + 1);
-
-            // For unknown reasons as for now, we need to save the length of the string
-            if (std::strcmp(attribute_type, "string") == 0) {
-                uint32_t str_sz = ((const Imf::StringAttribute&)it.attribute()).value().size();
-                attr_stream.write((char*)&str_sz, sizeof(uint32_t));
-            }
-
-            it.attribute().writeValueTo(attr_stream, 1);
-        }
-    }
-
-    _attributes_data = attr_stream.data();
-
-    // Read framebuffers
-    Imf::FrameBuffer exr_framebuffer;
-
-    const size_t x_stride = sizeof(float);
-    const size_t y_stride = x_stride * _width;
-
-    for (Imf::ChannelList::ConstIterator channel = exr_channels.begin();
-        channel != exr_channels.end();
-        channel++) {
-        EXRFramebuffer *fb = new EXRFramebuffer(_width, _height, channel.name());
-
-        Imf::Slice slice = Imf::Slice::Make(
-            Imf::FLOAT,
-            fb->getPixelData().data(),
-            exr_header.dataWindow(),
-            x_stride, y_stride);
-
-        exr_framebuffer.insert(channel.name(), slice);
-
-        _framebuffers.push_back(fb);
-    }
-
-    exr_in.setFrameBuffer(exr_framebuffer);
-    exr_in.readPixels(exr_datawindow.min.y, exr_datawindow.max.y);
+EXRImage::EXRImage(const std::string& filename)
+{
+    load(filename.c_str());
 }
 
 
@@ -227,4 +176,73 @@ void EXRImage::write(const char* filename) const
     Imf::OutputFile exr_out(filename, exr_header);
     exr_out.setFrameBuffer(exr_framebuffer);
     exr_out.writePixels(_height);
+}
+
+
+void EXRImage::write(const std::string& filename) const
+{
+    write(filename.c_str());
+}
+
+
+void EXRImage::load(const char* filename)
+{
+    Imf::InputFile exr_in(filename);
+
+    const Imf::Header&  exr_header       = exr_in.header();
+    const Imath::Box2i& exr_datawindow   = exr_header.dataWindow();
+    const Imf::ChannelList &exr_channels = exr_header.channels();
+
+    _width  = exr_datawindow.max.x - exr_datawindow.min.x + 1;
+    _height = exr_datawindow.max.y - exr_datawindow.min.y + 1;
+
+    // Read attributes
+    EXRArrayStream attr_stream;
+
+    for (Imf::Header::ConstIterator it = exr_header.begin(); it != exr_header.end(); it++) {
+        const char* attribute_name = it.name();
+        const char* attribute_type = it.attribute().typeName();
+
+        if (std::strcmp(attribute_name, "channels") != 0
+         && std::strcmp(attribute_name, "compression") != 0
+         && std::strcmp(attribute_name, "lineOrder") != 0) {
+            attr_stream.write(attribute_name, std::strlen(attribute_name) + 1);
+            attr_stream.write(attribute_type, std::strlen(attribute_type) + 1);
+
+            // For unknown reasons as for now, we need to save the length of the string
+            if (std::strcmp(attribute_type, "string") == 0) {
+                uint32_t str_sz = ((const Imf::StringAttribute&)it.attribute()).value().size();
+                attr_stream.write((char*)&str_sz, sizeof(uint32_t));
+            }
+
+            it.attribute().writeValueTo(attr_stream, 1);
+        }
+    }
+
+    _attributes_data = attr_stream.data();
+
+    // Read framebuffers
+    Imf::FrameBuffer exr_framebuffer;
+
+    const size_t x_stride = sizeof(float);
+    const size_t y_stride = x_stride * _width;
+
+    for (Imf::ChannelList::ConstIterator channel = exr_channels.begin();
+        channel != exr_channels.end();
+        channel++) {
+        EXRFramebuffer *fb = new EXRFramebuffer(_width, _height, channel.name());
+
+        Imf::Slice slice = Imf::Slice::Make(
+            Imf::FLOAT,
+            fb->getPixelData().data(),
+            exr_header.dataWindow(),
+            x_stride, y_stride);
+
+        exr_framebuffer.insert(channel.name(), slice);
+
+        _framebuffers.push_back(fb);
+    }
+
+    exr_in.setFrameBuffer(exr_framebuffer);
+    exr_in.readPixels(exr_datawindow.min.y, exr_datawindow.max.y);
 }

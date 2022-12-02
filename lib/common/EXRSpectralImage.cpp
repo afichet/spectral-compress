@@ -146,167 +146,13 @@ char* condition_framebuffers(
 
 EXRSpectralImage::EXRSpectralImage(const char* filename)
 {
-    Imf::InputFile exr_in(filename);
+    load(filename);
+}
 
-    const Imf::Header&  exr_header       = exr_in.header();
-    const Imath::Box2i& exr_datawindow   = exr_header.dataWindow();
-    const Imf::ChannelList &exr_channels = exr_header.channels();
 
-    _width  = exr_datawindow.max.x - exr_datawindow.min.x + 1;
-    _height = exr_datawindow.max.y - exr_datawindow.min.y + 1;
-
-    // =======================================================================
-    // Read attributes
-    // =======================================================================
-
-    EXRArrayStream attr_stream;
-
-    for (Imf::Header::ConstIterator it = exr_header.begin(); it != exr_header.end(); it++) {
-        const char* attribute_name = it.name();
-        const char* attribute_type = it.attribute().typeName();
-
-        if (std::strcmp(attribute_name, "channels") != 0
-         && std::strcmp(attribute_name, "compression") != 0
-         && std::strcmp(attribute_name, "lineOrder") != 0) {
-            attr_stream.write(attribute_name, std::strlen(attribute_name) + 1);
-            attr_stream.write(attribute_type, std::strlen(attribute_type) + 1);
-
-            // For unknown reasons as for now, we need to save the length of the string
-            if (std::strcmp(attribute_type, "string") == 0) {
-                uint32_t str_sz = ((const Imf::StringAttribute&)it.attribute()).value().size();
-                attr_stream.write((char*)&str_sz, sizeof(uint32_t));
-            }
-
-            it.attribute().writeValueTo(attr_stream, 1);
-        }
-    }
-
-    _attributes_data = attr_stream.data();
-
-    // ========================================================================
-    // Read framebuffers
-    // =======================================================================
-
-    std::map<std::string, std::vector<std::pair<std::string, float>>> spectral_channels;
-
-    std::set<std::string> extra_channels;
-    std::set<std::string> ignored_channels;
-
-    std::map<std::string, PixelType> channel_type;
-
-    Imf::FrameBuffer exr_framebuffer;
-
-    // ------------------------------------------------------------------------
-    // Determine channels' position
-    // ------------------------------------------------------------------------
-
-    const std::string flt_comma_rgx_str = "(((\\d+(,\\d*)?)|(,\\d+))([eE][+-]?\\d+)?)";
-
-    const std::regex expr(
-        "^(.*)((S([0-3]))|T)\\."
-        + flt_comma_rgx_str + "(Y|Z|E|P|T|G|M|k|h|da|d|c|m|u|n|p)?(m|Hz)$");
-
-    for (Imf::ChannelList::ConstIterator channel = exr_channels.begin();
-            channel != exr_channels.end();
-            channel++) {
-        const std::string name = channel.name();
-
-        // std::cout << "Name: " << name << " ";
-
-        // seems useless but allows to have a clean .h without any OpenEXR imclude
-        const PixelType p_type = from_Imf(channel.channel().type);
-
-        std::smatch matches;
-        const bool matched = std::regex_search(name, matches, expr);
-
-        if (matched) {
-            const std::string root   = matches[1].str();
-            const std::string prefix = root + matches[2].str();
-
-            if (spectral_channels[prefix].size() == 0) {
-                ignored_channels.insert(root + "R");
-                ignored_channels.insert(root + "G");
-                ignored_channels.insert(root + "B");
-            }
-
-            const double value_nm = to_nm(
-                matches[5].str(),
-                matches[11].str(),
-                matches[12].str()
-            );
-
-            spectral_channels[prefix].push_back(std::make_pair(channel.name(), value_nm));
-
-            channel_type[prefix] = p_type;
-
-            // std::cout << "Spectral with prefix: " << prefix << std::endl;
-        } else {
-            extra_channels.insert(name);
-            channel_type[name] = p_type;
-
-            // std::cout << "Grey" << std::endl;
-        }
-    }
-
-    // Filter out ignored channels
-    for (const std::string& s: ignored_channels) {
-        extra_channels.erase(s);
-    }
-
-    // ------------------------------------------------------------------------
-    // Read framebuffers
-    // ------------------------------------------------------------------------
-
-    for (const auto& n: spectral_channels) {
-        const std::string& root_name = n.first;
-        const std::vector<std::pair<std::string, float>>& wavelengths = n.second;
-
-        SpectralFramebuffer* fb = new SpectralFramebuffer;
-        fb->root_name = root_name;
-        fb->image_data.resize(_width * _height * wavelengths.size());
-        fb->wavelengths_nm.reserve(wavelengths.size());
-        fb->pixel_type = channel_type[root_name];
-
-        const size_t x_stride = sizeof(float) * wavelengths.size();
-        const size_t y_stride = x_stride * _width;
-
-        for (size_t wl_idx = 0; wl_idx < wavelengths.size(); wl_idx++) {
-            const std::string& layer_name    = n.second[wl_idx].first;
-            const float        wavelength_nm = n.second[wl_idx].second;
-
-            Imf::Slice slice = Imf::Slice::Make(
-                Imf::FLOAT,
-                &(fb->image_data[wl_idx]),
-                exr_header.dataWindow(),
-                x_stride, y_stride);
-
-            exr_framebuffer.insert(layer_name, slice);
-
-            fb->wavelengths_nm.push_back(wavelength_nm);
-        }
-
-        _spectral_framebuffers.push_back(fb);
-    }
-
-    for (const auto& name: extra_channels) {
-        GreyFramebuffer* fb = new GreyFramebuffer;
-
-        fb->layer_name = name;
-        fb->image_data.resize(_width * _height);
-        fb->pixel_type = channel_type[name];
-
-        Imf::Slice slice = Imf::Slice::Make(
-            Imf::FLOAT,
-            fb->image_data.data(),
-            exr_header.dataWindow());
-
-        exr_framebuffer.insert(name, slice);
-
-        _extra_framebuffers.push_back(fb);
-    }
-
-    exr_in.setFrameBuffer(exr_framebuffer);
-    exr_in.readPixels(exr_datawindow.min.y, exr_datawindow.max.y);
+EXRSpectralImage::EXRSpectralImage(const std::string& filename)
+{
+    load(filename.c_str());
 }
 
 
@@ -591,6 +437,12 @@ void EXRSpectralImage::write(const char* filename) const
 }
 
 
+void EXRSpectralImage::write(const std::string& filename) const
+{
+    write(filename.c_str());
+}
+
+
 double EXRSpectralImage::to_nm(
     const std::string& value,
     const std::string& prefix,
@@ -734,6 +586,12 @@ void EXRSpectralImage::dump(const char* filename) const
 }
 
 
+void EXRSpectralImage::dump(const std::string& filename) const
+{
+    dump(filename.c_str());
+}
+
+
 EXRSpectralImage* EXRSpectralImage::read_dump(const char* filename)
 {
     FILE* f = std::fopen(filename, "rb");
@@ -801,4 +659,170 @@ EXRSpectralImage* EXRSpectralImage::read_dump(const char* filename)
     std::fclose(f);
 
     return exr;
+}
+
+
+void EXRSpectralImage::load(const char* filename)
+{
+    Imf::InputFile exr_in(filename);
+
+    const Imf::Header&  exr_header       = exr_in.header();
+    const Imath::Box2i& exr_datawindow   = exr_header.dataWindow();
+    const Imf::ChannelList &exr_channels = exr_header.channels();
+
+    _width  = exr_datawindow.max.x - exr_datawindow.min.x + 1;
+    _height = exr_datawindow.max.y - exr_datawindow.min.y + 1;
+
+    // =======================================================================
+    // Read attributes
+    // =======================================================================
+
+    EXRArrayStream attr_stream;
+
+    for (Imf::Header::ConstIterator it = exr_header.begin(); it != exr_header.end(); it++) {
+        const char* attribute_name = it.name();
+        const char* attribute_type = it.attribute().typeName();
+
+        if (std::strcmp(attribute_name, "channels") != 0
+         && std::strcmp(attribute_name, "compression") != 0
+         && std::strcmp(attribute_name, "lineOrder") != 0) {
+            attr_stream.write(attribute_name, std::strlen(attribute_name) + 1);
+            attr_stream.write(attribute_type, std::strlen(attribute_type) + 1);
+
+            // For unknown reasons as for now, we need to save the length of the string
+            if (std::strcmp(attribute_type, "string") == 0) {
+                uint32_t str_sz = ((const Imf::StringAttribute&)it.attribute()).value().size();
+                attr_stream.write((char*)&str_sz, sizeof(uint32_t));
+            }
+
+            it.attribute().writeValueTo(attr_stream, 1);
+        }
+    }
+
+    _attributes_data = attr_stream.data();
+
+    // ========================================================================
+    // Read framebuffers
+    // =======================================================================
+
+    std::map<std::string, std::vector<std::pair<std::string, float>>> spectral_channels;
+
+    std::set<std::string> extra_channels;
+    std::set<std::string> ignored_channels;
+
+    std::map<std::string, PixelType> channel_type;
+
+    Imf::FrameBuffer exr_framebuffer;
+
+    // ------------------------------------------------------------------------
+    // Determine channels' position
+    // ------------------------------------------------------------------------
+
+    const std::string flt_comma_rgx_str = "(((\\d+(,\\d*)?)|(,\\d+))([eE][+-]?\\d+)?)";
+
+    const std::regex expr(
+        "^(.*)((S([0-3]))|T)\\."
+        + flt_comma_rgx_str + "(Y|Z|E|P|T|G|M|k|h|da|d|c|m|u|n|p)?(m|Hz)$");
+
+    for (Imf::ChannelList::ConstIterator channel = exr_channels.begin();
+            channel != exr_channels.end();
+            channel++) {
+        const std::string name = channel.name();
+
+        // std::cout << "Name: " << name << " ";
+
+        // seems useless but allows to have a clean .h without any OpenEXR imclude
+        const PixelType p_type = from_Imf(channel.channel().type);
+
+        std::smatch matches;
+        const bool matched = std::regex_search(name, matches, expr);
+
+        if (matched) {
+            const std::string root   = matches[1].str();
+            const std::string prefix = root + matches[2].str();
+
+            if (spectral_channels[prefix].size() == 0) {
+                ignored_channels.insert(root + "R");
+                ignored_channels.insert(root + "G");
+                ignored_channels.insert(root + "B");
+            }
+
+            const double value_nm = to_nm(
+                matches[5].str(),
+                matches[11].str(),
+                matches[12].str()
+            );
+
+            spectral_channels[prefix].push_back(std::make_pair(channel.name(), value_nm));
+
+            channel_type[prefix] = p_type;
+
+            // std::cout << "Spectral with prefix: " << prefix << std::endl;
+        } else {
+            extra_channels.insert(name);
+            channel_type[name] = p_type;
+
+            // std::cout << "Grey" << std::endl;
+        }
+    }
+
+    // Filter out ignored channels
+    for (const std::string& s: ignored_channels) {
+        extra_channels.erase(s);
+    }
+
+    // ------------------------------------------------------------------------
+    // Read framebuffers
+    // ------------------------------------------------------------------------
+
+    for (const auto& n: spectral_channels) {
+        const std::string& root_name = n.first;
+        const std::vector<std::pair<std::string, float>>& wavelengths = n.second;
+
+        SpectralFramebuffer* fb = new SpectralFramebuffer;
+        fb->root_name = root_name;
+        fb->image_data.resize(_width * _height * wavelengths.size());
+        fb->wavelengths_nm.reserve(wavelengths.size());
+        fb->pixel_type = channel_type[root_name];
+
+        const size_t x_stride = sizeof(float) * wavelengths.size();
+        const size_t y_stride = x_stride * _width;
+
+        for (size_t wl_idx = 0; wl_idx < wavelengths.size(); wl_idx++) {
+            const std::string& layer_name    = n.second[wl_idx].first;
+            const float        wavelength_nm = n.second[wl_idx].second;
+
+            Imf::Slice slice = Imf::Slice::Make(
+                Imf::FLOAT,
+                &(fb->image_data[wl_idx]),
+                exr_header.dataWindow(),
+                x_stride, y_stride);
+
+            exr_framebuffer.insert(layer_name, slice);
+
+            fb->wavelengths_nm.push_back(wavelength_nm);
+        }
+
+        _spectral_framebuffers.push_back(fb);
+    }
+
+    for (const auto& name: extra_channels) {
+        GreyFramebuffer* fb = new GreyFramebuffer;
+
+        fb->layer_name = name;
+        fb->image_data.resize(_width * _height);
+        fb->pixel_type = channel_type[name];
+
+        Imf::Slice slice = Imf::Slice::Make(
+            Imf::FLOAT,
+            fb->image_data.data(),
+            exr_header.dataWindow());
+
+        exr_framebuffer.insert(name, slice);
+
+        _extra_framebuffers.push_back(fb);
+    }
+
+    exr_in.setFrameBuffer(exr_framebuffer);
+    exr_in.readPixels(exr_datawindow.min.y, exr_datawindow.max.y);
 }

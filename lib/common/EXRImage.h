@@ -36,6 +36,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <vector>
+#include <string>
 
 #include <OpenEXR/ImfIO.h>
 
@@ -68,6 +69,8 @@ class EXRImage
 public:
     EXRImage(const char *filename);
 
+    EXRImage(const std::string& filename);
+
     EXRImage(uint32_t width, uint32_t height);
 
     virtual ~EXRImage();
@@ -77,6 +80,8 @@ public:
         const char* name);
 
     void write(const char* filename) const;
+
+    void write(const std::string& filename) const;
 
     uint32_t width()  const { return _width; }
     uint32_t height() const { return _height; }
@@ -96,6 +101,8 @@ public:
     const std::vector<uint8_t>& getAttributesData() const { return _attributes_data; }
 
 protected:
+    void load(const char* filename);
+
     uint32_t _width, _height;
     std::vector<EXRFramebuffer*> _framebuffers;
 

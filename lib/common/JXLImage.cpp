@@ -190,208 +190,26 @@ JXLFramebuffer* JXLFramebuffer::read_dump(FILE* stream)
 // ===========================================================================
 
 
+
+JXLImage::JXLImage(const char* filename)
+    : _n_parts(1) // At start, we assume there is only a single file
+{
+    load(filename);
+}
+
+
+JXLImage::JXLImage(const std::string& filename)
+    : _n_parts(1) // At start, we assume there is only a single file
+{
+    load(filename.c_str());
+}
+
+
 JXLImage::JXLImage(uint32_t width, uint32_t height)
     : _width(width)
     , _height(height)
     , _n_parts(1)
 {}
-
-
-JXLImage::JXLImage(const char* filename)
-    : _n_parts(1) // At start, we assume there is only a single file
-{
-    // Currently, JXL supports up to 256 framebuffers per image
-    // we may need have need more when writing the image...
-    // So extra images must be taken care of.
-
-    std::string base, ext;
-    Util::split_extension(filename, base, ext);
-
-    std::vector<uint8_t> box_raw_sgeg;
-
-    // At start, we assume there is only a single file, the SGEG
-    // box will tell us uppon decompression of the main file if
-    // additional files exist
-
-    for (uint32_t part = 0; part < _n_parts; part++) {
-        std::string curr_filename;
-
-        if (part == 0) {
-            curr_filename = base + ext;
-        } else {
-            std::stringstream ss;
-            ss << base << "_" << part << ext;
-            curr_filename = ss.str();
-        }
-
-        const uint32_t start_framebuffer_idx = part * JXL_MAX_FRAMEBUFFERS;
-        uint32_t n_framebuffer_part = 0;
-
-        JxlDecoderStatus status;
-
-        std::vector<uint8_t> jxl_data;
-
-        JxlDecoderPtr              dec;
-        JxlThreadParallelRunnerPtr runner;
-
-        // Read file
-        FILE* file = fopen(curr_filename.data(), "rb");
-
-        fseek(file, 0, SEEK_END);
-        const long file_size = ftell(file);
-        fseek(file, 0, SEEK_SET);
-
-        jxl_data.resize(file_size);
-
-        fread(jxl_data.data(), 1, file_size, file);
-        fclose(file);
-
-        // Decode JXL stream
-        dec = JxlDecoderMake(nullptr);
-        runner = JxlThreadParallelRunnerMake(nullptr, JxlThreadParallelRunnerDefaultNumWorkerThreads());
-
-        status = JxlDecoderSetParallelRunner(
-            dec.get(),
-            JxlThreadParallelRunner,
-            runner.get()
-        );
-
-        CHECK_JXL_DEC_STATUS(status);
-
-        status = JxlDecoderSubscribeEvents(
-            dec.get(),
-            JXL_DEC_BASIC_INFO |
-            JXL_DEC_BOX |
-            // JXL_DEC_COLOR_ENCODING |
-            JXL_DEC_FULL_IMAGE);
-
-        CHECK_JXL_DEC_STATUS(status);
-
-        JxlDecoderSetInput(dec.get(), jxl_data.data(), jxl_data.size());
-
-        for (JxlDecoderStatus status_process = JXL_DEC_NEED_MORE_INPUT;
-            status_process != JXL_DEC_FULL_IMAGE;
-            status_process = JxlDecoderProcessInput(dec.get()))
-        {
-            switch (status_process) {
-                case JXL_DEC_BASIC_INFO:
-                    {
-                        // Read metadata and allocate memory
-                        JxlBasicInfo basic_info;
-                        JxlExtraChannelInfo extra_info;
-                        std::vector<char> layer_name;
-
-                        // Main layer metadata
-                        status = JxlDecoderGetBasicInfo(dec.get(), &basic_info);
-
-                        _width  = basic_info.xsize;
-                        _height = basic_info.ysize;
-
-                        _framebuffers.push_back(new JXLFramebuffer(
-                            _width, _height,
-                            basic_info.num_color_channels,
-                            basic_info.bits_per_sample,
-                            basic_info.exponent_bits_per_sample
-                        ));
-
-                        // Extra layer metadata
-                        n_framebuffer_part = basic_info.num_extra_channels + 1;
-
-                        for (size_t i = 0; i < basic_info.num_extra_channels; i++) {
-                            status = JxlDecoderGetExtraChannelInfo(dec.get(), i, &extra_info);
-                            CHECK_JXL_DEC_STATUS(status);
-
-                            if (extra_info.name_length > 0) {
-                                layer_name.resize(extra_info.name_length + 1);
-                                status = JxlDecoderGetExtraChannelName(dec.get(), i, layer_name.data(), extra_info.name_length);
-                                layer_name[extra_info.name_length] = 0;
-                            }
-
-                            _framebuffers.push_back(new JXLFramebuffer(
-                                _width, _height,
-                                basic_info.num_color_channels, // TODO, is this really the case?
-                                extra_info.bits_per_sample,
-                                extra_info.exponent_bits_per_sample,
-                                1,
-                                (extra_info.name_length > 0) ? layer_name.data() : nullptr
-                            ));
-                        }
-                    }
-                    break;
-
-                case JXL_DEC_NEED_IMAGE_OUT_BUFFER:
-                    {
-                        JxlPixelFormat format = _framebuffers[start_framebuffer_idx]->getPixelFormat();
-
-                        status = JxlDecoderSetImageOutBuffer(
-                            dec.get(),
-                            &format,
-                            _framebuffers[start_framebuffer_idx]->getPixelData().data(),
-                            _framebuffers[start_framebuffer_idx]->getSizeBytes()
-                        );
-                        CHECK_JXL_DEC_STATUS(status);
-
-                        for (size_t i = 1; i < n_framebuffer_part; i++) {
-                            format = _framebuffers[start_framebuffer_idx + i]->getPixelFormat();
-
-                            status = JxlDecoderSetExtraChannelBuffer(
-                                dec.get(),
-                                &format,
-                                _framebuffers[start_framebuffer_idx + i]->getPixelData().data(),
-                                _framebuffers[start_framebuffer_idx + i]->getSizeBytes(),
-                                i - 1
-                            );
-                            CHECK_JXL_DEC_STATUS(status);
-                        }
-                    }
-                    break;
-
-                case JXL_DEC_BOX:
-                    {
-                        JxlBoxType box_type;
-
-                        status = JxlDecoderGetBoxType(dec.get(), box_type, JXL_TRUE);
-                        CHECK_JXL_DEC_STATUS(status);
-
-                        if (box_type[0] == 's'
-                        && box_type[1] == 'g'
-                        && box_type[2] == 'e'
-                        && box_type[3] == 'g') {
-                            // The SGEG box must be present only on part 0
-                            assert(part == 0);
-
-                            uint64_t box_size;
-                            status = JxlDecoderGetBoxSizeRaw(dec.get(), &box_size);
-                            box_raw_sgeg.resize(box_size);
-
-                            JxlDecoderSetBoxBuffer(dec.get(), box_raw_sgeg.data(), box_raw_sgeg.size());
-                        }
-                    }
-                    break;
-                case JXL_DEC_NEED_MORE_INPUT:
-                    break;
-                case JXL_DEC_ERROR:
-                    CHECK_JXL_DEC_STATUS(status_process);
-                    break;
-                default:
-                    std::stringstream err_msg;
-                    err_msg << "Unknown decoder status: " << status_process;
-                    throw std::runtime_error(err_msg.str());
-                    break;
-            }
-        }
-
-        JxlDecoderReleaseInput(dec.get());
-        CHECK_JXL_DEC_STATUS(status);
-
-        // For part 0, ensure we have a SGEG box
-        if (part == 0) {
-            assert(box_raw_sgeg.size() > 0);
-            _sgeg_box = SGEGBox(box_raw_sgeg);
-            _n_parts = _sgeg_box.n_parts;
-        }
-    }
-}
 
 
 JXLImage::~JXLImage()
@@ -663,6 +481,12 @@ void JXLImage::write(const char* filename) const {
 }
 
 
+void JXLImage::write(const std::string& filename) const
+{
+    write(filename.c_str());
+}
+
+
 void JXLImage::dump(const char* filename) const
 {
     FILE* f = std::fopen(filename, "wb");
@@ -689,6 +513,12 @@ void JXLImage::dump(const char* filename) const
     }
 
     std::fclose(f);
+}
+
+
+void JXLImage::dump(const std::string& filename) const
+{
+    dump(filename.c_str());
 }
 
 
@@ -727,6 +557,203 @@ JXLImage* JXLImage::read_dump(const char* filename)
 
     return image;
 }
+
+
+void JXLImage::load(const char* filename)
+{
+    // Currently, JXL supports up to 256 framebuffers per image
+    // we may need have need more when writing the image...
+    // So extra images must be taken care of.
+
+    std::string base, ext;
+    Util::split_extension(filename, base, ext);
+
+    std::vector<uint8_t> box_raw_sgeg;
+
+    // At start, we assume there is only a single file, the SGEG
+    // box will tell us uppon decompression of the main file if
+    // additional files exist
+
+    for (uint32_t part = 0; part < _n_parts; part++) {
+        std::string curr_filename;
+
+        if (part == 0) {
+            curr_filename = base + ext;
+        } else {
+            std::stringstream ss;
+            ss << base << "_" << part << ext;
+            curr_filename = ss.str();
+        }
+
+        const uint32_t start_framebuffer_idx = part * JXL_MAX_FRAMEBUFFERS;
+        uint32_t n_framebuffer_part = 0;
+
+        JxlDecoderStatus status;
+
+        std::vector<uint8_t> jxl_data;
+
+        JxlDecoderPtr              dec;
+        JxlThreadParallelRunnerPtr runner;
+
+        // Read file
+        FILE* file = fopen(curr_filename.data(), "rb");
+
+        fseek(file, 0, SEEK_END);
+        const long file_size = ftell(file);
+        fseek(file, 0, SEEK_SET);
+
+        jxl_data.resize(file_size);
+
+        fread(jxl_data.data(), 1, file_size, file);
+        fclose(file);
+
+        // Decode JXL stream
+        dec = JxlDecoderMake(nullptr);
+        runner = JxlThreadParallelRunnerMake(nullptr, JxlThreadParallelRunnerDefaultNumWorkerThreads());
+
+        status = JxlDecoderSetParallelRunner(
+            dec.get(),
+            JxlThreadParallelRunner,
+            runner.get()
+        );
+
+        CHECK_JXL_DEC_STATUS(status);
+
+        status = JxlDecoderSubscribeEvents(
+            dec.get(),
+            JXL_DEC_BASIC_INFO |
+            JXL_DEC_BOX |
+            // JXL_DEC_COLOR_ENCODING |
+            JXL_DEC_FULL_IMAGE);
+
+        CHECK_JXL_DEC_STATUS(status);
+
+        JxlDecoderSetInput(dec.get(), jxl_data.data(), jxl_data.size());
+
+        for (JxlDecoderStatus status_process = JXL_DEC_NEED_MORE_INPUT;
+            status_process != JXL_DEC_FULL_IMAGE;
+            status_process = JxlDecoderProcessInput(dec.get()))
+        {
+            switch (status_process) {
+                case JXL_DEC_BASIC_INFO:
+                    {
+                        // Read metadata and allocate memory
+                        JxlBasicInfo basic_info;
+                        JxlExtraChannelInfo extra_info;
+                        std::vector<char> layer_name;
+
+                        // Main layer metadata
+                        status = JxlDecoderGetBasicInfo(dec.get(), &basic_info);
+
+                        _width  = basic_info.xsize;
+                        _height = basic_info.ysize;
+
+                        _framebuffers.push_back(new JXLFramebuffer(
+                            _width, _height,
+                            basic_info.num_color_channels,
+                            basic_info.bits_per_sample,
+                            basic_info.exponent_bits_per_sample
+                        ));
+
+                        // Extra layer metadata
+                        n_framebuffer_part = basic_info.num_extra_channels + 1;
+
+                        for (size_t i = 0; i < basic_info.num_extra_channels; i++) {
+                            status = JxlDecoderGetExtraChannelInfo(dec.get(), i, &extra_info);
+                            CHECK_JXL_DEC_STATUS(status);
+
+                            if (extra_info.name_length > 0) {
+                                layer_name.resize(extra_info.name_length + 1);
+                                status = JxlDecoderGetExtraChannelName(dec.get(), i, layer_name.data(), extra_info.name_length);
+                                layer_name[extra_info.name_length] = 0;
+                            }
+
+                            _framebuffers.push_back(new JXLFramebuffer(
+                                _width, _height,
+                                basic_info.num_color_channels, // TODO, is this really the case?
+                                extra_info.bits_per_sample,
+                                extra_info.exponent_bits_per_sample,
+                                1,
+                                (extra_info.name_length > 0) ? layer_name.data() : nullptr
+                            ));
+                        }
+                    }
+                    break;
+
+                case JXL_DEC_NEED_IMAGE_OUT_BUFFER:
+                    {
+                        JxlPixelFormat format = _framebuffers[start_framebuffer_idx]->getPixelFormat();
+
+                        status = JxlDecoderSetImageOutBuffer(
+                            dec.get(),
+                            &format,
+                            _framebuffers[start_framebuffer_idx]->getPixelData().data(),
+                            _framebuffers[start_framebuffer_idx]->getSizeBytes()
+                        );
+                        CHECK_JXL_DEC_STATUS(status);
+
+                        for (size_t i = 1; i < n_framebuffer_part; i++) {
+                            format = _framebuffers[start_framebuffer_idx + i]->getPixelFormat();
+
+                            status = JxlDecoderSetExtraChannelBuffer(
+                                dec.get(),
+                                &format,
+                                _framebuffers[start_framebuffer_idx + i]->getPixelData().data(),
+                                _framebuffers[start_framebuffer_idx + i]->getSizeBytes(),
+                                i - 1
+                            );
+                            CHECK_JXL_DEC_STATUS(status);
+                        }
+                    }
+                    break;
+
+                case JXL_DEC_BOX:
+                    {
+                        JxlBoxType box_type;
+
+                        status = JxlDecoderGetBoxType(dec.get(), box_type, JXL_TRUE);
+                        CHECK_JXL_DEC_STATUS(status);
+
+                        if (box_type[0] == 's'
+                        && box_type[1] == 'g'
+                        && box_type[2] == 'e'
+                        && box_type[3] == 'g') {
+                            // The SGEG box must be present only on part 0
+                            assert(part == 0);
+
+                            uint64_t box_size;
+                            status = JxlDecoderGetBoxSizeRaw(dec.get(), &box_size);
+                            box_raw_sgeg.resize(box_size);
+
+                            JxlDecoderSetBoxBuffer(dec.get(), box_raw_sgeg.data(), box_raw_sgeg.size());
+                        }
+                    }
+                    break;
+                case JXL_DEC_NEED_MORE_INPUT:
+                    break;
+                case JXL_DEC_ERROR:
+                    CHECK_JXL_DEC_STATUS(status_process);
+                    break;
+                default:
+                    std::stringstream err_msg;
+                    err_msg << "Unknown decoder status: " << status_process;
+                    throw std::runtime_error(err_msg.str());
+                    break;
+            }
+        }
+
+        JxlDecoderReleaseInput(dec.get());
+        CHECK_JXL_DEC_STATUS(status);
+
+        // For part 0, ensure we have a SGEG box
+        if (part == 0) {
+            assert(box_raw_sgeg.size() > 0);
+            _sgeg_box = SGEGBox(box_raw_sgeg);
+            _n_parts = _sgeg_box.n_parts;
+        }
+    }
+}
+
 
 // void JXLImageReader::print_basic_info() const
 // {

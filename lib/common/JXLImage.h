@@ -105,12 +105,14 @@ protected:
 };
 
 
-
 class JXLImage
 {
 public:
-    JXLImage(uint32_t width, uint32_t height);
     JXLImage(const char* filename);
+
+    JXLImage(const std::string& filename);
+
+    JXLImage(uint32_t width, uint32_t height);
 
     virtual ~JXLImage();
 
@@ -123,6 +125,8 @@ public:
         const char* name = nullptr);
 
     void write(const char* filename) const;
+
+    void write(const std::string& filename) const;
 
     void setBox(const SGEGBox& box);
     const SGEGBox& getBox() const { return _sgeg_box; }
@@ -157,9 +161,13 @@ public:
 
     void dump(const char* filename) const;
 
+    void dump(const std::string& filename) const;
+
     static JXLImage* read_dump(const char* filename);
 
 protected:
+    void load(const char* filename);
+
     uint32_t _width;
     uint32_t _height;
     uint32_t _n_parts;
