@@ -75,6 +75,7 @@ void bounded_generate_quantization_curves(
             wavelengths,
             spectral_image,
             n_px, n_moments,
+            32,
             n_bits,
             quantization_curve
         );
@@ -99,6 +100,7 @@ void unbounded_generate_quantization_curves(
             wavelengths,
             spectral_image,
             n_px, n_moments,
+            32,
             n_bits,
             quantization_curve
         );
@@ -123,6 +125,7 @@ void unbounded_to_bounded_generate_quantization_curves(
             wavelengths,
             spectral_image,
             n_px, n_moments,
+            32,
             n_bits,
             quantization_curve
         );

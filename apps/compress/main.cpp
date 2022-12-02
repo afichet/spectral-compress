@@ -90,7 +90,9 @@ void compress_spectral_framebuffer(
     // Create a quantization profil
     unbounded_to_bounded_compute_quantization_curve(
         spectral_wavelengths, spectral_framebuffer,
-        n_pixels, n_moments, 12, quantization_curve
+        n_pixels, n_moments,
+        32, 12,
+        quantization_curve
     );
 
     unbounded_to_bounded_compress_spectral_image(

@@ -12,7 +12,8 @@ void run_for_bounded(
     const std::vector<double>& wavelengths,
     const std::vector<double>& image_data,
     int n_pixels, int n_bands,
-    int bits, int start_n_bits,
+    int n_bits_dc,
+    int n_bits_ac1,
     const std::string& output_prefix)
 {
 #ifdef VERBOSE
@@ -26,14 +27,14 @@ void run_for_bounded(
         wavelengths,
         image_data,
         n_pixels, n_bands,
-        bits,
-        quantization_curve_b,
-        start_n_bits
+        n_bits_dc,
+        n_bits_ac1,
+        quantization_curve_b
     );
 
     // Save data
     std::stringstream output_file;
-    output_file << output_prefix << "_b_" << bits << ".txt";
+    output_file << output_prefix << "_b_" << n_bits_ac1 << ".txt";
 
     std::ofstream out_b(output_file.str());
 
@@ -56,7 +57,8 @@ void run_for_unbounded(
     const std::vector<double>& wavelengths,
     const std::vector<double>& image_data,
     int n_pixels, int n_bands,
-    int bits, int start_n_bits,
+    int n_bits_dc,
+    int n_bits_ac1,
     const std::string& output_prefix)
 {
 #ifdef VERBOSE
@@ -70,14 +72,14 @@ void run_for_unbounded(
         wavelengths,
         image_data,
         n_pixels, n_bands,
-        bits,
-        quantization_curve_u,
-        start_n_bits
+        n_bits_dc,
+        n_bits_ac1,
+        quantization_curve_u
     );
 
     // Save data
     std::stringstream output_file;
-    output_file << output_prefix << "_u_" << bits << ".txt";
+    output_file << output_prefix << "_u_" << n_bits_ac1 << ".txt";
 
     std::ofstream out_u(output_file.str());
 
@@ -100,7 +102,8 @@ void run_for_unbounded_to_bounded(
     const std::vector<double>& wavelengths,
     const std::vector<double>& image_data,
     int n_pixels, int n_bands,
-    int bits, int start_n_bits,
+    int n_bits_dc,
+    int n_bits_ac1,
     const std::string& output_prefix)
 {
 #ifdef VERBOSE
@@ -114,14 +117,14 @@ void run_for_unbounded_to_bounded(
         wavelengths,
         image_data,
         n_pixels, n_bands,
-        bits,
-        quantization_curve_utb,
-        start_n_bits
+        n_bits_dc,
+        n_bits_ac1,
+        quantization_curve_utb
     );
 
     // Save data
     std::stringstream output_file;
-    output_file << output_prefix << "_utb_" << bits << ".txt";
+    output_file << output_prefix << "_utb_" << n_bits_ac1 << ".txt";
 
     std::ofstream out_utb(output_file.str());
 
@@ -144,7 +147,8 @@ void run_for_upperbound(
     const std::vector<double>& wavelengths,
     const std::vector<double>& image_data,
     int n_pixels, int n_bands,
-    int bits, int start_n_bits,
+    int n_bits_dc,
+    int n_bits_ac1,
     const std::string& output_prefix)
 {
 #ifdef VERBOSE
@@ -158,14 +162,14 @@ void run_for_upperbound(
         wavelengths,
         image_data,
         n_pixels, n_bands,
-        bits,
-        quantization_curve_utb,
-        start_n_bits
+        n_bits_dc,
+        n_bits_ac1,
+        quantization_curve_utb
     );
 
     // Save data
     std::stringstream output_file;
-    output_file << output_prefix << "_up_" << bits << ".txt";
+    output_file << output_prefix << "_up_" << n_bits_ac1 << ".txt";
 
     std::ofstream out_utb(output_file.str());
 
@@ -221,9 +225,9 @@ int main(int argc, char* argv[])
     const int n_bits[] = {6, 7, 9, 10, 11, 12, 13};
 
     for (SpectralFramebuffer* fb: image.getSpectralFramebuffers()) {
-        for (int bits: n_bits) {
+        for (int n_bits_ac1: n_bits) {
             #ifdef VERBOSE
-            std::cout << "Using " << bits << "bits" << std::endl;
+            std::cout << "Using " << n_bits_ac1 << "bits" << std::endl;
             #endif // VERBOSE
 
             const int n_bands = fb->wavelengths_nm.size();
@@ -240,15 +244,15 @@ int main(int argc, char* argv[])
                 image_data[i] = (double)fb->image_data[i];
             }
 
-            int start_n_bits = fb->pixel_type == PixelType::HALF ? 16 : 32;
+            int n_bits_dc = fb->pixel_type == PixelType::HALF ? 16 : 32;
 
             if (do_run_for_bounded) {
                 run_for_bounded(
                     wavelengths,
                     image_data,
                     n_pixels, n_bands,
-                    bits,
-                    start_n_bits,
+                    n_bits_dc,
+                    n_bits_ac1,
                     output_prefix
                 );
             }
@@ -257,8 +261,8 @@ int main(int argc, char* argv[])
                 wavelengths,
                 image_data,
                 n_pixels, n_bands,
-                bits,
-                start_n_bits,
+                n_bits_dc,
+                n_bits_ac1,
                 output_prefix
             );
 
@@ -266,8 +270,8 @@ int main(int argc, char* argv[])
                 wavelengths,
                 image_data,
                 n_pixels, n_bands,
-                bits,
-                start_n_bits,
+                n_bits_dc,
+                n_bits_ac1,
                 output_prefix
             );
 
@@ -275,8 +279,8 @@ int main(int argc, char* argv[])
                 wavelengths,
                 image_data,
                 n_pixels, n_bands,
-                bits,
-                start_n_bits,
+                n_bits_dc,
+                n_bits_ac1,
                 output_prefix
             );
         }

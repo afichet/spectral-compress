@@ -69,6 +69,8 @@
 
 void compress_spectral_framebuffer(
     const SpectralFramebuffer* framebuffer,
+    int n_bits_dc,
+    int n_bits_ac1,
     std::vector<std::vector<float>>& compressed_moments,
     std::vector<float>& mins,
     std::vector<float>& maxs,
@@ -106,7 +108,10 @@ void compress_spectral_framebuffer(
     // Create a quantization profil
     upperbound_compute_quantization_curve(
         spectral_wavelengths, spectral_framebuffer,
-        n_pixels, n_moments, 12, quantization_curve
+        n_pixels, n_moments,
+        n_bits_dc,
+        n_bits_ac1,
+        quantization_curve
     );
 
     upperbound_compress_spectral_image(
@@ -189,6 +194,7 @@ int main(int argc, char *argv[])
 {
     std::string filename_in, filename_out;
     float frame_distance = .1f;
+    int n_bits_start_quantization = 10;
 
     // Parse arguments
     try {
@@ -204,11 +210,15 @@ int main(int argc, char *argv[])
         TCLAP::ValueArg<float> frameDistanceArg("d", "frame_distance", "Distance level for lossy compression (compression rate). Range: 0 .. 15", false, .1f, &frameDistanceConstraint);
         cmd.add(frameDistanceArg);
 
+        TCLAP::ValueArg<int> quantizationStartArg("q", "quantization", "Starting number of bits for quantizing the first AC component.", false, 10, "integer");
+        cmd.add(quantizationStartArg);
+
         cmd.parse(argc, argv);
 
         filename_in    = inputFileArg.getValue();
         filename_out   = outputFileArg.getValue();
         frame_distance = frameDistanceArg.getValue();
+        n_bits_start_quantization = quantizationStartArg.getValue();
     } catch (TCLAP::ArgException &e) {
         std::cerr << "Error: " << e.error() << " for argument " << e.argId() << std::endl;
     }
@@ -243,6 +253,8 @@ int main(int argc, char *argv[])
 
         compress_spectral_framebuffer(
             fb,
+            main_n_bits,
+            n_bits_start_quantization,
             compressed_moments,
             sg.mins, sg.maxs,
             relative_scales,
