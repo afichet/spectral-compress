@@ -46,6 +46,8 @@
 #include <OpenEXR/ImfFrameBuffer.h>
 #include <OpenEXR/ImfHeader.h>
 
+#include <tclap/CmdLine.h>
+
 #include <JXLImage.h>
 #include <EXRSpectralImage.h>
 
@@ -59,7 +61,8 @@
  *    - to control the number of bits for starting the quantization curves
  *    - to control the JXL quality factor
  *    - to control spatial downsampling (needs as well serious work in the JXL class)
- *    - fix runtime error when running with CAVE database
+ * - Fix runtime error when running with CAVE database
+ * - RGB layers are only computed on the root (maybe a desirable behaviour though...)
  */
 
 void compress_spectral_framebuffer(
@@ -162,34 +165,38 @@ void quantization_from_exr(PixelType type, size_t& n_bits, size_t& n_exponent_bi
 
 int main(int argc, char *argv[])
 {
-    // TODO: generate a default output name and check if exists,
-    // this will allow drag and drop of an EXR over the executable
-    if (argc < 3) {
-        std::cout << "Usage:" << std::endl
-                  << "------" << std::endl
-                  << argv[0] << " <exr_in> <jxl_out>" << std::endl;
+    std::string filename_in, filename_out;
 
-        exit(0);
+    // Parse arguments
+    try {
+        TCLAP::CmdLine cmd("Compress a spectral image");
+
+        TCLAP::UnlabeledValueArg<std::string> inputFileArg("Input", "Spectral EXR input file", true, "input.exr", "path");
+        cmd.add(inputFileArg);
+
+        TCLAP::UnlabeledValueArg<std::string> outputFileArg("Output", "JPEG XL output file", true, "output.jxl", "path");
+        cmd.add(outputFileArg);
+
+        cmd.parse(argc, argv);
+
+        filename_in  = inputFileArg.getValue();
+        filename_out = outputFileArg.getValue();
+    } catch (TCLAP::ArgException &e) {
+        std::cerr << "Error: " << e.error() << " for argument " << e.argId() << std::endl;
     }
 
-    const char* filename_in  = argv[1];
-    const char* filename_out = argv[2];
-
+    // Execute compression
     EXRSpectralImage exr_in(filename_in);
 
     const std::vector<SpectralFramebuffer*>& spectral_framebuffers = exr_in.getSpectralFramebuffers();
     const std::vector<GreyFramebuffer*>& extra_framebuffers = exr_in.getExtraFramebuffers();
 
-    // get_buffers_from_exr(exr_in, spectral_framebuffers, extra_framebuffers);
-
     JXLImage jxl_out(exr_in.width(), exr_in.height());
     SGEGBox box;
 
     box.exr_attributes = exr_in.getAttributesData();
-    // std::cout << "Spectral FB: " << spectral_framebuffers.size() << std::endl;
-    // std::cout << "Grey GB:     " << extra_framebuffers.size() << std::endl;
-    // // exit(0);
 
+    // Run compression for each spectral group
     for (const SpectralFramebuffer* fb: spectral_framebuffers) {
         SGEGSpectralGroup sg;
 
@@ -253,6 +260,7 @@ int main(int argc, char *argv[])
         box.spectral_groups.push_back(sg);
     }
 
+    // Append the extra framebuffers as it
     for (const GreyFramebuffer* fb: extra_framebuffers) {
         SGEGGrayGroup gg;
 
@@ -276,14 +284,14 @@ int main(int argc, char *argv[])
         box.gray_groups.push_back(gg);
     }
 
-    // box.print();
-
     jxl_out.setBox(box);
     jxl_out.write(filename_out);
 
+#ifndef NDEBUG
     // Test dump
     jxl_out.dump("jxl_dump");
     exr_in.dump("exr_dump");
+#endif // NDEBUG
 
     return 0;
 }
