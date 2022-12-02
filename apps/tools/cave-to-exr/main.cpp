@@ -43,7 +43,6 @@
 
 #include <png.h>
 
-
 #include <EXRSpectralImage.h>
 
 // TODO: accept 8bit PNGs. One of the CAVE image is saved in 8bpp instead of 16bpp...
@@ -72,13 +71,15 @@ bool get_png_image_buffer(
     png_infop info_ptr;
     uint8_t sig[8];
     int bit_depth, color_type;
-    png_uint_32 rowbytes;
     std::vector<png_bytep> row_pointers;
+#ifndef NDEBUG
+    png_uint_32 rowbytes;
+#endif // NDEBUG
 
     f_png = std::fopen(filename, "rb");
 
     std::fread(sig, 1, 8, f_png);
-    
+
     if (!png_check_sig(sig, 8)) {
         std::cerr << "Not a PNG!" << std::endl;
         return false;
@@ -113,9 +114,11 @@ bool get_png_image_buffer(
         return false;
     }
 
+#ifndef NDEBUG
     // Now we are sure we are in 16bit monochrome
     rowbytes = png_get_rowbytes(png_ptr, info_ptr);
     assert(rowbytes == (*width) * 2);
+#endif // NDEBUG
 
     row_pointers.resize((*height));
     framebuffer.resize((*width) * (*height));
@@ -145,7 +148,7 @@ bool get_png_image_buffer(
 }
 
 
-int main(int argc, char* argv[]) 
+int main(int argc, char* argv[])
 {
     if (argc < 3) {
         std::cout << "Usage:" << std::endl
@@ -163,7 +166,7 @@ int main(int argc, char* argv[])
     const int start_wavelength_nm = 400;
     const int wavelength_increment_nm = 10;
 
-    uint32_t width, height;
+    uint32_t width = 0, height = 0;
     bool success = false;
 
     std::vector<float> wavelengths_nm(n_bands);
@@ -204,7 +207,7 @@ int main(int argc, char* argv[])
         for (uint32_t i = 0; i < width * height; i++) {
             assert(start_offset + i * stride < n_bands * width * height);
 
-            spectral_framebuffer[start_offset + i * stride] = 
+            spectral_framebuffer[start_offset + i * stride] =
                 (float)grey_framebuffer[i]
                 / 65535.f;
         }
