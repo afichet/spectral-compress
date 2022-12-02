@@ -254,7 +254,7 @@ size_t JXLImage::appendFramebuffer(
 }
 
 
-void JXLImage::write(const char* filename) const {
+void JXLImage::write(const char* filename, float distance) const {
     // Currently, JXL supports up to 256 framebuffers per image
     // we may need more than that so, in such scenario, we are
     // going to write multiple images
@@ -349,21 +349,16 @@ void JXLImage::write(const char* filename) const {
 
         JxlEncoderFrameSettings* frame_settings = JxlEncoderFrameSettingsCreate(enc.get(), nullptr);
 
-        // Set compression quality
-        // status = JxlEncoderSetFrameDistance(frame_settings, .1);
-        // CHECK_JXL_ENC_STATUS(status);
-
-        // status = JxlEncoderSetFrameLossless(frame_settings, JXL_TRUE);
-        // CHECK_JXL_DEC_STATUS(status);
-
-        // JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_EFFORT, 9);
         status = JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_RESAMPLING, _framebuffers[start_framebuffer_idx]->getDownsamplingFactor());
         CHECK_JXL_ENC_STATUS(status);
 
-        // status = JxlEncoderSetFrameLossless(frame_settings, JXL_TRUE);
-        // CHECK_JXL_ENC_STATUS(status);
+        // Set compression quality
+        if (distance > 0) {
+            status = JxlEncoderSetFrameDistance(frame_settings, distance);
+        } else {
+            status = JxlEncoderSetFrameLossless(frame_settings, JXL_TRUE);
+        }
 
-        status = JxlEncoderSetFrameDistance(frame_settings, 0.);
         CHECK_JXL_ENC_STATUS(status);
 
         // TODO: Fixme!
@@ -481,9 +476,9 @@ void JXLImage::write(const char* filename) const {
 }
 
 
-void JXLImage::write(const std::string& filename) const
+void JXLImage::write(const std::string& filename, float distance) const
 {
-    write(filename.c_str());
+    write(filename.c_str(), distance);
 }
 
 
