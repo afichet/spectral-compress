@@ -323,8 +323,6 @@ void JXLImage::write(const char* filename, float distance) const {
             status = JxlEncoderAddBox(enc.get(), tp, raw_box.data(), raw_box.size(), JXL_FALSE);
 
             CHECK_JXL_ENC_STATUS(status);
-
-            JxlEncoderCloseBoxes(enc.get());
         }
 
         // ====================================================================
@@ -349,16 +347,19 @@ void JXLImage::write(const char* filename, float distance) const {
 
         JxlEncoderFrameSettings* frame_settings = JxlEncoderFrameSettingsCreate(enc.get(), nullptr);
 
-        status = JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_RESAMPLING, _framebuffers[start_framebuffer_idx]->getDownsamplingFactor());
+        // Set compression quality
+        JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_EFFORT, 9);
         CHECK_JXL_ENC_STATUS(status);
 
-        // Set compression quality
         if (distance > 0) {
+            status = JxlEncoderSetFrameLossless(frame_settings, JXL_FALSE);
             status = JxlEncoderSetFrameDistance(frame_settings, distance);
         } else {
             status = JxlEncoderSetFrameLossless(frame_settings, JXL_TRUE);
         }
+        CHECK_JXL_ENC_STATUS(status);
 
+        status = JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_RESAMPLING, _framebuffers[start_framebuffer_idx]->getDownsamplingFactor());
         CHECK_JXL_ENC_STATUS(status);
 
         // TODO: Fixme!
@@ -416,10 +417,17 @@ void JXLImage::write(const char* filename, float distance) const {
             JxlEncoderFrameSettings* frame_settings = JxlEncoderFrameSettingsCreate(enc.get(), nullptr);
 
             // Set compression quality
-            // JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_EFFORT, 9);
+            JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_EFFORT, 9);
             // JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_EXTRA_CHANNEL_RESAMPLING, downsampling);
             // status = JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_EXTRA_CHANNEL_RESAMPLING, 4);
             // CHECK_JXL_ENC_STATUS(status);
+
+            // Set compression quality
+            // if (distance > 0) {
+            //     status = JxlEncoderSetFrameDistance(frame_settings, distance);
+            // } else {
+            //     status = JxlEncoderSetFrameLossless(frame_settings, JXL_TRUE);
+            // }
 
             status = JxlEncoderSetExtraChannelInfo(enc.get(), i - 1, &extra_info);
             CHECK_JXL_ENC_STATUS(status);

@@ -124,9 +124,9 @@ public:
         uint32_t enc_downsampling_factor = 1,
         const char* name = nullptr);
 
-    void write(const char* filename, float distance = 1.f) const;
+    void write(const char* filename, float distance = .1f) const;
 
-    void write(const std::string& filename, float distance = 1.f) const;
+    void write(const std::string& filename, float distance = .1f) const;
 
     void setBox(const SGEGBox& box);
     const SGEGBox& getBox() const { return _sgeg_box; }
