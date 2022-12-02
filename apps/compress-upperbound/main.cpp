@@ -59,7 +59,9 @@
  * TODO:
  * - Add an argument
  *    - to control the number of bits for starting the quantization curves
- *    - to control the JXL quality factor
+ *    - to control the JXL quality factor -> TODO, the option is there but
+ *      seems not affecting file size while decreasing quality. Also 1 is
+ *      supposed to look the same but does drastically decrease the quality
  *    - to control spatial downsampling (needs as well serious work in the JXL class)
  * - Fix runtime error when running with CAVE database
  * - RGB layers are only computed on the root (maybe a desirable behaviour though...)
@@ -163,9 +165,30 @@ void quantization_from_exr(PixelType type, size_t& n_bits, size_t& n_exponent_bi
 }
 
 
+class FrameDistanceConstraint: public TCLAP::Constraint<float>
+{
+public:
+    virtual std::string description() const
+    {
+        return "Sets the distance level for lossy compression";
+    }
+
+    virtual std::string shortID() const
+    {
+        return "FrameDistanceConstraint";
+    }
+
+    virtual bool check(const float &value) const
+    {
+        return (value >= 0.f) && (value <= 15.f);
+    }
+};
+
+
 int main(int argc, char *argv[])
 {
     std::string filename_in, filename_out;
+    float frame_distance = .1f;
 
     // Parse arguments
     try {
@@ -177,10 +200,15 @@ int main(int argc, char *argv[])
         TCLAP::UnlabeledValueArg<std::string> outputFileArg("Output", "JPEG XL output file", true, "output.jxl", "path");
         cmd.add(outputFileArg);
 
+        FrameDistanceConstraint frameDistanceConstraint;
+        TCLAP::ValueArg<float> frameDistanceArg("d", "frame_distance", "Distance level for lossy compression (compression rate). Range: 0 .. 15", false, .1f, &frameDistanceConstraint);
+        cmd.add(frameDistanceArg);
+
         cmd.parse(argc, argv);
 
-        filename_in  = inputFileArg.getValue();
-        filename_out = outputFileArg.getValue();
+        filename_in    = inputFileArg.getValue();
+        filename_out   = outputFileArg.getValue();
+        frame_distance = frameDistanceArg.getValue();
     } catch (TCLAP::ArgException &e) {
         std::cerr << "Error: " << e.error() << " for argument " << e.argId() << std::endl;
     }
@@ -285,7 +313,7 @@ int main(int argc, char *argv[])
     }
 
     jxl_out.setBox(box);
-    jxl_out.write(filename_out);
+    jxl_out.write(filename_out, frame_distance);
 
 #ifndef NDEBUG
     // Test dump
