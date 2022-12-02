@@ -45,17 +45,18 @@ for f in os.listdir(path_out):
                 up_err.append(e)
 
 
-plt.plot()
-plt.xlabel('Bits per pixel')
-plt.ylabel('Error')
+fig, ax = plt.subplots()
+ax.set_xlabel('Bits per pixel')
+ax.set_ylabel('Error')
+ax.set_yscale('log')
 
 pt_sz = 8
 
-plt.scatter(b_bits, b_err, s=pt_sz, label='Bounded')
-plt.scatter(u_bits, u_err, s=pt_sz, label='Unbounded')
-plt.scatter(utb_bits, utb_err, s=pt_sz, label='Unbounded to bounded')
-plt.scatter(up_bits, up_err, s=pt_sz, label='Upperbound')
+ax.scatter(b_bits, b_err, s=pt_sz, label='Bounded')
+ax.scatter(u_bits, u_err, s=pt_sz, label='Unbounded')
+ax.scatter(utb_bits, utb_err, s=pt_sz, label='Unbounded to bounded')
+ax.scatter(up_bits, up_err, s=pt_sz, label='Upperbound')
 
-plt.legend()
-plt.tight_layout()
+ax.legend()
+fig.tight_layout()
 plt.show()
