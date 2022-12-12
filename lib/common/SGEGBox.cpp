@@ -104,6 +104,7 @@ SGEGSpectralGroup::SGEGSpectralGroup(const SGEGSpectralGroup& other)
     , wavelengths(other.wavelengths)
     , mins(other.mins)
     , maxs(other.maxs)
+    , global_min(other.global_min)
     , global_max(other.global_max)
 {
 }
@@ -117,6 +118,7 @@ size_t SGEGSpectralGroup::getRaw(uint8_t data[]) const
     offset += write_vector(wavelengths, data + offset);
     offset += write_vector(mins, data + offset);
     offset += write_vector(maxs, data + offset);
+    offset += write_value(global_min, data + offset);
     offset += write_value(global_max, data + offset);
 
     return offset;
@@ -132,6 +134,7 @@ size_t SGEGSpectralGroup::fromRaw(const uint8_t data[])
     offset += read_vector(data + offset, wavelengths);
     offset += read_vector(data + offset, mins);
     offset += read_vector(data + offset, maxs);
+    offset += read_value(data + offset, global_min);
     offset += read_value(data + offset, global_max);
 
     return offset;
@@ -151,23 +154,10 @@ size_t SGEGSpectralGroup::size() const
         + mins.size() * sizeof(float)
         + sizeof(uint32_t) // Arrays size
         + maxs.size() * sizeof(float)
+        + sizeof(float)
         + sizeof(float);
 }
 
-
-// SGEGSpectralGroup& SGEGSpectralGroup::operator=(const SGEGSpectralGroup& other)
-// {
-//     if (this != &other) {
-//         root_name     = other.root_name;
-//         layer_indices = other.layer_indices;
-//         wavelengths   = other.wavelengths;
-//         mins          = other.mins;
-//         maxs          = other.maxs;
-//         global_max    = other.global_max;
-//     }
-
-//     return *this;
-// }
 
 // ----------------------------------------------------------------------------
 
