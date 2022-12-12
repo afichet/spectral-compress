@@ -479,7 +479,7 @@ void upperbound_compress_spectral_image(
 
 
 template<typename T>
-void two_bounds_compress_spectral_image(
+void twobounds_compress_spectral_image(
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,
     size_t n_pixels,
@@ -508,7 +508,7 @@ void two_bounds_compress_spectral_image(
 
         for (size_t b = 0; b < n_bands; b++) {
             avg_local += spectral_image[px * n_bands + b];
-            max_local = std::max(max_local, spectral_image[px * n_bands + b];
+            max_local = std::max(max_local, spectral_image[px * n_bands + b]);
         }
 
         avg_local /= (double)n_bands;
@@ -531,7 +531,7 @@ void two_bounds_compress_spectral_image(
 
     for (size_t px = 0; px < n_pixels; px++) {
         // eqn 7.
-        const double m_rounded = r_min + (double)relative_scales[i] / max_q * (r_max - r_min);
+        const double m_rounded = r_min + (double)relative_scales[px] / max_q * (r_max - r_min);
         const double scaling = 1. / m_rounded;
 
         for (size_t b = 0; b < n_bands; b++) {
@@ -629,7 +629,7 @@ void upperbound_decompress_spectral_image(
 
 
 template<typename T>
-void two_bounds_decompress_spectral_image(
+void twobounds_decompress_spectral_image(
     const std::vector<double>& wavelengths,
     const std::vector<double>& normalized_moments_image,
     const std::vector<double>& mins,
