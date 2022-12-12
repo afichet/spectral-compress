@@ -255,7 +255,7 @@ int main(int argc, char* argv[])
     const int n_pixels = image.width() * image.height();
 
     // const int n_bits[] = {12, 10, 8};
-    const int n_bits[] = {6, 7, 9, 10, 11, 12, 13};
+    const int n_bits[] = {6, 7, 8, 9, 10, 11, 12, 13};
 
     for (SpectralFramebuffer* fb: image.getSpectralFramebuffers()) {
         for (int n_bits_ac1: n_bits) {

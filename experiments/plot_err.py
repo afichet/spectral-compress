@@ -5,7 +5,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 
-path_out  = 'CAVE'
+path_out  = 'output'
 
 b_bits = []
 b_err = []

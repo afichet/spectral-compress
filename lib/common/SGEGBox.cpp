@@ -96,6 +96,18 @@ size_t read_vector(const uint8_t data[], std::vector<T>& vec)
 
 // ----------------------------------------------------------------------------
 
+SGEGSpectralGroup::SGEGSpectralGroup() {}
+
+SGEGSpectralGroup::SGEGSpectralGroup(const SGEGSpectralGroup& other)
+    : root_name(other.root_name)
+    , layer_indices(other.layer_indices)
+    , wavelengths(other.wavelengths)
+    , mins(other.mins)
+    , maxs(other.maxs)
+    , global_max(other.global_max)
+{
+}
+
 size_t SGEGSpectralGroup::getRaw(uint8_t data[]) const
 {
     size_t offset = 0;
@@ -143,18 +155,19 @@ size_t SGEGSpectralGroup::size() const
 }
 
 
-SGEGSpectralGroup& SGEGSpectralGroup::operator=(const SGEGSpectralGroup& other) {
-    if (this != &other) {
-        root_name     = other.root_name;
-        layer_indices = other.layer_indices;
-        wavelengths   = other.wavelengths;
-        mins          = other.mins;
-        maxs          = other.maxs;
-        global_max    = other.global_max;
-    }
+// SGEGSpectralGroup& SGEGSpectralGroup::operator=(const SGEGSpectralGroup& other)
+// {
+//     if (this != &other) {
+//         root_name     = other.root_name;
+//         layer_indices = other.layer_indices;
+//         wavelengths   = other.wavelengths;
+//         mins          = other.mins;
+//         maxs          = other.maxs;
+//         global_max    = other.global_max;
+//     }
 
-    return *this;
-}
+//     return *this;
+// }
 
 // ----------------------------------------------------------------------------
 

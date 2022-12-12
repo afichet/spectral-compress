@@ -41,6 +41,9 @@
 
 struct SGEGSpectralGroup
 {
+    SGEGSpectralGroup();
+    SGEGSpectralGroup(const SGEGSpectralGroup& other);
+
     // Contains everything before the last `.` separating the layer name from
     // the spectral wavelength.
     // E.g., `T.480`       has `T` as root name,
@@ -79,7 +82,7 @@ struct SGEGSpectralGroup
      */
     size_t size() const;
 
-    SGEGSpectralGroup& operator=(const SGEGSpectralGroup& other);
+    // SGEGSpectralGroup& operator=(const SGEGSpectralGroup& other);
 };
 
 

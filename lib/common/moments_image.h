@@ -477,6 +477,83 @@ void upperbound_compress_spectral_image(
     }
 }
 
+
+template<typename T>
+void two_bounds_compress_spectral_image(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    size_t n_pixels,
+    size_t n_moments,
+    std::vector<double>& normalized_moments_image,
+    std::vector<double>& mins,
+    std::vector<double>& maxs,
+    std::vector<T>& relative_scales,
+    double& r_min,
+    double& r_max)
+{
+    const double max_q = (double)std::numeric_limits<T>::max();
+    const size_t n_bands = wavelengths.size();
+
+    // Compute local scaling
+    relative_scales.resize(n_pixels);
+
+    std::vector<double> r_local(n_pixels);
+    r_min = std::numeric_limits<double>::max();
+    r_max = 0;
+
+    for (size_t px = 0; px < n_pixels; px++) {
+        // eqn 1, 2
+        double avg_local = 0;
+        double max_local = 0;
+
+        for (size_t b = 0; b < n_bands; b++) {
+            avg_local += spectral_image[px * n_bands + b];
+            max_local = std::max(max_local, spectral_image[px * n_bands + b];
+        }
+
+        avg_local /= (double)n_bands;
+
+        // eqn 3
+        r_local[px] = max_local / avg_local;
+
+        // eqn 4, 5
+        r_min = std::min(r_min, r_local[px]);
+        r_max = std::max(r_max, r_local[px]);
+    }
+
+    // eqn 6
+    for (size_t px = 0; px < n_pixels; px++) {
+        relative_scales[px] = std::ceil(max_q * (r_local[px] - r_min) / (r_max - r_min));
+    }
+
+    // Rescale the signal
+    std::vector<double> rescaled_spectral_image(n_pixels * n_bands);
+
+    for (size_t px = 0; px < n_pixels; px++) {
+        // eqn 7.
+        const double m_rounded = r_min + (double)relative_scales[i] / max_q * (r_max - r_min);
+        const double scaling = 1. / m_rounded;
+
+        for (size_t b = 0; b < n_bands; b++) {
+            rescaled_spectral_image[px * n_bands + b] = spectral_image[px * n_bands + b] * scaling;
+        }
+    }
+
+    bounded_compress_spectral_image(
+        wavelengths,
+        rescaled_spectral_image,
+        n_pixels, n_moments,
+        normalized_moments_image,
+        mins, maxs
+    );
+
+    // // Rescale DC components to match the average / pixel for better previewing
+    // for (size_t px = 0; px < n_pixels; px++) {
+    //     const double scaling = (r_max * (double)relative_scales[px]) / (double)std::numeric_limits<T>::max();
+    //     normalized_moments_image[px * n_moments] *= scaling;
+    // }
+}
+
 // Decompress (compressed_moments -> spectral_image)
 
 void bounded_decompress_spectral_image(
@@ -548,5 +625,51 @@ void upperbound_decompress_spectral_image(
         }
     }
 }
+
+
+
+template<typename T>
+void two_bounds_decompress_spectral_image(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& normalized_moments_image,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
+    const std::vector<T>& relative_scales,
+    double r_min,
+    double r_max,
+    size_t n_pixels,
+    size_t n_moments,
+    std::vector<double>& spectral_image)
+{
+    const double max_q = (double)std::numeric_limits<T>::max();
+    const size_t n_bands = wavelengths.size();
+    std::vector<double> normalized_moments_image_dc(normalized_moments_image);
+    std::vector<double> rescaled_spectral_image;
+
+    // for (size_t px = 0; px < n_pixels; px++) {
+    //     const double scaling = (double)std::numeric_limits<T>::max() / (global_max * (double)relative_scales[px]);
+    //     normalized_moments_image_dc[px * n_moments] *= scaling;
+    // }
+
+    bounded_decompress_spectral_image(
+        wavelengths,
+        normalized_moments_image_dc,
+        mins, maxs,
+        n_pixels, n_moments,
+        rescaled_spectral_image
+    );
+
+    spectral_image.resize(n_pixels * n_bands);
+
+    for (size_t px = 0; px < n_pixels; px++) {
+        const double m_rounded = r_min + (double)relative_scales[px] / max_q * (r_max - r_min);
+        const double scaling = m_rounded;
+
+        for (size_t b = 0; b < n_bands; b++) {
+            spectral_image[px * n_bands + b] = rescaled_spectral_image[px * n_bands + b] * scaling;
+        }
+    }
+}
+
 
 #endif // __cplusplus

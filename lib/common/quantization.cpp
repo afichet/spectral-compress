@@ -101,7 +101,7 @@ double unbounded_average_err(
     const std::vector<double>& mins,
     const std::vector<double>& maxs)
 {
-    double err = 0;
+    // double err = 0;
     const size_t n_wl = wavelengths.size();
 
     std::vector<double> reconst_spectral_image;
@@ -113,22 +113,27 @@ double unbounded_average_err(
         reconst_spectral_image
     );
 
-    for (size_t p = 0; p < n_px; p++) {
-        double px_err = 0;
+    return error_images(
+        spectral_image,
+        reconst_spectral_image,
+        n_px, n_wl
+    );
+    // for (size_t p = 0; p < n_px; p++) {
+    //     double px_err = 0;
 
-        if (norm_moments[p * n_wl] > 0) {
-            for (size_t i = 0; i < n_wl; i++) {
-                const double q = reconst_spectral_image[p * n_wl + i] - spectral_image[p * n_wl + i];
-                px_err += q * q;
-            }
+    //     if (norm_moments[p * n_wl] > 0) {
+    //         for (size_t i = 0; i < n_wl; i++) {
+    //             const double q = reconst_spectral_image[p * n_wl + i] - spectral_image[p * n_wl + i];
+    //             px_err += q * q;
+    //         }
 
-            px_err = std::sqrt(px_err) / norm_moments[p * n_wl];
-        }
+    //         px_err = std::sqrt(px_err) / norm_moments[p * n_wl];
+    //     }
 
-        err += px_err;
-    }
+    //     err += px_err;
+    // }
 
-    return err / (double)n_px;
+    // return err / (double)n_px;
 }
 
 
@@ -140,7 +145,7 @@ double bounded_average_err(
     const std::vector<double>& mins,
     const std::vector<double>& maxs)
 {
-    double err = 0;
+    // double err = 0;
     const size_t n_wl = wavelengths.size();
 
     std::vector<double> reconst_spectral_image;
@@ -152,22 +157,28 @@ double bounded_average_err(
         reconst_spectral_image
     );
 
-    for (size_t p = 0; p < n_px; p++) {
-        double px_err = 0;
+    return error_images(
+        spectral_image,
+        reconst_spectral_image,
+        n_px, n_wl
+    );
 
-        if (norm_moments[p * n_wl] > 0) {
-            for (size_t i = 0; i < n_wl; i++) {
-                const double q = reconst_spectral_image[p * n_wl + i] - spectral_image[p * n_wl + i];
-                px_err += q * q;
-            }
+    // for (size_t p = 0; p < n_px; p++) {
+    //     double px_err = 0;
 
-            px_err = std::sqrt(px_err) / norm_moments[p * n_wl];
-        }
+    //     if (norm_moments[p * n_wl] > 0) {
+    //         for (size_t i = 0; i < n_wl; i++) {
+    //             const double q = reconst_spectral_image[p * n_wl + i] - spectral_image[p * n_wl + i];
+    //             px_err += q * q;
+    //         }
 
-        err += px_err;
-    }
+    //         px_err = std::sqrt(px_err) / norm_moments[p * n_wl];
+    //     }
 
-    return err / (double)n_px;
+    //     err += px_err;
+    // }
+
+    // return err / (double)n_px;
 }
 
 
@@ -179,7 +190,7 @@ double unbounded_to_bounded_average_err(
     const std::vector<double>& mins,
     const std::vector<double>& maxs)
 {
-    double err = 0;
+    // double err = 0;
     const size_t n_wl = wavelengths.size();
 
     std::vector<double> reconst_spectral_image;
@@ -191,22 +202,27 @@ double unbounded_to_bounded_average_err(
         reconst_spectral_image
     );
 
-    for (size_t p = 0; p < n_px; p++) {
-        double px_err = 0;
+    return error_images(
+        spectral_image,
+        reconst_spectral_image,
+        n_px, n_wl
+    );
+    // for (size_t p = 0; p < n_px; p++) {
+    //     double px_err = 0;
 
-        if (norm_moments[p * n_wl] > 0) {
-            for (size_t i = 0; i < n_wl; i++) {
-                const double q = reconst_spectral_image[p * n_wl + i] - spectral_image[p * n_wl + i];
-                px_err += q * q;
-            }
+    //     if (norm_moments[p * n_wl] > 0) {
+    //         for (size_t i = 0; i < n_wl; i++) {
+    //             const double q = reconst_spectral_image[p * n_wl + i] - spectral_image[p * n_wl + i];
+    //             px_err += q * q;
+    //         }
 
-            px_err = std::sqrt(px_err) / norm_moments[p * n_wl];
-        }
+    //         px_err = std::sqrt(px_err) / norm_moments[p * n_wl];
+    //     }
 
-        err += px_err;
-    }
+    //     err += px_err;
+    // }
 
-    return err / (double)n_px;
+    // return err / (double)n_px;
 }
 
 template<typename T>
@@ -220,7 +236,7 @@ double upperbound_average_err(
     const std::vector<T>& relative_scales,
     double global_max)
 {
-    double err = 0;
+    // double err = 0;
     const size_t n_wl = wavelengths.size();
 
     std::vector<double> reconst_spectral_image;
@@ -234,22 +250,27 @@ double upperbound_average_err(
         reconst_spectral_image
     );
 
-    for (size_t p = 0; p < n_px; p++) {
-        double px_err = 0;
+    return error_images(
+        spectral_image,
+        reconst_spectral_image,
+        n_px, n_wl
+    );
+    // for (size_t p = 0; p < n_px; p++) {
+    //     double px_err = 0;
 
-        if (norm_moments[p * n_wl] > 0) {
-            for (size_t i = 0; i < n_wl; i++) {
-                const double q = reconst_spectral_image[p * n_wl + i] - spectral_image[p * n_wl + i];
-                px_err += q * q;
-            }
+    //     if (norm_moments[p * n_wl] > 0) {
+    //         for (size_t i = 0; i < n_wl; i++) {
+    //             const double q = reconst_spectral_image[p * n_wl + i] - spectral_image[p * n_wl + i];
+    //             px_err += q * q;
+    //         }
 
-            px_err = std::sqrt(px_err) / norm_moments[p * n_wl];
-        }
+    //         px_err = std::sqrt(px_err) / norm_moments[p * n_wl];
+    //     }
 
-        err += px_err;
-    }
+    //     err += px_err;
+    // }
 
-    return err / (double)n_px;
+    // return err / (double)n_px;
 }
 
 

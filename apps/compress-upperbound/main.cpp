@@ -327,11 +327,11 @@ int main(int argc, char *argv[])
     jxl_out.setBox(box);
     jxl_out.write(filename_out, frame_distance);
 
-#ifndef NDEBUG
+// #ifndef NDEBUG
     // Test dump
     jxl_out.dump("jxl_dump");
     exr_in.dump("exr_dump");
-#endif // NDEBUG
+// #endif // NDEBUG
 
     return 0;
 }
