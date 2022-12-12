@@ -224,6 +224,53 @@ void run_for_upperbound(
 }
 
 
+void run_for_twobounds(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& image_data,
+    int n_pixels, int n_bands,
+    int n_bits_dc,
+    int n_bits_ac1,
+    const std::string& output_prefix)
+{
+#ifdef VERBOSE
+    std::cout << "Running for twobounds...";
+    auto start = std::chrono::steady_clock::now();
+#endif // VERBOSE
+
+    std::vector<int> quantization_curve_utb;
+
+    double err_utb = twobounds_compute_quantization_curve(
+        wavelengths,
+        image_data,
+        n_pixels, n_bands,
+        n_bits_dc,
+        n_bits_ac1,
+        quantization_curve_utb
+    );
+
+    // Save data
+    std::stringstream output_file;
+    output_file << output_prefix << "_tb_" << n_bits_ac1 << ".txt";
+
+    std::ofstream out_utb(output_file.str());
+
+    for (size_t i = 0; i < quantization_curve_utb.size(); i++) {
+        out_utb << quantization_curve_utb[i] << " ";
+    }
+
+    // Add the relative scale memory footprint
+    out_utb << "8 ";
+
+    out_utb << std::endl << err_utb;
+
+#ifdef VERBOSE
+    auto end = std::chrono::steady_clock::now();
+    auto diff = end - start;
+    std::cout << "\t\t" << std::chrono::duration <double, std::milli> (diff).count() << " ms" << std::endl;
+    std::cout << "Writing: " << output_file.str() << std::endl;
+#endif // VERBOSE
+}
+
 
 int main(int argc, char* argv[])
 {
@@ -309,6 +356,15 @@ int main(int argc, char* argv[])
             );
 
             run_for_upperbound(
+                wavelengths,
+                image_data,
+                n_pixels, n_bands,
+                n_bits_dc,
+                n_bits_ac1,
+                output_prefix
+            );
+
+            run_for_twobounds(
                 wavelengths,
                 image_data,
                 n_pixels, n_bands,
