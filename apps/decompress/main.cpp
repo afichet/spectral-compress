@@ -60,7 +60,7 @@ void decompress_spectral_framebuffer(
     size_t n_moments = 0;
     
     switch (sg.method) {
-        case PLAIN:
+        case LINEAR:
         case BOUNDED:
         case UNBOUNDED:
         case UNBOUNDED_TO_BOUNDED:
@@ -98,8 +98,37 @@ void decompress_spectral_framebuffer(
     }
     
     switch (sg.method) {
+        case LINEAR:
+            linear_decompress_spectral_image(
+                wavelengths_d,
+                compressed_moments_d,
+                mins_d, maxs_d,
+                n_pixels, n_moments,
+                spectral_framebuffer_d
+            );
+            break;
+        
+        case BOUNDED:
+            bounded_decompress_spectral_image(
+                wavelengths_d,
+                compressed_moments_d,
+                mins_d, maxs_d,
+                n_pixels, n_moments,
+                spectral_framebuffer_d
+            );
+            break;
+
+        case UNBOUNDED:
+            unbounded_decompress_spectral_image(
+                wavelengths_d,
+                compressed_moments_d,
+                mins_d, maxs_d,
+                n_pixels, n_moments,
+                spectral_framebuffer_d
+            );
+            break;
+
         case UNBOUNDED_TO_BOUNDED:
-            
             unbounded_to_bounded_decompress_spectral_image(
                 wavelengths_d,
                 compressed_moments_d,

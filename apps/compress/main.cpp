@@ -110,6 +110,114 @@ void compress_spectral_framebuffer(
     }
 
     switch (sg.method) {
+        case LINEAR:
+            // Create a quantization profil
+            linear_compute_quantization_curve(
+                spectral_wavelengths, spectral_framebuffer,
+                n_pixels, n_moments,
+                n_bits_dc, n_bits_ac1,
+                quantization_curve
+            );
+
+            linear_compress_spectral_image(
+                spectral_wavelengths, spectral_framebuffer,
+                n_pixels, n_moments,
+                compressed_moments_d,
+                mins_d, maxs_d
+            );
+
+            // Copy back and implicit conversion to float
+            compressed_moments.resize(n_moments);
+
+            for (size_t m = 0; m < n_moments; m++) {
+                compressed_moments[m].resize(n_pixels);
+
+                for (size_t px = 0; px < n_pixels; px++) {
+                    compressed_moments[m][px] = compressed_moments_d[n_moments * px + m];
+                }
+            }
+
+            sg.mins.resize(n_moments - 1);
+            sg.maxs.resize(n_moments - 1);
+
+            for (size_t m = 0; m < n_moments - 1; m++) {
+                sg.mins[m] = mins_d[m];
+                sg.maxs[m] = maxs_d[m];
+            }
+            break;
+
+        case BOUNDED:
+            // Create a quantization profil
+            bounded_compute_quantization_curve(
+                spectral_wavelengths, spectral_framebuffer,
+                n_pixels, n_moments,
+                n_bits_dc, n_bits_ac1,
+                quantization_curve
+            );
+
+            bounded_compress_spectral_image(
+                spectral_wavelengths, spectral_framebuffer,
+                n_pixels, n_moments,
+                compressed_moments_d,
+                mins_d, maxs_d
+            );
+
+            // Copy back and implicit conversion to float
+            compressed_moments.resize(n_moments);
+
+            for (size_t m = 0; m < n_moments; m++) {
+                compressed_moments[m].resize(n_pixels);
+
+                for (size_t px = 0; px < n_pixels; px++) {
+                    compressed_moments[m][px] = compressed_moments_d[n_moments * px + m];
+                }
+            }
+
+            sg.mins.resize(n_moments - 1);
+            sg.maxs.resize(n_moments - 1);
+
+            for (size_t m = 0; m < n_moments - 1; m++) {
+                sg.mins[m] = mins_d[m];
+                sg.maxs[m] = maxs_d[m];
+            }
+            break;
+
+        case UNBOUNDED:
+            // Create a quantization profil
+            unbounded_compute_quantization_curve(
+                spectral_wavelengths, spectral_framebuffer,
+                n_pixels, n_moments,
+                n_bits_dc, n_bits_ac1,
+                quantization_curve
+            );
+
+            unbounded_compress_spectral_image(
+                spectral_wavelengths, spectral_framebuffer,
+                n_pixels, n_moments,
+                compressed_moments_d,
+                mins_d, maxs_d
+            );
+
+            // Copy back and implicit conversion to float
+            compressed_moments.resize(n_moments);
+
+            for (size_t m = 0; m < n_moments; m++) {
+                compressed_moments[m].resize(n_pixels);
+
+                for (size_t px = 0; px < n_pixels; px++) {
+                    compressed_moments[m][px] = compressed_moments_d[n_moments * px + m];
+                }
+            }
+
+            sg.mins.resize(n_moments - 1);
+            sg.maxs.resize(n_moments - 1);
+
+            for (size_t m = 0; m < n_moments - 1; m++) {
+                sg.mins[m] = mins_d[m];
+                sg.maxs[m] = maxs_d[m];
+            }
+            break;
+
         case UNBOUNDED_TO_BOUNDED:
             // Create a quantization profil
             unbounded_to_bounded_compute_quantization_curve(
@@ -245,10 +353,6 @@ void compress_spectral_framebuffer(
             sg.global_min = global_min_d;
             sg.global_max = global_max_d;
             break;
-
-        default:
-            std::cerr << "Unimplemented yet!" << std::endl;
-            break;
     }
 }
 
@@ -322,7 +426,7 @@ int main(int argc, char *argv[])
         cmd.add(quantizationStartArg);
 
         std::vector<std::string> allowedCompressionMethods;
-        allowedCompressionMethods.push_back("plain");
+        allowedCompressionMethods.push_back("linear");
         allowedCompressionMethods.push_back("bounded");
         allowedCompressionMethods.push_back("unbounded");
         allowedCompressionMethods.push_back("unbounded_to_bounded");
@@ -339,8 +443,8 @@ int main(int argc, char *argv[])
         frame_distance = frameDistanceArg.getValue();
         n_bits_start_quantization = quantizationStartArg.getValue();
 
-        if (momentCompressionMethodArg.getValue() == "plain") {
-            method = PLAIN;
+        if (momentCompressionMethodArg.getValue() == "linear") {
+            method = LINEAR;
         } else if (momentCompressionMethodArg.getValue() == "bounded") {
             method = BOUNDED;
         } else if (momentCompressionMethodArg.getValue() == "unbounded") {
@@ -417,17 +521,6 @@ int main(int argc, char *argv[])
 
             sg.layer_indices.push_back(idx);
         }
-
-        // // TODO: This is a bit hacky
-        // std::vector<float> relative_scales_f(relative_scales.size());
-
-        // for (size_t i = 0; i < relative_scales.size(); i++) {
-        //     relative_scales_f[i] = (float)relative_scales[i] / std::numeric_limits<uint8_t>::max();
-        // }
-
-        // const size_t idx = jxl_out.appendFramebuffer(relative_scales_f, 1, 8, 0, 1);
-
-        // sg.layer_indices.push_back(idx);
 
         box.spectral_groups.push_back(sg);
     }

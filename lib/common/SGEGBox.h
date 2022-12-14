@@ -41,7 +41,7 @@
 
 enum SpectralStorageMethod
 {
-    PLAIN,
+    LINEAR,
     BOUNDED,
     UNBOUNDED,
     UNBOUNDED_TO_BOUNDED,
