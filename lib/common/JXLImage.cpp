@@ -43,7 +43,8 @@
 
 // ----------------------------------------------------------------------------
 
-#define JXL_MAX_FRAMEBUFFERS 256
+#define JXL_MAX_FRAMEBUFFERS 1
+//256
 
 #define CHECK_JXL_ENC_STATUS(status)                                          \
     if (JXL_ENC_SUCCESS != (status)) {                                        \
@@ -423,11 +424,13 @@ void JXLImage::write(const char* filename, float distance) const {
             // CHECK_JXL_ENC_STATUS(status);
 
             // Set compression quality
-            // if (distance > 0) {
-            //     status = JxlEncoderSetFrameDistance(frame_settings, distance);
-            // } else {
-            //     status = JxlEncoderSetFrameLossless(frame_settings, JXL_TRUE);
-            // }
+            if (distance > 0) {
+                status = JxlEncoderSetFrameLossless(frame_settings, JXL_FALSE);
+                status = JxlEncoderSetFrameDistance(frame_settings, distance);
+            } else {
+                status = JxlEncoderSetFrameLossless(frame_settings, JXL_TRUE);
+            }
+            CHECK_JXL_ENC_STATUS(status);
 
             status = JxlEncoderSetExtraChannelInfo(enc.get(), i - 1, &extra_info);
             CHECK_JXL_ENC_STATUS(status);

@@ -547,11 +547,13 @@ void twobounds_compress_spectral_image(
         mins, maxs
     );
 
-    // // Rescale DC components to match the average / pixel for better previewing
-    // for (size_t px = 0; px < n_pixels; px++) {
-    //     const double scaling = (r_max * (double)relative_scales[px]) / (double)std::numeric_limits<T>::max();
-    //     normalized_moments_image[px * n_moments] *= scaling;
-    // }
+    // Rescale DC components to match the average / pixel for better previewing
+    for (size_t px = 0; px < n_pixels; px++) {
+        const double m_rounded = r_min + (double)relative_scales[px] / max_q * (r_max - r_min);
+        const double scaling = m_rounded;
+        
+        normalized_moments_image[px * n_moments] *= scaling;
+    }
 }
 
 // Decompress (compressed_moments -> spectral_image)
@@ -646,10 +648,12 @@ void twobounds_decompress_spectral_image(
     std::vector<double> normalized_moments_image_dc(normalized_moments_image);
     std::vector<double> rescaled_spectral_image;
 
-    // for (size_t px = 0; px < n_pixels; px++) {
-    //     const double scaling = (double)std::numeric_limits<T>::max() / (global_max * (double)relative_scales[px]);
-    //     normalized_moments_image_dc[px * n_moments] *= scaling;
-    // }
+    // Rescale DC component
+    for (size_t px = 0; px < n_pixels; px++) {
+        const double m_rounded = r_min + (double)relative_scales[px] / max_q * (r_max - r_min);
+        const double scaling = 1. / m_rounded;
+        normalized_moments_image_dc[px * n_moments] *= scaling;
+    }
 
     bounded_decompress_spectral_image(
         wavelengths,

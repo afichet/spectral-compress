@@ -2,7 +2,7 @@
 
 import os, subprocess
 
-path_data = '/home/afichet/Documents/spectral_images/EXRs/Bonn/'
+path_data = '/home/afichet/spectral_images/EXRs/Bonn/'
 path_bin  = '/home/afichet/Repositories/spectral-compress/build/bin/eval-quantization'
 path_out  = 'output'
 
