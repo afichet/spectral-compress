@@ -39,6 +39,17 @@
 #include <string>
 
 
+enum SpectralStorageMethod
+{
+    PLAIN,
+    BOUNDED,
+    UNBOUNDED,
+    UNBOUNDED_TO_BOUNDED,
+    UPPERBOUND,
+    TWOBOUNDS
+};
+
+
 struct SGEGSpectralGroup
 {
     SGEGSpectralGroup();
@@ -67,6 +78,8 @@ struct SGEGSpectralGroup
     float global_min;
     float global_max;
 
+    SpectralStorageMethod method;
+
     /**
      * Get the content of this structure for serialization.
      * @param data An array of bytes which need to be at least of `size`
@@ -89,6 +102,9 @@ struct SGEGSpectralGroup
 
 struct SGEGGrayGroup
 {
+    SGEGGrayGroup();
+    SGEGGrayGroup(const SGEGGrayGroup& other);
+
     // The name the layer has in the original OpenEXR file
     std::vector<char> layer_name;
     // Corresponding index of the framebuffer in the JXL file.
@@ -112,8 +128,6 @@ struct SGEGGrayGroup
      * array size required when calling `getRaw`
      */
     size_t size() const;
-
-    SGEGGrayGroup& operator=(const SGEGGrayGroup& other);
 };
 
 

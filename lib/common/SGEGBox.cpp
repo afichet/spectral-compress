@@ -98,6 +98,7 @@ size_t read_vector(const uint8_t data[], std::vector<T>& vec)
 
 SGEGSpectralGroup::SGEGSpectralGroup() {}
 
+
 SGEGSpectralGroup::SGEGSpectralGroup(const SGEGSpectralGroup& other)
     : root_name(other.root_name)
     , layer_indices(other.layer_indices)
@@ -106,8 +107,10 @@ SGEGSpectralGroup::SGEGSpectralGroup(const SGEGSpectralGroup& other)
     , maxs(other.maxs)
     , global_min(other.global_min)
     , global_max(other.global_max)
+    , method(other.method)
 {
 }
+
 
 size_t SGEGSpectralGroup::getRaw(uint8_t data[]) const
 {
@@ -120,6 +123,7 @@ size_t SGEGSpectralGroup::getRaw(uint8_t data[]) const
     offset += write_vector(maxs, data + offset);
     offset += write_value(global_min, data + offset);
     offset += write_value(global_max, data + offset);
+    offset += write_value(method, data + offset);
 
     return offset;
 }
@@ -136,6 +140,7 @@ size_t SGEGSpectralGroup::fromRaw(const uint8_t data[])
     offset += read_vector(data + offset, maxs);
     offset += read_value(data + offset, global_min);
     offset += read_value(data + offset, global_max);
+    offset += read_value(data + offset, method);
 
     return offset;
 }
@@ -155,11 +160,20 @@ size_t SGEGSpectralGroup::size() const
         + sizeof(uint32_t) // Arrays size
         + maxs.size() * sizeof(float)
         + sizeof(float)
-        + sizeof(float);
+        + sizeof(float)
+        + sizeof(SpectralStorageMethod);
 }
 
-
 // ----------------------------------------------------------------------------
+
+SGEGGrayGroup::SGEGGrayGroup() {}
+
+
+SGEGGrayGroup::SGEGGrayGroup(const SGEGGrayGroup& other)
+    : layer_name(other.layer_name)
+    , layer_index(other.layer_index)
+{
+}
 
 size_t SGEGGrayGroup::getRaw(uint8_t data[]) const
 {
@@ -189,16 +203,6 @@ size_t SGEGGrayGroup::size() const
         sizeof(uint32_t) // Array size
         + layer_name.size() * sizeof(char)
         + sizeof(uint32_t);
-}
-
-
-SGEGGrayGroup& SGEGGrayGroup::operator=(const SGEGGrayGroup& other) {
-    if (this != &other) {
-        layer_name  = other.layer_name;
-        layer_index = other.layer_index;
-    }
-
-    return *this;
 }
 
 // ----------------------------------------------------------------------------

@@ -51,22 +51,39 @@
 
 
 void decompress_spectral_framebuffer(
-    const std::vector<float>& wavelengths,
+    const SGEGSpectralGroup& sg,
     const std::vector<std::vector<float>>& compressed_moments,
-    const std::vector<float>& mins,
-    const std::vector<float>& maxs,
     std::vector<float>& spectral_framebuffer)
 {
-    const size_t n_moments = compressed_moments.size();
     const size_t n_pixels = compressed_moments[0].size();
 
-    std::vector<double> wavelengths_d(wavelengths.size());
+    size_t n_moments = 0;
+    
+    switch (sg.method) {
+        case PLAIN:
+        case BOUNDED:
+        case UNBOUNDED:
+        case UNBOUNDED_TO_BOUNDED:
+            assert(sg.layer_indices.size() == (sg.mins.size() + 1));
+            assert(sg.layer_indices.size() == (sg.maxs.size() + 1));
+            n_moments = compressed_moments.size();
+            break;
+        case UPPERBOUND:
+        case TWOBOUNDS:
+            assert(sg.layer_indices.size() - 1 == (sg.mins.size() + 1));
+            assert(sg.layer_indices.size() - 1 == (sg.maxs.size() + 1));
+            n_moments = compressed_moments.size() - 1;
+            break;
+    }
+
+    std::vector<double> wavelengths_d(sg.wavelengths.size());
     std::vector<double> compressed_moments_d(n_moments * n_pixels);
     std::vector<double> mins_d(n_moments - 1), maxs_d(n_moments - 1);
     std::vector<double> spectral_framebuffer_d;
+    std::vector<uint8_t> relative_scales;
 
-    for (size_t i = 0; i < wavelengths.size(); i++) {
-        wavelengths_d[i] = wavelengths[i];
+    for (size_t i = 0; i < sg.wavelengths.size(); i++) {
+        wavelengths_d[i] = sg.wavelengths[i];
     }
 
     for (size_t px = 0; px < n_pixels; px++) {
@@ -76,17 +93,65 @@ void decompress_spectral_framebuffer(
     }
 
     for (size_t i = 0; i < n_moments - 1; i++) {
-        mins_d[i] = mins[i];
-        maxs_d[i] = maxs[i];
+        mins_d[i] = sg.mins[i];
+        maxs_d[i] = sg.maxs[i];
     }
+    
+    switch (sg.method) {
+        case UNBOUNDED_TO_BOUNDED:
+            
+            unbounded_to_bounded_decompress_spectral_image(
+                wavelengths_d,
+                compressed_moments_d,
+                mins_d, maxs_d,
+                n_pixels, n_moments,
+                spectral_framebuffer_d
+            );
+            break;
 
-    unbounded_to_bounded_decompress_spectral_image(
-        wavelengths_d,
-        compressed_moments_d,
-        mins_d, maxs_d,
-        n_pixels, n_moments,
-        spectral_framebuffer_d
-    );
+        case UPPERBOUND:
+            relative_scales.resize(n_pixels);
+
+            for (size_t px = 0; px < n_pixels; px++) {
+                relative_scales[px] = std::numeric_limits<uint8_t>::max() * compressed_moments[n_moments][px];
+            }
+
+            upperbound_decompress_spectral_image(
+                wavelengths_d,
+                compressed_moments_d,
+                mins_d, maxs_d,
+                relative_scales,
+                sg.global_max,
+                n_pixels, n_moments,
+                spectral_framebuffer_d
+            );
+
+            break;
+
+        case TWOBOUNDS:
+            relative_scales.resize(n_pixels);
+
+            for (size_t px = 0; px < n_pixels; px++) {
+                relative_scales[px] = std::numeric_limits<uint8_t>::max() * compressed_moments[n_moments][px];
+            }
+
+            twobounds_decompress_spectral_image(
+                wavelengths_d,
+                compressed_moments_d,
+                mins_d, maxs_d,
+                relative_scales,
+                sg.global_min,
+                sg.global_max,
+                n_pixels, n_moments,
+                spectral_framebuffer_d
+            );
+
+            break;     
+
+        default:
+            std::cerr << "Unimplemented" << std::endl;
+            break;
+    }
 
     spectral_framebuffer.resize(spectral_framebuffer_d.size());
 
@@ -108,7 +173,6 @@ PixelType quantization_to_exr(size_t n_bits, size_t n_exponent_bits) {
         return PixelType::UINT;
     }
 }
-
 
 
 int main(int argc, char* argv[])
@@ -137,7 +201,6 @@ int main(int argc, char* argv[])
         std::string root_name = sg.root_name.data();
         const size_t n_moments = sg.layer_indices.size();
 
-        assert(sg.layer_indices.size() == (sg.mins.size() + 1));
         assert(sg.mins.size() == sg.maxs.size());
 
         std::vector<std::vector<float>> moments(n_moments);
@@ -148,9 +211,8 @@ int main(int argc, char* argv[])
         }
 
         decompress_spectral_framebuffer(
-            sg.wavelengths,
+            sg,
             moments,
-            sg.mins, sg.maxs,
             spectral_framebuffer
         );
 
