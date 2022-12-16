@@ -773,6 +773,16 @@ int main(int argc, char *argv[])
         log_file << log_content.str();
     }
 
+    clock_end = std::chrono::steady_clock::now();
+
+    if (log_is_active) {
+        auto diff = clock_end - clock_start;
+        log_content << "Total duration: " << std::chrono::duration<double, std::milli>(diff).count() << " ms" << std::endl;
+
+        std::ofstream log_file(log_filepath);
+        log_file << log_content.str();
+    }
+
 #ifndef NDEBUG
     // Test dump
     jxl_out.dump("jxl_dump");
