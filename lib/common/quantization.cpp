@@ -39,6 +39,7 @@
 #include <cstring>
 #include <cassert>
 
+#include "Util.h"
 
 inline double quantize_dequantize(double src, size_t n_bits)
 {
@@ -63,41 +64,6 @@ void quantize_dequantize_single_image(
     }
 }
 
-// TODO: Check this
-double error_images(
-    const std::vector<double>& reference,
-    const std::vector<double>& comparison,
-    size_t n_pixels,
-    size_t n_bands)
-{
-    double error = 0;
-
-    for (size_t px = 0; px < n_pixels; px++) {
-        double px_sum_err = 0;
-        double avg = 0;
-
-        for (size_t b = 0; b < n_bands; b++) {
-            const double ref = reference [px * n_bands + b];
-            const double cmp = comparison[px * n_bands + b] ;
-
-            const double diff = ref - cmp;
-            
-            avg += ref;
-            px_sum_err += diff * diff;
-        }
-
-        // avg /= (double)n_bands;
-
-        // if (avg > 0) {
-        //     error += std::sqrt(px_sum_err) / avg;
-        // }
-
-        error += std::sqrt(px_sum_err);
-    }
-
-    return error / (double)n_pixels;
-}
-
 
 double linear_average_err(
     const std::vector<double>& wavelengths,
@@ -119,27 +85,11 @@ double linear_average_err(
         reconst_spectral_image
     );
 
-    return error_images(
+    return Util::error_images(
         spectral_image,
         reconst_spectral_image,
         n_px, n_wl
     );
-    // for (size_t p = 0; p < n_px; p++) {
-    //     double px_err = 0;
-
-    //     if (norm_moments[p * n_wl] > 0) {
-    //         for (size_t i = 0; i < n_wl; i++) {
-    //             const double q = reconst_spectral_image[p * n_wl + i] - spectral_image[p * n_wl + i];
-    //             px_err += q * q;
-    //         }
-
-    //         px_err = std::sqrt(px_err) / norm_moments[p * n_wl];
-    //     }
-
-    //     err += px_err;
-    // }
-
-    // return err / (double)n_px;
 }
 
 
@@ -163,27 +113,11 @@ double unbounded_average_err(
         reconst_spectral_image
     );
 
-    return error_images(
+    return Util::error_images(
         spectral_image,
         reconst_spectral_image,
         n_px, n_wl
     );
-    // for (size_t p = 0; p < n_px; p++) {
-    //     double px_err = 0;
-
-    //     if (norm_moments[p * n_wl] > 0) {
-    //         for (size_t i = 0; i < n_wl; i++) {
-    //             const double q = reconst_spectral_image[p * n_wl + i] - spectral_image[p * n_wl + i];
-    //             px_err += q * q;
-    //         }
-
-    //         px_err = std::sqrt(px_err) / norm_moments[p * n_wl];
-    //     }
-
-    //     err += px_err;
-    // }
-
-    // return err / (double)n_px;
 }
 
 
@@ -207,28 +141,11 @@ double bounded_average_err(
         reconst_spectral_image
     );
 
-    return error_images(
+    return Util::error_images(
         spectral_image,
         reconst_spectral_image,
         n_px, n_wl
     );
-
-    // for (size_t p = 0; p < n_px; p++) {
-    //     double px_err = 0;
-
-    //     if (norm_moments[p * n_wl] > 0) {
-    //         for (size_t i = 0; i < n_wl; i++) {
-    //             const double q = reconst_spectral_image[p * n_wl + i] - spectral_image[p * n_wl + i];
-    //             px_err += q * q;
-    //         }
-
-    //         px_err = std::sqrt(px_err) / norm_moments[p * n_wl];
-    //     }
-
-    //     err += px_err;
-    // }
-
-    // return err / (double)n_px;
 }
 
 
@@ -252,27 +169,11 @@ double unbounded_to_bounded_average_err(
         reconst_spectral_image
     );
 
-    return error_images(
+    return Util::error_images(
         spectral_image,
         reconst_spectral_image,
         n_px, n_wl
     );
-    // for (size_t p = 0; p < n_px; p++) {
-    //     double px_err = 0;
-
-    //     if (norm_moments[p * n_wl] > 0) {
-    //         for (size_t i = 0; i < n_wl; i++) {
-    //             const double q = reconst_spectral_image[p * n_wl + i] - spectral_image[p * n_wl + i];
-    //             px_err += q * q;
-    //         }
-
-    //         px_err = std::sqrt(px_err) / norm_moments[p * n_wl];
-    //     }
-
-    //     err += px_err;
-    // }
-
-    // return err / (double)n_px;
 }
 
 template<typename T>
@@ -300,27 +201,11 @@ double upperbound_average_err(
         reconst_spectral_image
     );
 
-    return error_images(
+    return Util::error_images(
         spectral_image,
         reconst_spectral_image,
         n_px, n_wl
     );
-    // for (size_t p = 0; p < n_px; p++) {
-    //     double px_err = 0;
-
-    //     if (norm_moments[p * n_wl] > 0) {
-    //         for (size_t i = 0; i < n_wl; i++) {
-    //             const double q = reconst_spectral_image[p * n_wl + i] - spectral_image[p * n_wl + i];
-    //             px_err += q * q;
-    //         }
-
-    //         px_err = std::sqrt(px_err) / norm_moments[p * n_wl];
-    //     }
-
-    //     err += px_err;
-    // }
-
-    // return err / (double)n_px;
 }
 
 
@@ -351,27 +236,11 @@ double twobounds_average_err(
         reconst_spectral_image
     );
 
-    return error_images(
+    return Util::error_images(
         spectral_image,
         reconst_spectral_image,
         n_px, n_wl
     );
-    // for (size_t p = 0; p < n_px; p++) {
-    //     double px_err = 0;
-
-    //     if (norm_moments[p * n_wl] > 0) {
-    //         for (size_t i = 0; i < n_wl; i++) {
-    //             const double q = reconst_spectral_image[p * n_wl + i] - spectral_image[p * n_wl + i];
-    //             px_err += q * q;
-    //         }
-
-    //         px_err = std::sqrt(px_err) / norm_moments[p * n_wl];
-    //     }
-
-    //     err += px_err;
-    // }
-
-    // return err / (double)n_px;
 }
 
 

@@ -58,6 +58,7 @@ public:
         uint32_t n_bits_per_sample = 32,
         uint32_t n_exponent_bits_per_sample = 8,
         uint32_t downsampling_factor = 1,
+        float    framedistance = 0,
         const char* name = nullptr);
 
     JXLFramebuffer(
@@ -66,6 +67,7 @@ public:
         uint32_t n_bits_per_sample = 32,
         uint32_t n_exponent_bits_per_sample = 8,
         uint32_t downsampling_factor = 1,
+        float    framedistance = 0,
         const char* name = nullptr);
 
     virtual ~JXLFramebuffer();
@@ -74,6 +76,7 @@ public:
     uint32_t getBitsPerSample()  const { return _n_bits_per_sample; }
     uint32_t getExponentBitsPerSample() const { return _n_exponent_bits_per_sample; }
     uint32_t getDownsamplingFactor() const { return _downsampling_factor; }
+    float getFramedistance() const { return _framedistance; }
 
     JxlPixelFormat getPixelFormat() const { return _pixel_format; }
 
@@ -98,6 +101,7 @@ protected:
     uint32_t _n_bits_per_sample;
     uint32_t _n_exponent_bits_per_sample;
     uint32_t _downsampling_factor; // Not possible with the current state of the API
+    float    _framedistance;
 
     JxlPixelFormat _pixel_format;
 
@@ -122,9 +126,10 @@ public:
         uint32_t enc_bits_per_sample = 32,
         uint32_t enc_exponent_bits_per_sample = 8,
         uint32_t enc_downsampling_factor = 1,
+        float    enc_framedistance = .1f,
         const char* name = nullptr);
 
-    void write(const char* filename, float distance = .1f) const;
+    void write(const char* filename) const;
 
     void write(const std::string& filename, float distance = .1f) const;
 

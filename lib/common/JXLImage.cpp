@@ -73,11 +73,13 @@ JXLFramebuffer::JXLFramebuffer(
     uint32_t n_bits_per_sample,
     uint32_t n_exponent_bits_per_sample,
     uint32_t downsampling_factor,
+    float    framedistance,
     const char* name)
     : _name(nullptr)
     , _n_bits_per_sample(n_bits_per_sample)
     , _n_exponent_bits_per_sample(n_exponent_bits_per_sample)
     , _downsampling_factor(downsampling_factor)
+    , _framedistance(framedistance)
     , _pixel_format(
         {
             /* .num_channels = */ n_color_channels,
@@ -100,11 +102,13 @@ JXLFramebuffer::JXLFramebuffer(
     uint32_t n_bits_per_sample,
     uint32_t n_exponent_bits_per_sample,
     uint32_t downsampling_factor,
+    float    framedistance,
     const char* name)
     : _name(nullptr)
     , _n_bits_per_sample(n_bits_per_sample)
     , _n_exponent_bits_per_sample(n_exponent_bits_per_sample)
     , _downsampling_factor(downsampling_factor)
+    , _framedistance(framedistance)
     , _pixel_format(
         {
             /* .num_channels = */ n_color_channels,
@@ -234,6 +238,7 @@ size_t JXLImage::appendFramebuffer(
     uint32_t enc_bits_per_sample,
     uint32_t enc_exponent_bits_per_sample,
     uint32_t enc_downsampling_factor,
+    float    enc_framedistance,
     const char* name)
 {
     assert(framebuffer.size() == n_channels * _width * _height);
@@ -244,6 +249,7 @@ size_t JXLImage::appendFramebuffer(
         enc_bits_per_sample,
         enc_exponent_bits_per_sample,
         enc_downsampling_factor,
+        enc_framedistance,
         name
     );
 
@@ -255,7 +261,7 @@ size_t JXLImage::appendFramebuffer(
 }
 
 
-void JXLImage::write(const char* filename, float distance) const {
+void JXLImage::write(const char* filename) const {
     // Currently, JXL supports up to 256 framebuffers per image
     // we may need more than that so, in such scenario, we are
     // going to write multiple images
@@ -352,9 +358,9 @@ void JXLImage::write(const char* filename, float distance) const {
         JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_EFFORT, 9);
         CHECK_JXL_ENC_STATUS(status);
 
-        if (distance > 0) {
+        if (_framebuffers[start_framebuffer_idx]->getFramedistance() > 0) {
             status = JxlEncoderSetFrameLossless(frame_settings, JXL_FALSE);
-            status = JxlEncoderSetFrameDistance(frame_settings, distance);
+            status = JxlEncoderSetFrameDistance(frame_settings, _framebuffers[start_framebuffer_idx]->getFramedistance());
         } else {
             status = JxlEncoderSetFrameLossless(frame_settings, JXL_TRUE);
         }
@@ -424,9 +430,11 @@ void JXLImage::write(const char* filename, float distance) const {
             // CHECK_JXL_ENC_STATUS(status);
 
             // Set compression quality
-            if (distance > 0) {
+            // NOTE: this does absolutely nothing at the time this code was written.
+            // We expect a support for custom compression ratios in libjxl in a near future.
+            if (fb->getFramedistance() > 0) {
                 status = JxlEncoderSetFrameLossless(frame_settings, JXL_FALSE);
-                status = JxlEncoderSetFrameDistance(frame_settings, distance);
+                status = JxlEncoderSetFrameDistance(frame_settings, fb->getFramedistance());
             } else {
                 status = JxlEncoderSetFrameLossless(frame_settings, JXL_TRUE);
             }
@@ -680,6 +688,7 @@ void JXLImage::load(const char* filename)
                                 extra_info.bits_per_sample,
                                 extra_info.exponent_bits_per_sample,
                                 1,
+                                0, // TODO: The current API does not gives the used framedistance
                                 (extra_info.name_length > 0) ? layer_name.data() : nullptr
                             ));
                         }

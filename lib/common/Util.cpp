@@ -31,52 +31,43 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
+#include "Util.h"
 
+#include <vector>
+#include <string>
 #include <cstring>
 
-#include <EXRImage.h>
-#include <JXLImage.h>
-
-int main(int argc, char* argv[])
+void Util::split_extension(const char* filename, std::string& base_str, std::string& extension_str)
 {
-    if (argc < 3) {
-        std::cout << "Usage:" << std::endl;
-        std::cout << "------" << std::endl;
-        std::cout << argv[0] << " <exr_in> <jxl_out> [<framedistance> = 0.1]" << std::endl;
+    std::vector<char> base, extension;
 
-        exit(0);
+    const size_t filename_len = std::strlen(filename);
+
+    int len_base = filename_len;
+
+    while (len_base >= 0 && filename[len_base] != '.') {
+        --len_base;
     }
 
-    const char* filename_in  = argv[1];
-    const char* filename_out = argv[2];
-    const float framedistance = (argc >= 4) ? std::stof(argv[3]) : 0.1f;
+    if (len_base == -1) {
+        // No extension
+        base.resize(filename_len + 1);
+        std::memcpy(base.data(), filename, sizeof(char) * filename_len);
+        base.back() = 0;
 
-    EXRImage exr_in(filename_in);
-    JXLImage jxl_out(exr_in.width(), exr_in.height());
-    SGEGBox box;
+        extension.resize(1);
+        extension[0] = 0;
+    } else {
+        base.resize(len_base + 1);
+        std::memcpy(base.data(), filename, sizeof(char) * len_base);
+        base[len_base] = 0;
 
-    box.exr_attributes = exr_in.getAttributesData();
-
-    const std::vector<EXRFramebuffer*>& framebuffers = exr_in.getFramebuffersConst();
-
-    for (const EXRFramebuffer* fb: framebuffers) {
-        SGEGGrayGroup gg;
-        const char* layer_name = fb->getName();
-
-        gg.layer_index = jxl_out.appendFramebuffer(fb->getPixelDataConst(), 1, 32, 8, 1, framedistance, fb->getName());
-        
-        gg.layer_name.resize(std::strlen(layer_name) + 1);
-        std::memcpy(gg.layer_name.data(), layer_name, gg.layer_name.size() * sizeof(char));
-
-        box.gray_groups.push_back(gg);
+        extension.resize(filename_len - len_base + 1);
+        std::memcpy(extension.data(), &filename[len_base], sizeof(char) * extension.size());
     }
 
-    jxl_out.setBox(box);
-
-    std::cout << "Len ATTR: " << box.exr_attributes.size() << std::endl;
-
-    jxl_out.write(filename_out);
-
-    return 0;
+    base_str = std::string(base.data());
+    extension_str = std::string(extension.data());
 }
+
+

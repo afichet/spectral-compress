@@ -35,10 +35,17 @@
 
 #include <string>
 #include <map>
+#include <vector>
 #include <stdexcept>
 #include <cmath>
 #include <cstring>
 
+/**
+ * @brief Collection of utility functions
+ * 
+ * Misc. functions. Probably would be better to separate those in
+ * different groups in the future.
+ */
 class Util
 {
 public:
@@ -85,8 +92,9 @@ public:
         }
     }
 
+
     // XYZ with each component in [0..1]
-    template<class Float>
+    template<typename Float>
     static void xyz_to_Lab(const Float XYZ[3], Float Lab[3])
     {
         Float f[3];
@@ -113,7 +121,7 @@ public:
     }
 
 
-    template<class Float>
+    template<typename Float>
     static Float deltaE2000(const Float Lab_1[3], const Float Lab_2[3])
     {
         const Float L1 = Lab_1[0];
@@ -227,36 +235,44 @@ public:
             + R_T * delta_C_r * delta_H_r);
     }
 
-    static void split_extension(const char* filename, std::string& base_str, std::string& extension_str)
+
+    static void split_extension(const char* filename, std::string& base_str, std::string& extension_str);
+
+
+    // TODO: Check this
+    template<typename T>
+    static T error_images(
+        const std::vector<T>& reference,
+        const std::vector<T>& comparison,
+        size_t n_pixels,
+        size_t n_bands)
     {
-        std::vector<char> base, extension;
-        
-        const size_t filename_len = std::strlen(filename);
-        
-        int len_base = filename_len;
-        
-        while (len_base >= 0 && filename[len_base] != '.') {
-            --len_base;
+        T error = 0;
+
+        for (size_t px = 0; px < n_pixels; px++) {
+            T px_sum_err = 0;
+            T avg = 0;
+
+            for (size_t b = 0; b < n_bands; b++) {
+                const T ref = reference [px * n_bands + b];
+                const T cmp = comparison[px * n_bands + b] ;
+
+                const T diff = ref - cmp;
+                
+                avg += ref;
+                px_sum_err += diff * diff;
+            }
+
+            // avg /= (double)n_bands;
+
+            // if (avg > 0) {
+            //     error += std::sqrt(px_sum_err) / avg;
+            // }
+
+            error += std::sqrt(px_sum_err);
         }
 
-        if (len_base == -1) {
-            // No extension
-            base.resize(filename_len + 1);
-            std::memcpy(base.data(), filename, sizeof(char) * filename_len);
-            base.back() = 0;
-
-            extension.resize(1);
-            extension[0] = 0;
-        } else {
-            base.resize(len_base + 1);
-            std::memcpy(base.data(), filename, sizeof(char) * len_base);
-            base[len_base] = 0;
-
-            extension.resize(filename_len - len_base + 1);
-            std::memcpy(extension.data(), &filename[len_base], sizeof(char) * extension.size());
-        }
-
-        base_str = std::string(base.data());
-        extension_str = std::string(extension.data());
+        return error / (T)n_pixels;
     }
+
 };
