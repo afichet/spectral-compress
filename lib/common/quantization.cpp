@@ -41,13 +41,6 @@
 
 #include "Util.h"
 
-inline double quantize_dequantize(double src, size_t n_bits)
-{
-    const uint64_t v = (1 << n_bits) - 1;
-
-    return std::round(src * (double)v) / (double)v;
-}
-
 
 void quantize_dequantize_single_image(
     const std::vector<double>& src,
@@ -60,7 +53,7 @@ void quantize_dequantize_single_image(
     std::memcpy(dest.data(), src.data(), sizeof(double) * src.size());
 
     for (size_t px = 0; px < n_px; px++) {
-        dest[px * n_moments + i] = quantize_dequantize(src[px * n_moments + i], n_bits);
+        dest[px * n_moments + i] = Util::quantize_dequantize(src[px * n_moments + i], n_bits);
     }
 }
 
@@ -812,7 +805,7 @@ double unbounded_error_for_quantization_curve(
 
         for (size_t m = 1; m < n_moments; m++) {
             quantized_moments[px * n_moments + m] =
-                quantize_dequantize(
+                Util::quantize_dequantize(
                     normalized_moments[px * n_moments + m],
                     quantization_curve[m]
                 );
@@ -849,7 +842,7 @@ double bounded_error_for_quantization_curve(
 
         for (size_t m = 1; m < n_moments; m++) {
             quantized_moments[px * n_moments + m] =
-                quantize_dequantize(
+                Util::quantize_dequantize(
                     normalized_moments[px * n_moments + m],
                     quantization_curve[m]
                 );
@@ -886,7 +879,7 @@ double unbounded_to_bounded_error_for_quantization_curve(
 
         for (size_t m = 1; m < n_moments; m++) {
             quantized_moments[px * n_moments + m] =
-                quantize_dequantize(
+                Util::quantize_dequantize(
                     normalized_moments[px * n_moments + m],
                     quantization_curve[m]
                 );
@@ -925,7 +918,7 @@ double upperbound_error_for_quantization_curve(
 
         for (size_t m = 1; m < n_moments; m++) {
             quantized_moments[px * n_moments + m] =
-                quantize_dequantize(
+                Util::quantize_dequantize(
                     normalized_moments[px * n_moments + m],
                     quantization_curve[m]
                 );
@@ -967,7 +960,7 @@ double twobounds_error_for_quantization_curve(
 
         for (size_t m = 1; m < n_moments; m++) {
             quantized_moments[px * n_moments + m] =
-                quantize_dequantize(
+                Util::quantize_dequantize(
                     normalized_moments[px * n_moments + m],
                     quantization_curve[m]
                 );

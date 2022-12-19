@@ -275,4 +275,13 @@ public:
         return error / (T)n_pixels;
     }
 
+
+    template<typename T>
+    static T quantize_dequantize(T src, size_t n_bits)
+    {
+        const uint64_t v = (1 << n_bits) - 1;
+
+        return std::round(src * (T)v) / (T)v;
+    }
+
 };
