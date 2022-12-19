@@ -495,9 +495,9 @@ void JXLImage::write(const char* filename) const {
 }
 
 
-void JXLImage::write(const std::string& filename, float distance) const
+void JXLImage::write(const std::string& filename) const
 {
-    write(filename.c_str(), distance);
+    write(filename.c_str());
 }
 
 

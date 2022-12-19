@@ -1,7 +1,9 @@
 set(PUBLIC_HEADERS
     moments.h
     moments_image.h
+    moments_error.h
     quantization.h
+    jxlcompression.h
     JXLImage.h
     EXRImage.h
     EXRSpectralImage.h
@@ -11,10 +13,12 @@ set(PUBLIC_HEADERS
     Util.h
 )
 
-add_library(common STATIC 
+add_library(common STATIC
     moments.cpp
     moments_image.cpp
+    moments_error.cpp
     quantization.cpp
+    jxlcompression.cpp
     JXLImage.cpp
     EXRImage.cpp
     EXRSpectralImage.cpp
@@ -55,5 +59,3 @@ endif()
 target_include_directories(common PUBLIC ${OpenEXR_INCLUDE_DIR})
 target_link_libraries(common PUBLIC ${OpenEXR_LIBRARIES})
 target_link_libraries(common PUBLIC jxl jxl_threads Eigen3::Eigen)
-
-

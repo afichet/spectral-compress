@@ -42,6 +42,7 @@
 #include <chrono>
 #include <sstream>
 #include <fstream>
+#include <cassert>
 
 #include <OpenEXR/ImfInputFile.h>
 #include <OpenEXR/ImfChannelList.h>
@@ -57,6 +58,7 @@
 #include <moments.h>
 #include <moments_image.h>
 #include <quantization.h>
+#include <jxlcompression.h>
 
 /**
  * TODO:
@@ -74,16 +76,20 @@
 void compress_spectral_framebuffer(
     SpectralStorageMethod method,
     const SpectralFramebuffer* framebuffer,
+    uint32_t width, uint32_t height,
     int n_bits_dc,
     int n_bits_ac1,
-    std::vector<std::vector<float>>& compressed_moments,
     std::vector<int>& quantization_curve,
+    float start_compression_curve,
+    std::vector<float>& compression_curve,
+    std::vector<std::vector<float>>& compressed_moments,
     SGEGSpectralGroup& sg,
     bool log,
     std::stringstream& log_stream)
 {
     sg.method = method;
     double quantization_error;
+    double compression_error;
 
     std::chrono::time_point<std::chrono::steady_clock>  clock_start, clock_end;
 
@@ -117,7 +123,14 @@ void compress_spectral_framebuffer(
         spectral_framebuffer[i] = v;
     }
 
-    // std::chrono::tic
+    // TODO: this has to be removed and calculated on a per compression scheme basis
+    compression_curve.resize(n_moments);
+
+    for (size_t m = 0; m < n_moments; m++) {
+        compression_curve[m] = start_compression_curve;
+    }
+
+    std::cout << "[WARNING] The compression curve may be not computed!" << std::endl;
 
     switch (sg.method) {
         case LINEAR:
@@ -137,6 +150,23 @@ void compress_spectral_framebuffer(
                 clock_end = std::chrono::steady_clock::now();
                 auto diff = clock_end - clock_start;
                 log_stream << "Quantization: ";
+                log_stream << std::chrono::duration<double, std::milli>(diff).count() << " ms" << std::endl;;
+
+                clock_start = std::chrono::steady_clock::now();
+            }
+
+            compression_error = linear_compute_compression_curve(
+                spectral_wavelengths, spectral_framebuffer,
+                width, height, n_moments,
+                quantization_curve,
+                start_compression_curve,
+                compression_curve
+            );
+
+            if (log) {
+                clock_end = std::chrono::steady_clock::now();
+                auto diff = clock_end - clock_start;
+                log_stream << "Compression: ";
                 log_stream << std::chrono::duration<double, std::milli>(diff).count() << " ms" << std::endl;;
 
                 clock_start = std::chrono::steady_clock::now();
@@ -164,6 +194,16 @@ void compress_spectral_framebuffer(
                 }
 
                 log_stream << std::endl << quantization_error << std::endl;
+            }
+
+            if (log) {
+                log_stream << "Compression curve:" << std::endl;
+
+                for (const float& c : compression_curve) {
+                    log_stream << c << " ";
+                }
+
+                log_stream << std::endl << compression_error << std::endl;
             }
 
             // Copy back and implicit conversion to float
@@ -694,18 +734,25 @@ int main(int argc, char *argv[])
         std::vector<std::vector<float>> compressed_moments;
         std::vector<uint8_t> relative_scales;
         std::vector<int> quantization_curve;
+        std::vector<float> compression_curve;
 
         compress_spectral_framebuffer(
             method,
             fb,
+            exr_in.width(), exr_in.height(),
             main_n_bits,
             n_bits_start_quantization,
-            compressed_moments,
             quantization_curve,
+            frame_distance,
+            compression_curve,
+            compressed_moments,
             sg,
             log_is_active,
             log_content
         );
+
+        assert(quantization_curve.size() == compressed_moments.size());
+        assert(compression_curve.size() == compressed_moments.size());
 
         // Now we can save to JPEG XL
         for (size_t m = 0; m < compressed_moments.size(); m++) {
@@ -726,7 +773,7 @@ int main(int argc, char *argv[])
                 n_bits,
                 n_exponent_bits,
                 1,
-                frame_distance,
+                compression_curve[m],
                 fb->root_name.c_str());
 
             sg.layer_indices.push_back(idx);
@@ -762,16 +809,6 @@ int main(int argc, char *argv[])
 
     jxl_out.setBox(box);
     jxl_out.write(filename_out);
-
-    clock_end = std::chrono::steady_clock::now();
-
-    if (log_is_active) {
-        auto diff = clock_end - clock_start;
-        log_content << "Total duration: " << std::chrono::duration<double, std::milli>(diff).count() << " ms" << std::endl;
-
-        std::ofstream log_file(log_filepath);
-        log_file << log_content.str();
-    }
 
     clock_end = std::chrono::steady_clock::now();
 

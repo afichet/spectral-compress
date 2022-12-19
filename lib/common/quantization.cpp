@@ -34,12 +34,11 @@
 #include "quantization.h"
 #include "moments.h"
 #include "moments_image.h"
+#include "moments_error.h"
 
 #include <cmath>
 #include <cstring>
 #include <cassert>
-
-#include "Util.h"
 
 
 void quantize_dequantize_single_image(
@@ -56,186 +55,6 @@ void quantize_dequantize_single_image(
         dest[px * n_moments + i] = Util::quantize_dequantize(src[px * n_moments + i], n_bits);
     }
 }
-
-
-double linear_average_err(
-    const std::vector<double>& wavelengths,
-    const std::vector<double>& spectral_image,
-    size_t n_px, size_t n_moments,
-    const std::vector<double>& norm_moments,
-    const std::vector<double>& mins,
-    const std::vector<double>& maxs)
-{
-    // double err = 0;
-    const size_t n_wl = wavelengths.size();
-
-    std::vector<double> reconst_spectral_image;
-
-    linear_decompress_spectral_image(
-        wavelengths, norm_moments,
-        mins, maxs,
-        n_px, n_moments,
-        reconst_spectral_image
-    );
-
-    return Util::error_images(
-        spectral_image,
-        reconst_spectral_image,
-        n_px, n_wl
-    );
-}
-
-
-double unbounded_average_err(
-    const std::vector<double>& wavelengths,
-    const std::vector<double>& spectral_image,
-    size_t n_px, size_t n_moments,
-    const std::vector<double>& norm_moments,
-    const std::vector<double>& mins,
-    const std::vector<double>& maxs)
-{
-    // double err = 0;
-    const size_t n_wl = wavelengths.size();
-
-    std::vector<double> reconst_spectral_image;
-
-    unbounded_decompress_spectral_image(
-        wavelengths, norm_moments,
-        mins, maxs,
-        n_px, n_moments,
-        reconst_spectral_image
-    );
-
-    return Util::error_images(
-        spectral_image,
-        reconst_spectral_image,
-        n_px, n_wl
-    );
-}
-
-
-double bounded_average_err(
-    const std::vector<double>& wavelengths,
-    const std::vector<double>& spectral_image,
-    size_t n_px, size_t n_moments,
-    const std::vector<double>& norm_moments,
-    const std::vector<double>& mins,
-    const std::vector<double>& maxs)
-{
-    // double err = 0;
-    const size_t n_wl = wavelengths.size();
-
-    std::vector<double> reconst_spectral_image;
-
-    bounded_decompress_spectral_image(
-        wavelengths, norm_moments,
-        mins, maxs,
-        n_px, n_moments,
-        reconst_spectral_image
-    );
-
-    return Util::error_images(
-        spectral_image,
-        reconst_spectral_image,
-        n_px, n_wl
-    );
-}
-
-
-double unbounded_to_bounded_average_err(
-    const std::vector<double>& wavelengths,
-    const std::vector<double>& spectral_image,
-    size_t n_px, size_t n_moments,
-    const std::vector<double>& norm_moments,
-    const std::vector<double>& mins,
-    const std::vector<double>& maxs)
-{
-    // double err = 0;
-    const size_t n_wl = wavelengths.size();
-
-    std::vector<double> reconst_spectral_image;
-
-    unbounded_to_bounded_decompress_spectral_image(
-        wavelengths, norm_moments,
-        mins, maxs,
-        n_px, n_moments,
-        reconst_spectral_image
-    );
-
-    return Util::error_images(
-        spectral_image,
-        reconst_spectral_image,
-        n_px, n_wl
-    );
-}
-
-template<typename T>
-double upperbound_average_err(
-    const std::vector<double>& wavelengths,
-    const std::vector<double>& spectral_image,
-    size_t n_px, size_t n_moments,
-    const std::vector<double>& norm_moments,
-    const std::vector<double>& mins,
-    const std::vector<double>& maxs,
-    const std::vector<T>& relative_scales,
-    double global_max)
-{
-    // double err = 0;
-    const size_t n_wl = wavelengths.size();
-
-    std::vector<double> reconst_spectral_image;
-
-    upperbound_decompress_spectral_image(
-        wavelengths, norm_moments,
-        mins, maxs,
-        relative_scales,
-        global_max,
-        n_px, n_moments,
-        reconst_spectral_image
-    );
-
-    return Util::error_images(
-        spectral_image,
-        reconst_spectral_image,
-        n_px, n_wl
-    );
-}
-
-
-template<typename T>
-double twobounds_average_err(
-    const std::vector<double>& wavelengths,
-    const std::vector<double>& spectral_image,
-    size_t n_px, size_t n_moments,
-    const std::vector<double>& norm_moments,
-    const std::vector<double>& mins,
-    const std::vector<double>& maxs,
-    const std::vector<T>& relative_scales,
-    double global_min,
-    double global_max)
-{
-    // double err = 0;
-    const size_t n_wl = wavelengths.size();
-
-    std::vector<double> reconst_spectral_image;
-
-    twobounds_decompress_spectral_image(
-        wavelengths, norm_moments,
-        mins, maxs,
-        relative_scales,
-        global_min,
-        global_max,
-        n_px, n_moments,
-        reconst_spectral_image
-    );
-
-    return Util::error_images(
-        spectral_image,
-        reconst_spectral_image,
-        n_px, n_wl
-    );
-}
-
 
 /*****************************************************************************/
 /* Create quantization curves                                                */
@@ -284,7 +103,8 @@ double linear_compute_quantization_curve(
     for (size_t m = 2; m < n_moments; m++) {
         quantization_curve[m] = quantization_curve[m - 1];
 
-        for (size_t n_bits = quantization_curve[m]; n_bits > 0; n_bits--) {
+        // TODO: I suspect 1 can be skipped in the initialization...
+        for (size_t n_bits = quantization_curve[m] - 1; n_bits > 0; n_bits--) {
             quantize_dequantize_single_image(
                 norm_moments,
                 n_px, n_moments,
@@ -292,7 +112,7 @@ double linear_compute_quantization_curve(
                 m, n_bits
             );
 
-            double curr_err = linear_average_err(
+            const double curr_err = linear_average_err(
                 wavelengths,
                 spectral_image,
                 n_px, n_moments,
@@ -370,7 +190,7 @@ double unbounded_compute_quantization_curve(
                 m, n_bits
             );
 
-            double curr_err = unbounded_average_err(
+            const double curr_err = unbounded_average_err(
                 wavelengths,
                 spectral_image,
                 n_px, n_moments,
@@ -451,7 +271,7 @@ double bounded_compute_quantization_curve(
                 m, n_bits
             );
 
-            double curr_err = bounded_average_err(
+            const double curr_err = bounded_average_err(
                 wavelengths,
                 spectral_image,
                 n_px,
@@ -531,7 +351,7 @@ double unbounded_to_bounded_compute_quantization_curve(
                 m, n_bits
             );
 
-            double curr_err = unbounded_to_bounded_average_err(
+            const double curr_err = unbounded_to_bounded_average_err(
                 wavelengths,
                 spectral_image,
                 n_px, n_moments,
@@ -618,7 +438,7 @@ double upperbound_compute_quantization_curve(
                 m, n_bits
             );
 
-            double curr_err = upperbound_average_err(
+            const double curr_err = upperbound_average_err(
                 wavelengths,
                 spectral_image,
                 n_px, n_moments,
@@ -711,7 +531,7 @@ double twobounds_compute_quantization_curve(
                 m, n_bits
             );
 
-            double curr_err = twobounds_average_err(
+            const double curr_err = twobounds_average_err(
                 wavelengths,
                 spectral_image,
                 n_px, n_moments,
@@ -768,7 +588,7 @@ double linear_error_for_quantization_curve(
 
         for (size_t m = 1; m < n_moments; m++) {
             quantized_moments[px * n_moments + m] =
-                quantize_dequantize(
+                Util::quantize_dequantize(
                     normalized_moments[px * n_moments + m],
                     quantization_curve[m]
                 );
