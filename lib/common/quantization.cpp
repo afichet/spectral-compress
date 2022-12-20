@@ -103,7 +103,6 @@ double linear_compute_quantization_curve(
     for (size_t m = 2; m < n_moments; m++) {
         quantization_curve[m] = quantization_curve[m - 1];
 
-        // TODO: I suspect 1 can be skipped in the initialization...
         for (size_t n_bits = quantization_curve[m] - 1; n_bits > 0; n_bits--) {
             quantize_dequantize_single_image(
                 norm_moments,
@@ -182,7 +181,7 @@ double unbounded_compute_quantization_curve(
     for (size_t m = 2; m < n_moments; m++) {
         quantization_curve[m] = quantization_curve[m - 1];
 
-        for (size_t n_bits = quantization_curve[m]; n_bits > 0; n_bits--) {
+        for (size_t n_bits = quantization_curve[m] - 1; n_bits > 0; n_bits--) {
             quantize_dequantize_single_image(
                 norm_moments,
                 n_px, n_moments,
@@ -262,7 +261,7 @@ double bounded_compute_quantization_curve(
     for (size_t m = 2; m < n_moments; m++) {
         quantization_curve[m] = quantization_curve[m - 1];
 
-        for (size_t n_bits = quantization_curve[m]; n_bits > 0; n_bits--) {
+        for (size_t n_bits = quantization_curve[m] - 1; n_bits > 0; n_bits--) {
             quantize_dequantize_single_image(
                 norm_moments,
                 n_px,
@@ -343,7 +342,7 @@ double unbounded_to_bounded_compute_quantization_curve(
     for (size_t m = 2; m < n_moments; m++) {
         quantization_curve[m] = quantization_curve[m - 1];
 
-        for (size_t n_bits = quantization_curve[m]; n_bits > 0; n_bits--) {
+        for (size_t n_bits = quantization_curve[m] - 1; n_bits > 0; n_bits--) {
             quantize_dequantize_single_image(
                 norm_moments,
                 n_px, n_moments,
@@ -430,7 +429,7 @@ double upperbound_compute_quantization_curve(
     for (size_t m = 2; m < n_moments; m++) {
         quantization_curve[m] = quantization_curve[m - 1];
 
-        for (size_t n_bits = quantization_curve[m]; n_bits > 0; n_bits--) {
+        for (size_t n_bits = quantization_curve[m] - 1; n_bits > 0; n_bits--) {
             quantize_dequantize_single_image(
                 normalized_moments_image,
                 n_px, n_moments,
@@ -523,7 +522,7 @@ double twobounds_compute_quantization_curve(
     for (size_t m = 2; m < n_moments; m++) {
         quantization_curve[m] = quantization_curve[m - 1];
 
-        for (size_t n_bits = quantization_curve[m]; n_bits > 0; n_bits--) {
+        for (size_t n_bits = quantization_curve[m] - 1; n_bits > 0; n_bits--) {
             quantize_dequantize_single_image(
                 normalized_moments_image,
                 n_px, n_moments,
