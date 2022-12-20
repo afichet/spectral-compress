@@ -31,7 +31,7 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "jxlcompression.h"
+#include "curve_compression.h"
 
 #include <jxl/encode.h>
 #include <jxl/encode_cxx.h>

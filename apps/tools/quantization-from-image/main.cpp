@@ -40,7 +40,7 @@
 
 #include <moments.h>
 #include <moments_image.h>
-#include <quantization.h>
+#include <curve_quantization.h>
 #include <Util.h>
 #include <SpectrumConverter.h>
 #include <EXRSpectralImage.h>

@@ -57,8 +57,8 @@
 
 #include <moments.h>
 #include <moments_image.h>
-#include <quantization.h>
-#include <jxlcompression.h>
+#include <curve_quantization.h>
+#include <curve_compression.h>
 
 /**
  * TODO:

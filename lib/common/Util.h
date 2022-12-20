@@ -42,7 +42,7 @@
 
 /**
  * @brief Collection of utility functions
- * 
+ *
  * Misc. functions. Probably would be better to separate those in
  * different groups in the future.
  */
@@ -258,16 +258,16 @@ public:
                 const T cmp = comparison[px * n_bands + b] ;
 
                 const T diff = ref - cmp;
-                
+
                 avg += ref;
                 px_sum_err += diff * diff;
             }
 
-            // avg /= (double)n_bands;
+            avg /= (double)n_bands;
 
-            // if (avg > 0) {
-            //     error += std::sqrt(px_sum_err) / avg;
-            // }
+            if (avg > 0) {
+                error += std::sqrt(px_sum_err) / avg;
+            }
 
             error += std::sqrt(px_sum_err);
         }

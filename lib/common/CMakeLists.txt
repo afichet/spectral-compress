@@ -2,8 +2,8 @@ set(PUBLIC_HEADERS
     moments.h
     moments_image.h
     moments_error.h
-    quantization.h
-    jxlcompression.h
+    curve_quantization.h
+    curve_compression.h
     JXLImage.h
     EXRImage.h
     EXRSpectralImage.h
@@ -17,8 +17,8 @@ add_library(common STATIC
     moments.cpp
     moments_image.cpp
     moments_error.cpp
-    quantization.cpp
-    jxlcompression.cpp
+    curve_quantization.cpp
+    curve_compression.cpp
     JXLImage.cpp
     EXRImage.cpp
     EXRSpectralImage.cpp

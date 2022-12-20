@@ -31,7 +31,7 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "quantization.h"
+#include "curve_quantization.h"
 #include "moments.h"
 #include "moments_image.h"
 #include "moments_error.h"

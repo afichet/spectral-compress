@@ -34,7 +34,7 @@
 #include <iostream>
 
 #include <EXRSpectralImage.h>
-#include <quantization.h>
+#include <curve_quantization.h>
 #include <sstream>
 #include <fstream>
 #include <chrono>
