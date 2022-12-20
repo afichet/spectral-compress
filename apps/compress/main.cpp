@@ -99,7 +99,9 @@ void compress_spectral_framebuffer(
     double global_min_d, global_max_d;
 
     const uint32_t n_moments = framebuffer->wavelengths_nm.size();
-    const uint32_t n_pixels = framebuffer->image_data.size() / framebuffer->wavelengths_nm.size();
+    const uint32_t n_pixels = width * height;
+
+    assert(framebuffer->image_data.size() == n_moments * n_pixels);
 
     // TODO: this shall be revisited
     // TODO: this is invalid for polarization layers that can be negative
@@ -123,20 +125,11 @@ void compress_spectral_framebuffer(
         spectral_framebuffer[i] = v;
     }
 
-    // TODO: this has to be removed and calculated on a per compression scheme basis
-    compression_curve.resize(n_moments);
-
-    for (size_t m = 0; m < n_moments; m++) {
-        compression_curve[m] = start_compression_curve;
-    }
-
-    std::cout << "[WARNING] The compression curve may be not computed!" << std::endl;
+    double quantization_curve_timing, compression_curve_timing, compression_timing;
 
     switch (sg.method) {
         case LINEAR:
-            if (log) {
-                clock_start = std::chrono::steady_clock::now();
-            }
+            clock_start = std::chrono::steady_clock::now();
 
             // Create a quantization profil
             quantization_error = linear_compute_quantization_curve(
@@ -146,14 +139,11 @@ void compress_spectral_framebuffer(
                 quantization_curve
             );
 
-            if (log) {
-                clock_end = std::chrono::steady_clock::now();
-                auto diff = clock_end - clock_start;
-                log_stream << "Quantization: ";
-                log_stream << std::chrono::duration<double, std::milli>(diff).count() << " ms" << std::endl;;
+            assert(quantization_curve.size() == n_moments);
 
-                clock_start = std::chrono::steady_clock::now();
-            }
+            clock_end = std::chrono::steady_clock::now();
+            quantization_curve_timing = std::chrono::duration<double, std::milli>(clock_end - clock_start).count();
+            clock_start = std::chrono::steady_clock::now();
 
             compression_error = linear_compute_compression_curve(
                 spectral_wavelengths, spectral_framebuffer,
@@ -163,14 +153,11 @@ void compress_spectral_framebuffer(
                 compression_curve
             );
 
-            if (log) {
-                clock_end = std::chrono::steady_clock::now();
-                auto diff = clock_end - clock_start;
-                log_stream << "Compression: ";
-                log_stream << std::chrono::duration<double, std::milli>(diff).count() << " ms" << std::endl;;
+            assert(compression_curve.size() == n_moments);
 
-                clock_start = std::chrono::steady_clock::now();
-            }
+            clock_end = std::chrono::steady_clock::now();
+            compression_curve_timing = std::chrono::duration<double, std::milli>(clock_end - clock_start).count();
+            clock_start = std::chrono::steady_clock::now();
 
             linear_compress_spectral_image(
                 spectral_wavelengths, spectral_framebuffer,
@@ -179,32 +166,13 @@ void compress_spectral_framebuffer(
                 mins_d, maxs_d
             );
 
-            if (log) {
-                clock_end = std::chrono::steady_clock::now();
-                auto diff = clock_end - clock_start;
-                log_stream << "Compression: ";
-                log_stream << std::chrono::duration<double, std::milli>(diff).count() << " ms" << std::endl;;
-            }
+            assert(compressed_moments_d.size() == n_pixels * n_moments);
+            assert(mins_d.size() == n_moments - 1);
+            assert(maxs_d.size() == n_moments - 1);
 
-            if (log) {
-                log_stream << "Quantization curve:" << std::endl;
-
-                for (const int& q : quantization_curve) {
-                    log_stream << q << " ";
-                }
-
-                log_stream << std::endl << quantization_error << std::endl;
-            }
-
-            if (log) {
-                log_stream << "Compression curve:" << std::endl;
-
-                for (const float& c : compression_curve) {
-                    log_stream << c << " ";
-                }
-
-                log_stream << std::endl << compression_error << std::endl;
-            }
+            clock_end = std::chrono::steady_clock::now();
+            compression_timing = std::chrono::duration<double, std::milli>(clock_end - clock_start).count();
+            clock_start = std::chrono::steady_clock::now();
 
             // Copy back and implicit conversion to float
             compressed_moments.resize(n_moments);
@@ -239,14 +207,25 @@ void compress_spectral_framebuffer(
                 quantization_curve
             );
 
-            if (log) {
-                clock_end = std::chrono::steady_clock::now();
-                auto diff = clock_end - clock_start;
-                log_stream << "Quantization: ";
-                log_stream << std::chrono::duration<double, std::milli>(diff).count() << " ms" << std::endl;;
+            assert(quantization_curve.size() == n_moments);
 
-                clock_start = std::chrono::steady_clock::now();
-            }
+            clock_end = std::chrono::steady_clock::now();
+            quantization_curve_timing = std::chrono::duration<double, std::milli>(clock_end - clock_start).count();
+            clock_start = std::chrono::steady_clock::now();
+
+            compression_error = bounded_compute_compression_curve(
+                spectral_wavelengths, spectral_framebuffer,
+                width, height, n_moments,
+                quantization_curve,
+                start_compression_curve,
+                compression_curve
+            );
+
+            assert(compression_curve.size() == n_moments);
+
+            clock_end = std::chrono::steady_clock::now();
+            compression_curve_timing = std::chrono::duration<double, std::milli>(clock_end - clock_start).count();
+            clock_start = std::chrono::steady_clock::now();
 
             bounded_compress_spectral_image(
                 spectral_wavelengths, spectral_framebuffer,
@@ -255,22 +234,13 @@ void compress_spectral_framebuffer(
                 mins_d, maxs_d
             );
 
-            if (log) {
-                clock_end = std::chrono::steady_clock::now();
-                auto diff = clock_end - clock_start;
-                log_stream << "Compression: ";
-                log_stream << std::chrono::duration<double, std::milli>(diff).count() << " ms" << std::endl;;
-            }
+            assert(compressed_moments_d.size() == n_pixels * n_moemnts);
+            assert(mins_d.size() == n_moments - 1);
+            assert(maxs_d.size() == n_moments - 1);
 
-            if (log) {
-                log_stream << "Quantization curve:" << std::endl;
-
-                for (const int& q : quantization_curve) {
-                    log_stream << q << " ";
-                }
-
-                log_stream << std::endl << quantization_error << std::endl;
-            }
+            clock_end = std::chrono::steady_clock::now();
+            compression_timing = std::chrono::duration<double, std::milli>(clock_end - clock_start).count();
+            clock_start = std::chrono::steady_clock::now();
 
             // Copy back and implicit conversion to float
             compressed_moments.resize(n_moments);
@@ -305,14 +275,25 @@ void compress_spectral_framebuffer(
                 quantization_curve
             );
 
-            if (log) {
-                clock_end = std::chrono::steady_clock::now();
-                auto diff = clock_end - clock_start;
-                log_stream << "Quantization: ";
-                log_stream << std::chrono::duration<double, std::milli>(diff).count() << " ms" << std::endl;;
+            assert(quantization_curve.size() == n_moments);
 
-                clock_start = std::chrono::steady_clock::now();
-            }
+            clock_end = std::chrono::steady_clock::now();
+            quantization_curve_timing = std::chrono::duration<double, std::milli>(clock_end - clock_start).count();
+            clock_start = std::chrono::steady_clock::now();
+
+            compression_error = unbounded_compute_compression_curve(
+                spectral_wavelengths, spectral_framebuffer,
+                width, height, n_moments,
+                quantization_curve,
+                start_compression_curve,
+                compression_curve
+            );
+
+            assert(compression_curve.size() == n_moments);
+
+            clock_end = std::chrono::steady_clock::now();
+            compression_curve_timing = std::chrono::duration<double, std::milli>(clock_end - clock_start).count();
+            clock_start = std::chrono::steady_clock::now();
 
             unbounded_compress_spectral_image(
                 spectral_wavelengths, spectral_framebuffer,
@@ -321,22 +302,13 @@ void compress_spectral_framebuffer(
                 mins_d, maxs_d
             );
 
-            if (log) {
-                clock_end = std::chrono::steady_clock::now();
-                auto diff = clock_end - clock_start;
-                log_stream << "Compression: ";
-                log_stream << std::chrono::duration<double, std::milli>(diff).count() << " ms" << std::endl;;
-            }
+            assert(compressed_moments_d.size() == n_pixels * n_moments);
+            assert(mins_d.size() == n_moments - 1);
+            assert(maxs_d.size() == n_moments - 1);
 
-            if (log) {
-                log_stream << "Quantization curve:" << std::endl;
-
-                for (const int& q : quantization_curve) {
-                    log_stream << q << " ";
-                }
-
-                log_stream << std::endl << quantization_error << std::endl;
-            }
+            clock_end = std::chrono::steady_clock::now();
+            compression_timing = std::chrono::duration<double, std::milli>(clock_end - clock_start).count();
+            clock_start = std::chrono::steady_clock::now();
 
             // Copy back and implicit conversion to float
             compressed_moments.resize(n_moments);
@@ -371,14 +343,25 @@ void compress_spectral_framebuffer(
                 quantization_curve
             );
 
-            if (log) {
-                clock_end = std::chrono::steady_clock::now();
-                auto diff = clock_end - clock_start;
-                log_stream << "Quantization: ";
-                log_stream << std::chrono::duration<double, std::milli>(diff).count() << " ms" << std::endl;;
+            assert(quantization_curve.size() == n_moments);
 
-                clock_start = std::chrono::steady_clock::now();
-            }
+            clock_end = std::chrono::steady_clock::now();
+            quantization_curve_timing = std::chrono::duration<double, std::milli>(clock_end - clock_start).count();
+            clock_start = std::chrono::steady_clock::now();
+
+            compression_error = unbounded_to_bounded_compute_compression_curve(
+                spectral_wavelengths, spectral_framebuffer,
+                width, height, n_moments,
+                quantization_curve,
+                start_compression_curve,
+                compression_curve
+            );
+
+            assert(compression_curve.size() == n_moments);
+
+            clock_end = std::chrono::steady_clock::now();
+            compression_curve_timing = std::chrono::duration<double, std::milli>(clock_end - clock_start).count();
+            clock_start = std::chrono::steady_clock::now();
 
             unbounded_to_bounded_compress_spectral_image(
                 spectral_wavelengths, spectral_framebuffer,
@@ -387,22 +370,13 @@ void compress_spectral_framebuffer(
                 mins_d, maxs_d
             );
 
-            if (log) {
-                clock_end = std::chrono::steady_clock::now();
-                auto diff = clock_end - clock_start;
-                log_stream << "Compression: ";
-                log_stream << std::chrono::duration<double, std::milli>(diff).count() << " ms" << std::endl;;
-            }
+            assert(compressed_moments_d.size() == n_pixels * n_moments);
+            assert(mins_d.size() == n_moments - 1);
+            assert(maxs_d.size() == n_moments - 1);
 
-            if (log) {
-                log_stream << "Quantization curve:" << std::endl;
-
-                for (const int& q : quantization_curve) {
-                    log_stream << q << " ";
-                }
-
-                log_stream << std::endl << quantization_error << std::endl;
-            }
+            clock_end = std::chrono::steady_clock::now();
+            compression_timing = std::chrono::duration<double, std::milli>(clock_end - clock_start).count();
+            clock_start = std::chrono::steady_clock::now();
 
             // Copy back and implicit conversion to float
             compressed_moments.resize(n_moments);
@@ -438,14 +412,25 @@ void compress_spectral_framebuffer(
                 quantization_curve
             );
 
-            if (log) {
-                clock_end = std::chrono::steady_clock::now();
-                auto diff = clock_end - clock_start;
-                log_stream << "Quantization: ";
-                log_stream << std::chrono::duration<double, std::milli>(diff).count() << " ms" << std::endl;;
+            assert(quantization_curve.size() == n_moments);
 
-                clock_start = std::chrono::steady_clock::now();
-            }
+            clock_end = std::chrono::steady_clock::now();
+            quantization_curve_timing = std::chrono::duration<double, std::milli>(clock_end - clock_start).count();
+            clock_start = std::chrono::steady_clock::now();
+
+            compression_error = upperbound_compute_compression_curve(
+                spectral_wavelengths, spectral_framebuffer,
+                width, height, n_moments,
+                quantization_curve,
+                start_compression_curve,
+                compression_curve
+            );
+
+            assert(compression_curve.size() == n_moments);
+
+            clock_end = std::chrono::steady_clock::now();
+            compression_curve_timing = std::chrono::duration<double, std::milli>(clock_end - clock_start).count();
+            clock_start = std::chrono::steady_clock::now();
 
             upperbound_compress_spectral_image(
                 spectral_wavelengths, spectral_framebuffer,
@@ -456,22 +441,14 @@ void compress_spectral_framebuffer(
                 global_max_d
             );
 
-            if (log) {
-                clock_end = std::chrono::steady_clock::now();
-                auto diff = clock_end - clock_start;
-                log_stream << "Compression: ";
-                log_stream << std::chrono::duration<double, std::milli>(diff).count() << " ms" << std::endl;;
-            }
+            assert(compressed_moments_d.size() == n_pixels * n_moemnts);
+            assert(mins_d.size() == n_moments - 1);
+            assert(maxs_d.size() == n_moments - 1);
+            assert(relative_scales.size() == n_pixels);
 
-            if (log) {
-                log_stream << "Quantization curve:" << std::endl;
-
-                for (const int& q : quantization_curve) {
-                    log_stream << q << " ";
-                }
-
-                log_stream << std::endl << quantization_error << std::endl;
-            }
+            clock_end = std::chrono::steady_clock::now();
+            compression_timing = std::chrono::duration<double, std::milli>(clock_end - clock_start).count();
+            clock_start = std::chrono::steady_clock::now();
 
             // Copy back and implicit conversion to float
             compressed_moments.resize(n_moments + 1);
@@ -517,14 +494,25 @@ void compress_spectral_framebuffer(
                 quantization_curve
             );
 
-            if (log) {
-                clock_end = std::chrono::steady_clock::now();
-                auto diff = clock_end - clock_start;
-                log_stream << "Quantization: ";
-                log_stream << std::chrono::duration<double, std::milli>(diff).count() << " ms" << std::endl;;
+            assert(quantization_curve.size() == n_moments);
 
-                clock_start = std::chrono::steady_clock::now();
-            }
+            clock_end = std::chrono::steady_clock::now();
+            quantization_curve_timing = std::chrono::duration<double, std::milli>(clock_end - clock_start).count();
+            clock_start = std::chrono::steady_clock::now();
+
+            compression_error = twobounds_compute_compression_curve(
+                spectral_wavelengths, spectral_framebuffer,
+                width, height, n_moments,
+                quantization_curve,
+                start_compression_curve,
+                compression_curve
+            );
+
+            assert(compression_curve.size() == n_moments);
+
+            clock_end = std::chrono::steady_clock::now();
+            compression_curve_timing = std::chrono::duration<double, std::milli>(clock_end - clock_start).count();
+            clock_start = std::chrono::steady_clock::now();
 
             twobounds_compress_spectral_image(
                 spectral_wavelengths, spectral_framebuffer,
@@ -536,22 +524,14 @@ void compress_spectral_framebuffer(
                 global_max_d
             );
 
-            if (log) {
-                clock_end = std::chrono::steady_clock::now();
-                auto diff = clock_end - clock_start;
-                log_stream << "Compression: ";
-                log_stream << std::chrono::duration<double, std::milli>(diff).count() << " ms" << std::endl;;
-            }
+            assert(compressed_moments_d.size() == n_pixels * n_moemnts);
+            assert(mins_d.size() == n_moments - 1);
+            assert(maxs_d.size() == n_moments - 1);
+            assert(relative_scales.size() == n_pixels);
 
-            if (log) {
-                log_stream << "Quantization curve:" << std::endl;
-
-                for (const int& q : quantization_curve) {
-                    log_stream << q << " ";
-                }
-
-                log_stream << std::endl << quantization_error << std::endl;
-            }
+            clock_end = std::chrono::steady_clock::now();
+            compression_timing = std::chrono::duration<double, std::milli>(clock_end - clock_start).count();
+            clock_start = std::chrono::steady_clock::now();
 
             // Copy back and implicit conversion to float
             compressed_moments.resize(n_moments + 1);
@@ -583,6 +563,25 @@ void compress_spectral_framebuffer(
             sg.global_min = global_min_d;
             sg.global_max = global_max_d;
             break;
+    }
+
+    if (log) {
+        log_stream << "Quantization curve:" << std::endl;
+        for (const int& q : quantization_curve) {
+            log_stream << q << " ";
+        }
+        log_stream << std::endl << quantization_error << std::endl;
+
+        log_stream << "Compression curve:" << std::endl;
+        for (const float& c : compression_curve) {
+            log_stream << c << " ";
+        }
+        log_stream << std::endl << compression_error << std::endl;
+
+        log_stream << "Timings:" << std::endl;
+        log_stream << "Quantization curve: " << quantization_curve_timing << " ms" << std::endl;
+        log_stream << "Compression curve:  " << compression_curve_timing << " ms" << std::endl;
+        log_stream << "Compression:        " << compression_timing << " ms" << std::endl;
     }
 }
 
