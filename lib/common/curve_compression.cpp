@@ -331,8 +331,8 @@ double linear_compute_compression_curve(
 
     std::vector<double> normalized_moments;
     std::vector<double> mins, maxs;
-    const float frame_distance_inc = 0.3f;
-    const float max_frame_distance = 3.0f;
+    const float frame_distance_inc = 0.1f;
+    const float max_frame_distance = 15.0f;
 
     linear_compress_spectral_image(
         wavelengths, spectral_image,
@@ -379,13 +379,7 @@ double linear_compute_compression_curve(
         mins, maxs
     );
 
-    std::cout << "Base ERR: " << base_err << std::endl;
-
-    // #pragma omp parallel for
-    // We can make an optim here:
-    // We try to find the highest bound each time
     for (size_t m = 2; m < n_moments; m++) {
-        std::cout << "Moment " << m << " trying: " << std::endl;
         compression_curve[m] = compression_curve[m - 1];
 
         for (float frame_distance = compression_curve[m] + frame_distance_inc; frame_distance <= max_frame_distance; frame_distance += frame_distance_inc) {
@@ -404,8 +398,6 @@ double linear_compute_compression_curve(
                 compressed_decompressed_moments,
                 mins, maxs
             );
-
-            std::cout << "  " << frame_distance << " - ERR: " << curr_err << std::endl;
 
             if (curr_err >= base_err) {
                 break;

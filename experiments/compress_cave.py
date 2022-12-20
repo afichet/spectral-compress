@@ -9,8 +9,8 @@ path_out  = 'cave'
 if not os.path.exists(path_out):
     os.mkdir(path_out)
 
-techniques = ['linear', 'unbounded', 'unbounded_to_bounded', 'upperbound', 'twobounds']
-start_bits = [6, 8, 10, 12]
+techniques = ['linear'] #, 'unbounded', 'unbounded_to_bounded', 'upperbound', 'twobounds']
+start_bits = [8]#[6, 8, 10, 12]
 
 
 for d in os.listdir(path_data):
@@ -34,6 +34,6 @@ for d in os.listdir(path_data):
                 os.mkdir(path_bits)
 
             output_file = os.path.join(path_bits, d[:-4]) + '.jxl'
+            log_file = os.path.join(path_bits, d[:-4] + '.txt')
             print(spectral_image, output_file)
-            subprocess.run([path_bin, spectral_image, output_file, '-m', tech])
-            
+            subprocess.run([path_bin, spectral_image, output_file, '-m', tech, '-l', log_file])
