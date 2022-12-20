@@ -311,6 +311,63 @@ void compress_decompress_single_image(
     }
 }
 
+
+void compress_decompress_image(
+    const std::vector<double>& input_framebuffers,
+    std::vector<double>& output_framebuffers,
+    uint32_t width, uint32_t height,
+    size_t n_moments,
+    const std::vector<int>& quantization_curve,
+    const std::vector<float>& compression_curve)
+{
+    assert(intput_framebuffers.size() == width * height * n_moments);
+    assert(quantization_curve.size() == n_moments);
+    assert(compression_curve.size() == n_moments);
+
+    output_framebuffers.resize(width * height * n_moments);
+
+    // JXL compression for every layers
+    #pragma omp parallel for
+    for (size_t m = 0; m < n_moments; m++) {
+        std::vector<float> framebuffer_in(width * height);
+        std::vector<float> framebuffer_out;
+
+        // Copy cast to float
+        for (size_t px = 0; px < width * height; px++) {
+            framebuffer_in[px] = input_framebuffers[px * n_moments + m];
+        }
+
+        // Compress / decompress
+        const int bps = quantization_curve[m];
+        int exponent_bits = 0;
+
+        if (m == 0) {
+            if (bps == 16) {
+                exponent_bits = 5;
+            } else if (bps == 32) {
+                exponent_bits = 8;
+            } else {
+                throw std::runtime_error("Unknown quantization ratio for 0th moment");
+            }
+        }
+
+        // TODO: double check that the quantization is applied
+        compress_decompress_framebuffer(
+            framebuffer_in,
+            framebuffer_out,
+            width, height,
+            bps, exponent_bits,
+            compression_curve[m],
+            1);
+
+        // Copy cast to float
+        for (size_t px = 0; px < width * height; px++) {
+            output_framebuffers[px * n_moments + m] = framebuffer_out[px];
+        }
+    }
+}
+
+
 /*****************************************************************************/
 /* Create compression curves                                                 */
 /*****************************************************************************/
@@ -331,6 +388,7 @@ double linear_compute_compression_curve(
 
     std::vector<double> normalized_moments;
     std::vector<double> mins, maxs;
+
     const float frame_distance_inc = 0.1f;
     const float max_frame_distance = 15.0f;
 
@@ -341,6 +399,11 @@ double linear_compute_compression_curve(
         mins, maxs
     );
 
+    assert(normalized_moments.size() == width * heigth * n_moments);
+    assert(mins.size() == n_moments - 1);
+    assert(maxs.size() == n_moments - 1);
+
+    // TODO: Check if this is really necessary, it is skipped in other parts of the code
     // Quantize / dequantize each moment based on the provided quantization
     // curve
     std::vector<double> quantized_moments(normalized_moments.size());
@@ -371,6 +434,8 @@ double linear_compute_compression_curve(
         1, compression_curve[1]
     );
 
+    assert(compress_decompress_framebuffer.size() == quantized_moments.size());
+
     const double base_err = linear_average_err(
         wavelengths,
         spectral_image,
@@ -390,6 +455,8 @@ double linear_compute_compression_curve(
                 quantization_curve[m],
                 m, frame_distance
             );
+
+            assert(compressed_decompressed_moments.size() == quantized_moments.size());
 
             const double curr_err = linear_average_err(
                 wavelengths,
@@ -419,6 +486,602 @@ double linear_compute_compression_curve(
 }
 
 
+double unbounded_compute_compression_curve(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    uint32_t width, uint32_t height,
+    size_t n_moments,
+    const std::vector<int>& quantization_curve,
+    float start_compression_curve,
+    std::vector<float>& compression_curve)
+{
+    assert(spectral_image.size() == width * height * wavelengths.size());
+    assert(quantization_curve.size() == n_moments);
+
+    compression_curve.resize(n_moments);
+
+    std::vector<double> normalized_moments;
+    std::vector<double> mins, maxs;
+
+    const float frame_distance_inc = 0.1f;
+    const float max_frame_distance = 15.0f;
+
+    unbounded_compress_spectral_image(
+        wavelengths, spectral_image,
+        width * height, n_moments,
+        normalized_moments,
+        mins, maxs
+    );
+
+    assert(normalized_moments.size() == width * heigth * n_moments);
+    assert(mins.size() == n_moments - 1);
+    assert(maxs.size() == n_moments - 1);
+
+    // TODO: Check if this is really necessary, it is skipped in other parts of the code
+    // Quantize / dequantize each moment based on the provided quantization
+    // curve
+    std::vector<double> quantized_moments(normalized_moments.size());
+
+    for (size_t px = 0; px < width * height; px++) {
+        // We ignore moment 0
+        quantized_moments[px * n_moments + 0] = normalized_moments[px * n_moments + 0];
+
+        for (size_t m = 1; m < n_moments; m++) {
+            quantized_moments[px * n_moments + m] =
+                Util::quantize_dequantize(
+                    normalized_moments[px * n_moments + m],
+                    quantization_curve[m]
+                );
+        }
+    }
+
+    compression_curve[0] = start_compression_curve;
+    compression_curve[1] = start_compression_curve;
+
+    std::vector<double> compressed_decompressed_moments;
+
+    compress_decompress_single_image(
+        quantized_moments,
+        compressed_decompressed_moments,
+        width, height, n_moments,
+        quantization_curve[1],
+        1, compression_curve[1]
+    );
+
+    assert(compress_decompress_framebuffer.size() == quantized_moments.size());
+
+    const double base_err = unbounded_average_err(
+        wavelengths,
+        spectral_image,
+        width * height, n_moments,
+        compressed_decompressed_moments,
+        mins, maxs
+    );
+
+    for (size_t m = 2; m < n_moments; m++) {
+        compression_curve[m] = compression_curve[m - 1];
+
+        for (float frame_distance = compression_curve[m] + frame_distance_inc; frame_distance <= max_frame_distance; frame_distance += frame_distance_inc) {
+            compress_decompress_single_image(
+                quantized_moments,
+                compressed_decompressed_moments,
+                width, height, n_moments,
+                quantization_curve[m],
+                m, frame_distance
+            );
+
+            assert(compressed_decompressed_moments.size() == quantized_moments.size());
+
+            const double curr_err = unbounded_average_err(
+                wavelengths,
+                spectral_image,
+                width * height, n_moments,
+                compressed_decompressed_moments,
+                mins, maxs
+            );
+
+            if (curr_err >= base_err) {
+                break;
+            }
+
+            compression_curve[m] = frame_distance;
+        }
+    }
+
+    return unbounded_error_for_compression_curve(
+        wavelengths, spectral_image,
+        width, height,
+        n_moments,
+        normalized_moments,
+        mins, maxs,
+        quantization_curve,
+        compression_curve
+    );
+}
+
+
+double bounded_compute_compression_curve(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    uint32_t width, uint32_t height,
+    size_t n_moments,
+    const std::vector<int>& quantization_curve,
+    float start_compression_curve,
+    std::vector<float>& compression_curve)
+{
+    assert(spectral_image.size() == width * height * wavelengths.size());
+    assert(quantization_curve.size() == n_moments);
+
+    compression_curve.resize(n_moments);
+
+    std::vector<double> normalized_moments;
+    std::vector<double> mins, maxs;
+
+    const float frame_distance_inc = 0.1f;
+    const float max_frame_distance = 15.0f;
+
+    bounded_compress_spectral_image(
+        wavelengths, spectral_image,
+        width * height, n_moments,
+        normalized_moments,
+        mins, maxs
+    );
+
+    assert(normalized_moments.size() == width * heigth * n_moments);
+    assert(mins.size() == n_moments - 1);
+    assert(maxs.size() == n_moments - 1);
+
+    // TODO: Check if this is really necessary, it is skipped in other parts of the code
+    // Quantize / dequantize each moment based on the provided quantization
+    // curve
+    std::vector<double> quantized_moments(normalized_moments.size());
+
+    for (size_t px = 0; px < width * height; px++) {
+        // We ignore moment 0
+        quantized_moments[px * n_moments + 0] = normalized_moments[px * n_moments + 0];
+
+        for (size_t m = 1; m < n_moments; m++) {
+            quantized_moments[px * n_moments + m] =
+                Util::quantize_dequantize(
+                    normalized_moments[px * n_moments + m],
+                    quantization_curve[m]
+                );
+        }
+    }
+
+    compression_curve[0] = start_compression_curve;
+    compression_curve[1] = start_compression_curve;
+
+    std::vector<double> compressed_decompressed_moments;
+
+    compress_decompress_single_image(
+        quantized_moments,
+        compressed_decompressed_moments,
+        width, height, n_moments,
+        quantization_curve[1],
+        1, compression_curve[1]
+    );
+
+    assert(compressed_decompressed_moments.size() == quantized_moments.size());
+
+    const double base_err = bounded_average_err(
+        wavelengths,
+        spectral_image,
+        width * height, n_moments,
+        compressed_decompressed_moments,
+        mins, maxs
+    );
+
+    for (size_t m = 2; m < n_moments; m++) {
+        compression_curve[m] = compression_curve[m - 1];
+
+        for (float frame_distance = compression_curve[m] + frame_distance_inc; frame_distance <= max_frame_distance; frame_distance += frame_distance_inc) {
+            compress_decompress_single_image(
+                quantized_moments,
+                compressed_decompressed_moments,
+                width, height, n_moments,
+                quantization_curve[m],
+                m, frame_distance
+            );
+
+            assert(compressed_decompressed_moments.size() == quantized_moments.size());
+
+            const double curr_err = bounded_average_err(
+                wavelengths,
+                spectral_image,
+                width * height, n_moments,
+                compressed_decompressed_moments,
+                mins, maxs
+            );
+
+            if (curr_err >= base_err) {
+                break;
+            }
+
+            compression_curve[m] = frame_distance;
+        }
+    }
+
+    return bounded_error_for_compression_curve(
+        wavelengths, spectral_image,
+        width, height,
+        n_moments,
+        normalized_moments,
+        mins, maxs,
+        quantization_curve,
+        compression_curve
+    );
+}
+
+
+double unbounded_to_bounded_compute_compression_curve(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    uint32_t width, uint32_t height,
+    size_t n_moments,
+    const std::vector<int>& quantization_curve,
+    float start_compression_curve,
+    std::vector<float>& compression_curve)
+{
+    assert(spectral_image.size() == width * height * wavelengths.size());
+    assert(quantization_curve.size() == n_moments);
+
+    compression_curve.resize(n_moments);
+
+    std::vector<double> normalized_moments;
+    std::vector<double> mins, maxs;
+
+    const float frame_distance_inc = 0.1f;
+    const float max_frame_distance = 15.0f;
+
+    unbounded_to_bounded_compress_spectral_image(
+        wavelengths, spectral_image,
+        width * height, n_moments,
+        normalized_moments,
+        mins, maxs
+    );
+
+    assert(normalized_moments.size() == width * heigth * n_moments);
+    assert(mins.size() == n_moments - 1);
+    assert(maxs.size() == n_moments - 1);
+
+    // TODO: Check if this is really necessary, it is skipped in other parts of the code
+    // Quantize / dequantize each moment based on the provided quantization
+    // curve
+    std::vector<double> quantized_moments(normalized_moments.size());
+
+    for (size_t px = 0; px < width * height; px++) {
+        // We ignore moment 0
+        quantized_moments[px * n_moments + 0] = normalized_moments[px * n_moments + 0];
+
+        for (size_t m = 1; m < n_moments; m++) {
+            quantized_moments[px * n_moments + m] =
+                Util::quantize_dequantize(
+                    normalized_moments[px * n_moments + m],
+                    quantization_curve[m]
+                );
+        }
+    }
+
+    compression_curve[0] = start_compression_curve;
+    compression_curve[1] = start_compression_curve;
+
+    std::vector<double> compressed_decompressed_moments;
+
+    compress_decompress_single_image(
+        quantized_moments,
+        compressed_decompressed_moments,
+        width, height, n_moments,
+        quantization_curve[1],
+        1, compression_curve[1]
+    );
+
+    assert(compress_decompress_framebuffer.size() == quantized_moments.size());
+
+    const double base_err = unbounded_to_bounded_average_err(
+        wavelengths,
+        spectral_image,
+        width * height, n_moments,
+        compressed_decompressed_moments,
+        mins, maxs
+    );
+
+    for (size_t m = 2; m < n_moments; m++) {
+        compression_curve[m] = compression_curve[m - 1];
+
+        for (float frame_distance = compression_curve[m] + frame_distance_inc; frame_distance <= max_frame_distance; frame_distance += frame_distance_inc) {
+            compress_decompress_single_image(
+                quantized_moments,
+                compressed_decompressed_moments,
+                width, height, n_moments,
+                quantization_curve[m],
+                m, frame_distance
+            );
+
+            assert(compressed_decompressed_moments.size() == quantized_moments.size());
+
+            const double curr_err = unbounded_to_bounded_average_err(
+                wavelengths,
+                spectral_image,
+                width * height, n_moments,
+                compressed_decompressed_moments,
+                mins, maxs
+            );
+
+            if (curr_err >= base_err) {
+                break;
+            }
+
+            compression_curve[m] = frame_distance;
+        }
+    }
+
+    return unbounded_to_bounded_error_for_compression_curve(
+        wavelengths, spectral_image,
+        width, height,
+        n_moments,
+        normalized_moments,
+        mins, maxs,
+        quantization_curve,
+        compression_curve
+    );
+}
+
+
+double upperbound_compute_compression_curve(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    uint32_t width, uint32_t height,
+    size_t n_moments,
+    const std::vector<int>& quantization_curve,
+    float start_compression_curve,
+    std::vector<float>& compression_curve)
+{
+    assert(spectral_image.size() == width * height * wavelengths.size());
+    assert(quantization_curve.size() == n_moments);
+
+    compression_curve.resize(n_moments);
+
+    std::vector<double> normalized_moments;
+    std::vector<double> mins, maxs;
+    std::vector<uint8_t> relative_scales;
+    double global_max;
+
+    const float frame_distance_inc = 0.1f;
+    const float max_frame_distance = 15.0f;
+
+    upperbound_compress_spectral_image(
+        wavelengths, spectral_image,
+        width * height, n_moments,
+        normalized_moments,
+        mins, maxs,
+        relative_scales,
+        global_max
+    );
+
+    assert(normalized_moments.size() == width * heigth * n_moments);
+    assert(mins.size() == n_moments - 1);
+    assert(maxs.size() == n_moments - 1);
+    assert(relative_scales.size() == width * height);
+
+    // TODO: Check if this is really necessary, it is skipped in other parts of the code
+    // Quantize / dequantize each moment based on the provided quantization
+    // curve
+    std::vector<double> quantized_moments(normalized_moments.size());
+
+    for (size_t px = 0; px < width * height; px++) {
+        // We ignore moment 0
+        quantized_moments[px * n_moments + 0] = normalized_moments[px * n_moments + 0];
+
+        for (size_t m = 1; m < n_moments; m++) {
+            quantized_moments[px * n_moments + m] =
+                Util::quantize_dequantize(
+                    normalized_moments[px * n_moments + m],
+                    quantization_curve[m]
+                );
+        }
+    }
+
+    compression_curve[0] = start_compression_curve;
+    compression_curve[1] = start_compression_curve;
+
+    std::vector<double> compressed_decompressed_moments;
+
+    compress_decompress_single_image(
+        quantized_moments,
+        compressed_decompressed_moments,
+        width, height, n_moments,
+        quantization_curve[1],
+        1, compression_curve[1]
+    );
+
+    assert(compress_decompress_framebuffer.size() == quantized_moments.size());
+
+    const double base_err = upperbound_average_err(
+        wavelengths,
+        spectral_image,
+        width * height, n_moments,
+        compressed_decompressed_moments,
+        mins, maxs,
+        relative_scales,
+        global_max
+    );
+
+    for (size_t m = 2; m < n_moments; m++) {
+        compression_curve[m] = compression_curve[m - 1];
+
+        for (float frame_distance = compression_curve[m] + frame_distance_inc; frame_distance <= max_frame_distance; frame_distance += frame_distance_inc) {
+            compress_decompress_single_image(
+                quantized_moments,
+                compressed_decompressed_moments,
+                width, height, n_moments,
+                quantization_curve[m],
+                m, frame_distance
+            );
+
+            assert(compressed_decompressed_moments.size() == quantized_moments.size());
+
+            const double curr_err = upperbound_average_err(
+                wavelengths,
+                spectral_image,
+                width * height, n_moments,
+                compressed_decompressed_moments,
+                mins, maxs,
+                relative_scales,
+                global_max
+            );
+
+            if (curr_err >= base_err) {
+                break;
+            }
+
+            compression_curve[m] = frame_distance;
+        }
+    }
+
+    return upperbound_error_for_compression_curve(
+        wavelengths, spectral_image,
+        width, height,
+        n_moments,
+        normalized_moments,
+        mins, maxs,
+        relative_scales,
+        global_max,
+        quantization_curve,
+        compression_curve
+    );
+}
+
+
+double twobounds_compute_compression_curve(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    uint32_t width, uint32_t height,
+    size_t n_moments,
+    const std::vector<int>& quantization_curve,
+    float start_compression_curve,
+    std::vector<float>& compression_curve)
+{
+    assert(spectral_image.size() == width * height * wavelengths.size());
+    assert(quantization_curve.size() == n_moments);
+
+    compression_curve.resize(n_moments);
+
+    std::vector<double> normalized_moments;
+    std::vector<double> mins, maxs;
+    std::vector<uint8_t> relative_scales;
+    double global_min, global_max;
+
+    const float frame_distance_inc = 0.1f;
+    const float max_frame_distance = 15.0f;
+
+    twobounds_compress_spectral_image(
+        wavelengths, spectral_image,
+        width * height, n_moments,
+        normalized_moments,
+        mins, maxs,
+        relative_scales,
+        global_min,
+        global_max
+    );
+
+    assert(normalized_moments.size() == width * heigth * n_moments);
+    assert(mins.size() == n_moments - 1);
+    assert(maxs.size() == n_moments - 1);
+    assert(relative_scales.size() == width * height);
+
+    // TODO: Check if this is really necessary, it is skipped in other parts of the code
+    // Quantize / dequantize each moment based on the provided quantization
+    // curve
+    std::vector<double> quantized_moments(normalized_moments.size());
+
+    for (size_t px = 0; px < width * height; px++) {
+        // We ignore moment 0
+        quantized_moments[px * n_moments + 0] = normalized_moments[px * n_moments + 0];
+
+        for (size_t m = 1; m < n_moments; m++) {
+            quantized_moments[px * n_moments + m] =
+                Util::quantize_dequantize(
+                    normalized_moments[px * n_moments + m],
+                    quantization_curve[m]
+                );
+        }
+    }
+
+    compression_curve[0] = start_compression_curve;
+    compression_curve[1] = start_compression_curve;
+
+    std::vector<double> compressed_decompressed_moments;
+
+    compress_decompress_single_image(
+        quantized_moments,
+        compressed_decompressed_moments,
+        width, height, n_moments,
+        quantization_curve[1],
+        1, compression_curve[1]
+    );
+
+    assert(compress_decompress_framebuffer.size() == quantized_moments.size());
+
+    const double base_err = twobounds_average_err(
+        wavelengths,
+        spectral_image,
+        width * height, n_moments,
+        compressed_decompressed_moments,
+        mins, maxs,
+        relative_scales,
+        global_min,
+        global_max
+    );
+
+    for (size_t m = 2; m < n_moments; m++) {
+        compression_curve[m] = compression_curve[m - 1];
+
+        for (float frame_distance = compression_curve[m] + frame_distance_inc; frame_distance <= max_frame_distance; frame_distance += frame_distance_inc) {
+            compress_decompress_single_image(
+                quantized_moments,
+                compressed_decompressed_moments,
+                width, height, n_moments,
+                quantization_curve[m],
+                m, frame_distance
+            );
+
+            assert(compressed_decompressed_moments.size() == quantized_moments.size());
+
+            const double curr_err = twobounds_average_err(
+                wavelengths,
+                spectral_image,
+                width * height, n_moments,
+                compressed_decompressed_moments,
+                mins, maxs,
+                relative_scales,
+                global_min,
+                global_max
+            );
+
+            if (curr_err >= base_err) {
+                break;
+            }
+
+            compression_curve[m] = frame_distance;
+        }
+    }
+
+    return twobounds_error_for_compression_curve(
+        wavelengths, spectral_image,
+        width, height,
+        n_moments,
+        normalized_moments,
+        mins, maxs,
+        relative_scales,
+        global_min,
+        global_max,
+        quantization_curve,
+        compression_curve
+    );
+}
+
+
 /*****************************************************************************/
 /* Error for a compression curve                                             */
 /*****************************************************************************/
@@ -441,47 +1104,17 @@ double linear_error_for_compression_curve(
     assert(quantization_curve.size() == n_moments);
     assert(compression_curve.size() == n_moments);
 
-    std::vector<double> compressed_decompressed_normalized_moments(width * height * n_moments);
+    std::vector<double> compressed_decompressed_normalized_moments;
 
-    // JXL compression for every layers
-    #pragma omp parallel for
-    for (size_t m = 0; m < n_moments; m++) {
-        std::vector<float> og_moment(width * height);
-        std::vector<float> compressed_moments;
-
-        // Copy cast to float
-        for (size_t px = 0; px < width * height; px++) {
-            og_moment[px] = normalized_moments[px * n_moments + m];
-        }
-
-        // Compress / decompress
-        const int bps = quantization_curve[m];
-        int exponent_bits = 0;
-
-        if (m == 0) {
-            if (bps == 16) {
-                exponent_bits = 5;
-            } else if (bps == 32) {
-                exponent_bits = 8;
-            } else {
-                throw std::runtime_error("Unknown quantization ratio for 0th moment");
-            }
-        }
-
-        compress_decompress_framebuffer(
-            og_moment,
-            compressed_moments,
-            width, height,
-            bps, exponent_bits,
-            compression_curve[m],
-            1);
-
-        // Copy cast to float
-        for (size_t px = 0; px < width * height; px++) {
-            compressed_decompressed_normalized_moments[px * n_moments + m] = compressed_moments[px];
-        }
-    }
-
+    compress_decompress_image(
+        normalized_moments,
+        compressed_decompressed_normalized_moments,
+        width, height,
+        n_moments,
+        quantization_curve,
+        compression_curve
+    );
+    
     // Unpack the moments
     std::vector<double> decompressed_spectral_image;
 
@@ -489,6 +1122,268 @@ double linear_error_for_compression_curve(
         wavelengths,
         compressed_decompressed_normalized_moments,
         mins, maxs,
+        width * height,
+        n_moments,
+        decompressed_spectral_image
+    );
+
+    return Util::error_images(
+        ref_spectral_image,
+        decompressed_spectral_image,
+        width * height,
+        wavelengths.size()
+    );
+}
+
+
+double unbounded_error_for_compression_curve(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& ref_spectral_image,
+    uint32_t width, uint32_t height,
+    size_t n_moments,
+    const std::vector<double>& normalized_moments,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
+    const std::vector<int>& quantization_curve,
+    const std::vector<float>& compression_curve)
+{
+    assert(ref_spectral_image.size() == width * height * wavelengths.size());
+    assert(normalized_moments.size() == width * height * n_moments);
+    assert(mins.size() == n_moments - 1);
+    assert(maxs.size() == n_moments - 1);
+    assert(quantization_curve.size() == n_moments);
+    assert(compression_curve.size() == n_moments);
+
+    std::vector<double> compressed_decompressed_normalized_moments;
+
+    compress_decompress_image(
+        normalized_moments,
+        compressed_decompressed_normalized_moments,
+        width, height,
+        n_moments,
+        quantization_curve,
+        compression_curve
+    );
+    
+    // Unpack the moments
+    std::vector<double> decompressed_spectral_image;
+
+    unbounded_decompress_spectral_image(
+        wavelengths,
+        compressed_decompressed_normalized_moments,
+        mins, maxs,
+        width * height,
+        n_moments,
+        decompressed_spectral_image
+    );
+
+    return Util::error_images(
+        ref_spectral_image,
+        decompressed_spectral_image,
+        width * height,
+        wavelengths.size()
+    );
+}
+
+
+double bounded_error_for_compression_curve(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& ref_spectral_image,
+    uint32_t width, uint32_t height,
+    size_t n_moments,
+    const std::vector<double>& normalized_moments,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
+    const std::vector<int>& quantization_curve,
+    const std::vector<float>& compression_curve)
+{
+    assert(ref_spectral_image.size() == width * height * wavelengths.size());
+    assert(normalized_moments.size() == width * height * n_moments);
+    assert(mins.size() == n_moments - 1);
+    assert(maxs.size() == n_moments - 1);
+    assert(quantization_curve.size() == n_moments);
+    assert(compression_curve.size() == n_moments);
+
+    std::vector<double> compressed_decompressed_normalized_moments;
+
+    compress_decompress_image(
+        normalized_moments,
+        compressed_decompressed_normalized_moments,
+        width, height,
+        n_moments,
+        quantization_curve,
+        compression_curve
+    );
+    
+    // Unpack the moments
+    std::vector<double> decompressed_spectral_image;
+
+    bounded_decompress_spectral_image(
+        wavelengths,
+        compressed_decompressed_normalized_moments,
+        mins, maxs,
+        width * height,
+        n_moments,
+        decompressed_spectral_image
+    );
+
+    return Util::error_images(
+        ref_spectral_image,
+        decompressed_spectral_image,
+        width * height,
+        wavelengths.size()
+    );
+}
+
+
+double unbounded_to_bounded_error_for_compression_curve(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& ref_spectral_image,
+    uint32_t width, uint32_t height,
+    size_t n_moments,
+    const std::vector<double>& normalized_moments,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
+    const std::vector<int>& quantization_curve,
+    const std::vector<float>& compression_curve)
+{
+    assert(ref_spectral_image.size() == width * height * wavelengths.size());
+    assert(normalized_moments.size() == width * height * n_moments);
+    assert(mins.size() == n_moments - 1);
+    assert(maxs.size() == n_moments - 1);
+    assert(quantization_curve.size() == n_moments);
+    assert(compression_curve.size() == n_moments);
+
+    std::vector<double> compressed_decompressed_normalized_moments;
+
+    compress_decompress_image(
+        normalized_moments,
+        compressed_decompressed_normalized_moments,
+        width, height,
+        n_moments,
+        quantization_curve,
+        compression_curve
+    );
+    
+    // Unpack the moments
+    std::vector<double> decompressed_spectral_image;
+
+    unbounded_to_bounded_decompress_spectral_image(
+        wavelengths,
+        compressed_decompressed_normalized_moments,
+        mins, maxs,
+        width * height,
+        n_moments,
+        decompressed_spectral_image
+    );
+
+    return Util::error_images(
+        ref_spectral_image,
+        decompressed_spectral_image,
+        width * height,
+        wavelengths.size()
+    );
+}
+
+
+double upperbound_error_for_compression_curve(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& ref_spectral_image,
+    uint32_t width, uint32_t height,
+    size_t n_moments,
+    const std::vector<double>& normalized_moments,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
+    const std::vector<uint8_t>& relative_scales,
+    double global_max,
+    const std::vector<int>& quantization_curve,
+    const std::vector<float>& compression_curve)
+{
+    assert(ref_spectral_image.size() == width * height * wavelengths.size());
+    assert(normalized_moments.size() == width * height * n_moments);
+    assert(mins.size() == n_moments - 1);
+    assert(maxs.size() == n_moments - 1);
+    assert(relative_scales.size() == width * height);
+    assert(quantization_curve.size() == n_moments);
+    assert(compression_curve.size() == n_moments);
+
+    std::vector<double> compressed_decompressed_normalized_moments;
+
+    compress_decompress_image(
+        normalized_moments,
+        compressed_decompressed_normalized_moments,
+        width, height,
+        n_moments,
+        quantization_curve,
+        compression_curve
+    );
+    
+    // Unpack the moments
+    std::vector<double> decompressed_spectral_image;
+
+    upperbound_decompress_spectral_image(
+        wavelengths,
+        compressed_decompressed_normalized_moments,
+        mins, maxs,
+        relative_scales,
+        global_max,
+        width * height,
+        n_moments,
+        decompressed_spectral_image
+    );
+
+    return Util::error_images(
+        ref_spectral_image,
+        decompressed_spectral_image,
+        width * height,
+        wavelengths.size()
+    );
+}
+
+
+double twobounds_error_for_compression_curve(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& ref_spectral_image,
+    uint32_t width, uint32_t height,
+    size_t n_moments,
+    const std::vector<double>& normalized_moments,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
+    const std::vector<uint8_t>& relative_scales,
+    double global_min,
+    double global_max,
+    const std::vector<int>& quantization_curve,
+    const std::vector<float>& compression_curve)
+{
+    assert(ref_spectral_image.size() == width * height * wavelengths.size());
+    assert(normalized_moments.size() == width * height * n_moments);
+    assert(mins.size() == n_moments - 1);
+    assert(maxs.size() == n_moments - 1);
+    assert(relative_scales.size() == width * height);
+    assert(quantization_curve.size() == n_moments);
+    assert(compression_curve.size() == n_moments);
+
+    std::vector<double> compressed_decompressed_normalized_moments;
+
+    compress_decompress_image(
+        normalized_moments,
+        compressed_decompressed_normalized_moments,
+        width, height,
+        n_moments,
+        quantization_curve,
+        compression_curve
+    );
+    
+    // Unpack the moments
+    std::vector<double> decompressed_spectral_image;
+
+    twobounds_decompress_spectral_image(
+        wavelengths,
+        compressed_decompressed_normalized_moments,
+        mins, maxs,
+        relative_scales,
+        global_min,
+        global_max,
         width * height,
         n_moments,
         decompressed_spectral_image
