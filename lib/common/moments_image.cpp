@@ -459,8 +459,8 @@ void normalize_moment_image(
     std::vector<double>& maxs)
 {
     dest.resize(src.size());
-    mins.resize(n_px * (n_moments - 1));
-    maxs.resize(n_px * (n_moments - 1));
+    mins.resize(n_moments - 1);
+    maxs.resize(n_moments - 1);
 
     normalize_moment_image(
         src.data(),
@@ -512,8 +512,6 @@ void denormalize_moment_image(
         dest.data()
     );
 }
-
-
 
 
 /*****************************************************************************/

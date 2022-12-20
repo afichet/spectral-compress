@@ -251,7 +251,7 @@ public:
 
         for (size_t px = 0; px < n_pixels; px++) {
             T px_sum_err = 0;
-            T avg = 0;
+            // T avg = 0;
 
             for (size_t b = 0; b < n_bands; b++) {
                 const T ref = reference [px * n_bands + b];
@@ -259,15 +259,15 @@ public:
 
                 const T diff = ref - cmp;
 
-                avg += ref;
+                // avg += ref;
                 px_sum_err += diff * diff;
             }
 
-            avg /= (double)n_bands;
+            // avg /= (T)n_bands;
 
-            if (avg > 0) {
-                error += std::sqrt(px_sum_err) / avg;
-            }
+            // if (avg > 0) {
+            //     error += std::sqrt(px_sum_err) / avg;
+            // }
 
             error += std::sqrt(px_sum_err);
         }

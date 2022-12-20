@@ -130,7 +130,6 @@ void compress_decompress_framebuffer(
 
     if (frame_distance > 0) {
         enc_status = JxlEncoderSetFrameLossless(frame_settings, JXL_FALSE);
-        std::cout << "trying with frame distance = " << frame_distance << std::endl;
         enc_status = JxlEncoderSetFrameDistance(frame_settings, frame_distance);
     } else {
         enc_status = JxlEncoderSetFrameLossless(frame_settings, JXL_TRUE);
@@ -303,12 +302,12 @@ void compress_decompress_single_image(
     std::memcpy(
         output_image.data(),
         input_image.data(),
-        width * height * n_moments * sizeof(float)
+        width * height * n_moments * sizeof(double)
     );
 
     // Change what has changed
     for (size_t px = 0; px < width * height; px++) {
-        output_image[px * n_moments + i] = (float)compressed_framebuffer[px];
+        output_image[px * n_moments + i] = (double)compressed_framebuffer[px];
     }
 }
 
@@ -325,6 +324,11 @@ double linear_compute_compression_curve(
     float start_compression_curve,
     std::vector<float>& compression_curve)
 {
+    assert(spectral_image.size() == width * height * wavelengths.size());
+    assert(quantization_curve.size() == n_moments);
+
+    compression_curve.resize(n_moments);
+
     std::vector<double> normalized_moments;
     std::vector<double> mins, maxs;
     const float frame_distance_inc = 0.3f;
@@ -353,8 +357,6 @@ double linear_compute_compression_curve(
                 );
         }
     }
-
-    compression_curve.resize(n_moments);
 
     compression_curve[0] = start_compression_curve;
     compression_curve[1] = start_compression_curve;
@@ -413,13 +415,15 @@ double linear_compute_compression_curve(
         }
     }
 
-    return 0;/*linear_error_for_compression_curve(
+    return linear_error_for_compression_curve(
         wavelengths, spectral_image,
-        width, height, n_moments,
+        width, height,
+        n_moments,
         normalized_moments,
         mins, maxs,
-        quantization_curve, compression_curve
-    );*/
+        quantization_curve,
+        compression_curve
+    );
 }
 
 
@@ -438,32 +442,31 @@ double linear_error_for_compression_curve(
     const std::vector<int>& quantization_curve,
     const std::vector<float>& compression_curve)
 {
+    assert(ref_spectral_image.size() == width * height * wavelengths.size());
+    assert(normalized_moments.size() == width * height * n_moments);
+    assert(mins.size() == n_moments - 1);
+    assert(maxs.size() == n_moments - 1);
+    assert(quantization_curve.size() == n_moments);
+    assert(compression_curve.size() == n_moments);
+
     std::vector<double> compressed_decompressed_normalized_moments(width * height * n_moments);
 
     // JXL compression for every layers
+    #pragma omp parallel for
     for (size_t m = 0; m < n_moments; m++) {
         std::vector<float> og_moment(width * height);
-        std::vector<float> compressed_moments(width * height);
+        std::vector<float> compressed_moments;
 
         // Copy cast to float
         for (size_t px = 0; px < width * height; px++) {
-            og_moment[px] = normalized_moments[m * n_moments + px];
+            og_moment[px] = normalized_moments[px * n_moments + m];
         }
 
         // Compress / decompress
-        if (m > 0) {
-            compress_decompress_framebuffer(
-                og_moment,
-                compressed_moments,
-                width, height,
-                quantization_curve[m],
-                0,
-                compression_curve[m],
-                1);
-        } else {
-            const int bps = quantization_curve[0];
-            int exponent_bits = 0;
+        const int bps = quantization_curve[m];
+        int exponent_bits = 0;
 
+        if (m == 0) {
             if (bps == 16) {
                 exponent_bits = 5;
             } else if (bps == 32) {
@@ -471,20 +474,19 @@ double linear_error_for_compression_curve(
             } else {
                 throw std::runtime_error("Unknown quantization ratio for 0th moment");
             }
-
-            compress_decompress_framebuffer(
-                og_moment,
-                compressed_moments,
-                width, height,
-                quantization_curve[m],
-                exponent_bits,
-                compression_curve[m],
-                1);
         }
+
+        compress_decompress_framebuffer(
+            og_moment,
+            compressed_moments,
+            width, height,
+            bps, exponent_bits,
+            compression_curve[m],
+            1);
 
         // Copy cast to float
         for (size_t px = 0; px < width * height; px++) {
-            compressed_decompressed_normalized_moments[m * n_moments + px] = compressed_moments[px];
+            compressed_decompressed_normalized_moments[px * n_moments + m] = compressed_moments[px];
         }
     }
 
