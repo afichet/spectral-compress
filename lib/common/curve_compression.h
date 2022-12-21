@@ -46,7 +46,8 @@ double linear_compute_compression_curve(
     uint32_t width, uint32_t height,
     size_t n_moments,
     const std::vector<int>& quantization_curve,
-    float start_compression_curve,
+    float compression_dc,
+    float compression_ac1,
     std::vector<float>& compression_curve);
 
 
@@ -56,7 +57,8 @@ double unbounded_compute_compression_curve(
     uint32_t width, uint32_t height,
     size_t n_moments,
     const std::vector<int>& quantization_curve,
-    float start_compression_curve,
+    float compression_dc,
+    float compression_ac1,
     std::vector<float>& compression_curve);
 
 
@@ -66,7 +68,8 @@ double bounded_compute_compression_curve(
     uint32_t width, uint32_t height,
     size_t n_moments,
     const std::vector<int>& quantization_curve,
-    float start_compression_curve,
+    float compression_dc,
+    float compression_ac1,
     std::vector<float>& compression_curve);
 
 
@@ -76,7 +79,8 @@ double unbounded_to_bounded_compute_compression_curve(
     uint32_t width, uint32_t height,
     size_t n_moments,
     const std::vector<int>& quantization_curve,
-    float start_compression_curve,
+    float compression_dc,
+    float compression_ac1,
     std::vector<float>& compression_curve);
 
 
@@ -86,7 +90,8 @@ double upperbound_compute_compression_curve(
     uint32_t width, uint32_t height,
     size_t n_moments,
     const std::vector<int>& quantization_curve,
-    float start_compression_curve,
+    float compression_dc,
+    float compression_ac1,
     std::vector<float>& compression_curve);
 
 
@@ -96,7 +101,8 @@ double twobounds_compute_compression_curve(
     uint32_t width, uint32_t height,
     size_t n_moments,
     const std::vector<int>& quantization_curve,
-    float start_compression_curve,
+    float compression_dc,
+    float compression_ac1,
     std::vector<float>& compression_curve);
 
 

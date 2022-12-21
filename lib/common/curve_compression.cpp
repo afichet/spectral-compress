@@ -378,7 +378,8 @@ double linear_compute_compression_curve(
     uint32_t width, uint32_t height,
     size_t n_moments,
     const std::vector<int>& quantization_curve,
-    float start_compression_curve,
+    float compression_dc,
+    float compression_ac1,
     std::vector<float>& compression_curve)
 {
     assert(spectral_image.size() == width * height * wavelengths.size());
@@ -421,8 +422,8 @@ double linear_compute_compression_curve(
         }
     }
 
-    compression_curve[0] = start_compression_curve;
-    compression_curve[1] = start_compression_curve;
+    compression_curve[0] = compression_dc;
+    compression_curve[1] = compression_ac1;
 
     std::vector<double> compressed_decompressed_moments;
 
@@ -492,7 +493,8 @@ double unbounded_compute_compression_curve(
     uint32_t width, uint32_t height,
     size_t n_moments,
     const std::vector<int>& quantization_curve,
-    float start_compression_curve,
+    float compression_dc,
+    float compression_ac1,
     std::vector<float>& compression_curve)
 {
     assert(spectral_image.size() == width * height * wavelengths.size());
@@ -535,8 +537,8 @@ double unbounded_compute_compression_curve(
         }
     }
 
-    compression_curve[0] = start_compression_curve;
-    compression_curve[1] = start_compression_curve;
+    compression_curve[0] = compression_dc;
+    compression_curve[1] = compression_ac1;
 
     std::vector<double> compressed_decompressed_moments;
 
@@ -606,7 +608,8 @@ double bounded_compute_compression_curve(
     uint32_t width, uint32_t height,
     size_t n_moments,
     const std::vector<int>& quantization_curve,
-    float start_compression_curve,
+    float compression_dc,
+    float compression_ac1,
     std::vector<float>& compression_curve)
 {
     assert(spectral_image.size() == width * height * wavelengths.size());
@@ -649,8 +652,8 @@ double bounded_compute_compression_curve(
         }
     }
 
-    compression_curve[0] = start_compression_curve;
-    compression_curve[1] = start_compression_curve;
+    compression_curve[0] = compression_dc;
+    compression_curve[1] = compression_ac1;
 
     std::vector<double> compressed_decompressed_moments;
 
@@ -720,7 +723,8 @@ double unbounded_to_bounded_compute_compression_curve(
     uint32_t width, uint32_t height,
     size_t n_moments,
     const std::vector<int>& quantization_curve,
-    float start_compression_curve,
+    float compression_dc,
+    float compression_ac1,
     std::vector<float>& compression_curve)
 {
     assert(spectral_image.size() == width * height * wavelengths.size());
@@ -763,8 +767,8 @@ double unbounded_to_bounded_compute_compression_curve(
         }
     }
 
-    compression_curve[0] = start_compression_curve;
-    compression_curve[1] = start_compression_curve;
+    compression_curve[0] = compression_dc;
+    compression_curve[1] = compression_ac1;
 
     std::vector<double> compressed_decompressed_moments;
 
@@ -834,7 +838,8 @@ double upperbound_compute_compression_curve(
     uint32_t width, uint32_t height,
     size_t n_moments,
     const std::vector<int>& quantization_curve,
-    float start_compression_curve,
+    float compression_dc,
+    float compression_ac1,
     std::vector<float>& compression_curve)
 {
     assert(spectral_image.size() == width * height * wavelengths.size());
@@ -882,8 +887,8 @@ double upperbound_compute_compression_curve(
         }
     }
 
-    compression_curve[0] = start_compression_curve;
-    compression_curve[1] = start_compression_curve;
+    compression_curve[0] = compression_dc;
+    compression_curve[1] = compression_ac1;
 
     std::vector<double> compressed_decompressed_moments;
 
@@ -959,7 +964,8 @@ double twobounds_compute_compression_curve(
     uint32_t width, uint32_t height,
     size_t n_moments,
     const std::vector<int>& quantization_curve,
-    float start_compression_curve,
+    float compression_dc,
+    float compression_ac1,
     std::vector<float>& compression_curve)
 {
     assert(spectral_image.size() == width * height * wavelengths.size());
@@ -1008,8 +1014,8 @@ double twobounds_compute_compression_curve(
         }
     }
 
-    compression_curve[0] = start_compression_curve;
-    compression_curve[1] = start_compression_curve;
+    compression_curve[0] = compression_dc;
+    compression_curve[1] = compression_ac1;
 
     std::vector<double> compressed_decompressed_moments;
 
@@ -1114,7 +1120,7 @@ double linear_error_for_compression_curve(
         quantization_curve,
         compression_curve
     );
-    
+
     // Unpack the moments
     std::vector<double> decompressed_spectral_image;
 
@@ -1164,7 +1170,7 @@ double unbounded_error_for_compression_curve(
         quantization_curve,
         compression_curve
     );
-    
+
     // Unpack the moments
     std::vector<double> decompressed_spectral_image;
 
@@ -1214,7 +1220,7 @@ double bounded_error_for_compression_curve(
         quantization_curve,
         compression_curve
     );
-    
+
     // Unpack the moments
     std::vector<double> decompressed_spectral_image;
 
@@ -1264,7 +1270,7 @@ double unbounded_to_bounded_error_for_compression_curve(
         quantization_curve,
         compression_curve
     );
-    
+
     // Unpack the moments
     std::vector<double> decompressed_spectral_image;
 
@@ -1317,7 +1323,7 @@ double upperbound_error_for_compression_curve(
         quantization_curve,
         compression_curve
     );
-    
+
     // Unpack the moments
     std::vector<double> decompressed_spectral_image;
 
@@ -1373,7 +1379,7 @@ double twobounds_error_for_compression_curve(
         quantization_curve,
         compression_curve
     );
-    
+
     // Unpack the moments
     std::vector<double> decompressed_spectral_image;
 
