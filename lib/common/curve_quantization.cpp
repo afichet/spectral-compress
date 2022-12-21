@@ -257,7 +257,6 @@ double bounded_compute_quantization_curve(
         mins, maxs
     );
 
-
     for (size_t m = 2; m < n_moments; m++) {
         quantization_curve[m] = quantization_curve[m - 1];
 
@@ -406,7 +405,6 @@ double upperbound_compute_quantization_curve(
     quantization_curve[0] = n_bits_dc;
     quantization_curve[1] = n_bits_ac1;
 
-
     std::vector<double> quantized_moments;
 
     quantize_dequantize_single_image(
@@ -497,7 +495,6 @@ double twobounds_compute_quantization_curve(
 
     quantization_curve[0] = n_bits_dc;
     quantization_curve[1] = n_bits_ac1;
-
 
     std::vector<double> quantized_moments;
 
