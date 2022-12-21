@@ -606,7 +606,7 @@ void compress_spectral_framebuffer(
         assert(relative_scales.size() == n_pixels);
 
         quantization_curve.push_back(8);
-        quantization_curve.push_back(compression_dc);
+        compression_curve.push_back(compression_dc);
 
         compressed_moments.resize(n_moments + 1);
         compressed_moments[n_moments].resize(n_pixels);
@@ -620,6 +620,27 @@ void compress_spectral_framebuffer(
     }
 
     if (log) {
+        switch(sg.method) {
+            case LINEAR:
+                log_stream << "Method: linear" << std::endl;
+                break;
+            case BOUNDED:
+                log_stream << "Method: bounded" << std::endl;
+                break;
+            case UNBOUNDED:
+                log_stream << "Method: unbounded" << std::endl;
+                break;
+            case UNBOUNDED_TO_BOUNDED:
+                log_stream << "Method: unbounded_to_bounded" << std::endl;
+                break;
+            case UPPERBOUND:
+                log_stream << "Method: upperbound" << std::endl;
+                break;
+            case TWOBOUNDS:
+                log_stream << "Method: twobounds" << std::endl;
+                break;
+
+        }
         log_stream << "Quantization curve:" << std::endl;
         for (const int& q : quantization_curve) {
             log_stream << q << " ";
