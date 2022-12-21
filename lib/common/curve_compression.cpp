@@ -320,7 +320,7 @@ void compress_decompress_image(
     const std::vector<int>& quantization_curve,
     const std::vector<float>& compression_curve)
 {
-    assert(intput_framebuffers.size() == width * height * n_moments);
+    assert(input_framebuffers.size() == width * height * n_moments);
     assert(quantization_curve.size() == n_moments);
     assert(compression_curve.size() == n_moments);
 
@@ -400,7 +400,7 @@ double linear_compute_compression_curve(
         mins, maxs
     );
 
-    assert(normalized_moments.size() == width * heigth * n_moments);
+    assert(normalized_moments.size() == width * height * n_moments);
     assert(mins.size() == n_moments - 1);
     assert(maxs.size() == n_moments - 1);
 
@@ -435,7 +435,7 @@ double linear_compute_compression_curve(
         1, compression_curve[1]
     );
 
-    assert(compress_decompress_framebuffer.size() == quantized_moments.size());
+    assert(compressed_decompressed_moments.size() == quantized_moments.size());
 
     const double base_err = linear_average_err(
         wavelengths,
@@ -515,7 +515,7 @@ double unbounded_compute_compression_curve(
         mins, maxs
     );
 
-    assert(normalized_moments.size() == width * heigth * n_moments);
+    assert(normalized_moments.size() == width * height * n_moments);
     assert(mins.size() == n_moments - 1);
     assert(maxs.size() == n_moments - 1);
 
@@ -550,7 +550,7 @@ double unbounded_compute_compression_curve(
         1, compression_curve[1]
     );
 
-    assert(compress_decompress_framebuffer.size() == quantized_moments.size());
+    assert(compressed_decompressed_moments.size() == quantized_moments.size());
 
     const double base_err = unbounded_average_err(
         wavelengths,
@@ -630,7 +630,7 @@ double bounded_compute_compression_curve(
         mins, maxs
     );
 
-    assert(normalized_moments.size() == width * heigth * n_moments);
+    assert(normalized_moments.size() == width * height * n_moments);
     assert(mins.size() == n_moments - 1);
     assert(maxs.size() == n_moments - 1);
 
@@ -745,7 +745,7 @@ double unbounded_to_bounded_compute_compression_curve(
         mins, maxs
     );
 
-    assert(normalized_moments.size() == width * heigth * n_moments);
+    assert(normalized_moments.size() == width * height * n_moments);
     assert(mins.size() == n_moments - 1);
     assert(maxs.size() == n_moments - 1);
 
@@ -780,7 +780,7 @@ double unbounded_to_bounded_compute_compression_curve(
         1, compression_curve[1]
     );
 
-    assert(compress_decompress_framebuffer.size() == quantized_moments.size());
+    assert(compressed_decompressed_moments.size() == quantized_moments.size());
 
     const double base_err = unbounded_to_bounded_average_err(
         wavelengths,
@@ -864,7 +864,7 @@ double upperbound_compute_compression_curve(
         global_max
     );
 
-    assert(normalized_moments.size() == width * heigth * n_moments);
+    assert(normalized_moments.size() == width * height * n_moments);
     assert(mins.size() == n_moments - 1);
     assert(maxs.size() == n_moments - 1);
     assert(relative_scales.size() == width * height);
@@ -900,7 +900,7 @@ double upperbound_compute_compression_curve(
         1, compression_curve[1]
     );
 
-    assert(compress_decompress_framebuffer.size() == quantized_moments.size());
+    assert(compressed_decompressed_moments.size() == quantized_moments.size());
 
     const double base_err = upperbound_average_err(
         wavelengths,
@@ -991,7 +991,7 @@ double twobounds_compute_compression_curve(
         global_max
     );
 
-    assert(normalized_moments.size() == width * heigth * n_moments);
+    assert(normalized_moments.size() == width * height * n_moments);
     assert(mins.size() == n_moments - 1);
     assert(maxs.size() == n_moments - 1);
     assert(relative_scales.size() == width * height);
@@ -1027,7 +1027,7 @@ double twobounds_compute_compression_curve(
         1, compression_curve[1]
     );
 
-    assert(compress_decompress_framebuffer.size() == quantized_moments.size());
+    assert(compressed_decompressed_moments.size() == quantized_moments.size());
 
     const double base_err = twobounds_average_err(
         wavelengths,

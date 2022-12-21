@@ -322,9 +322,9 @@ void compress_image(
     auto clock_end = std::chrono::steady_clock::now();
     timing = std::chrono::duration<double, std::milli>(clock_end - clock_start).count();
 
-    assert(compressed_moments_d.size() == n_pixels * n_moments);
-    assert(mins_d.size() == n_moments - 1);
-    assert(maxs_d.size() == n_moments - 1);
+    assert(compressed_moments.size() == n_pixels * n_moments);
+    assert(mins.size() == n_moments - 1);
+    assert(maxs.size() == n_moments - 1);
 
 #ifndef NDEBUG
     if (method == UPPERBOUND || method == TWOBOUNDS) {
