@@ -798,6 +798,8 @@ int main(int argc, char *argv[])
         }
     } catch (TCLAP::ArgException &e) {
         std::cerr << "Error: " << e.error() << " for argument " << e.argId() << std::endl;
+
+        return 1;
     }
 
     // Timing setup
