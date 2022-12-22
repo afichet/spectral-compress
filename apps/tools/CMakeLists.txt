@@ -19,5 +19,7 @@ add_subdirectory(eval-quantization)
 add_subdirectory(cave-to-exr)
 add_subdirectory(envi-to-exr)
 
+add_subdirectory(exr-diff)
+
 # REMOVE!
 add_subdirectory(temp-diff)
