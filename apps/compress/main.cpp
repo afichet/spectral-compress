@@ -728,25 +728,25 @@ int main(int argc, char *argv[])
         TCLAP::CmdLine cmd("Compress a spectral image");
 
         // Input / output
-        TCLAP::UnlabeledValueArg<std::string> inputFileArg("Input", "Spectral EXR input file", true, "input.exr", "path");
-        TCLAP::UnlabeledValueArg<std::string> outputFileArg("Output", "JPEG XL output file", true, "output.jxl", "path");
-        TCLAP::ValueArg<std::string> logFileArg("l", "log", "File to log into", false, "log.txt", "path");
+        TCLAP::UnlabeledValueArg<std::string> inputFileArg("Input", "Specifies the Spectral OpenEXR file to compress from (input).", true, "input.exr", "path");
+        TCLAP::UnlabeledValueArg<std::string> outputFileArg("Output", "Specifies the JPEG XL file to compress spectral data to (output).", true, "output.jxl", "path");
+        TCLAP::ValueArg<std::string> logFileArg("l", "log", "Specifies a file to log timings and quantization and compression curves into,", false, "log.txt", "path");
         cmd.add(inputFileArg);
         cmd.add(outputFileArg);
         cmd.add(logFileArg);
 
         // Compresion tweaking
         FrameDistanceConstraint frameDistanceConstraint;
-        TCLAP::ValueArg<float> frameDistanceDCArg("a", "frame_distance_dc", "Distance level for lossy compression (compression rate) on the DC component.", false, .1f, &frameDistanceConstraint);
-        TCLAP::ValueArg<float> frameDistanceACArg("b", "frame_distance_ac", "Distance level for lossy compression (compression rate) on the first AC component.", false, .1f, &frameDistanceConstraint);
-        TCLAP::SwitchArg useFlatCompressionArg("c", "c_flat", "Use a flat compression curve");
+        TCLAP::ValueArg<float> frameDistanceDCArg("a", "frame_distance_dc", "Sets the distance level for lossy compression (compression rate) on the DC component.", false, .1f, &frameDistanceConstraint);
+        TCLAP::ValueArg<float> frameDistanceACArg("b", "frame_distance_ac", "Sets the distance level for lossy compression (compression rate) on the first AC component. The program uses the same compression ratio for the remaining components when `--c_flat` is set. Otherwise, the program generates a compression curve starting with the distance parameter for the first AC component using the provided value based on the image data (can be slow).", false, .1f, &frameDistanceConstraint);
+        TCLAP::SwitchArg useFlatCompressionArg("c", "c_flat", "Sets a flat compression curve. All AC components use the same distance level as the first AC component set by `--frame_distance_ac` while the DC components uses the distance level provided by `--frame_distance_dc` parameter.");
         cmd.add(frameDistanceDCArg);
         cmd.add(frameDistanceACArg);
         cmd.add(useFlatCompressionArg);
 
         // Quantization tweaking
-        TCLAP::ValueArg<int> quantizationStartArg("q", "quantization", "Starting number of bits for quantizing the first AC component.", false, 10, "integer");
-        TCLAP::SwitchArg useFlatQuantizationArg("u", "q_flat", "Use a flat quantization curve");
+        TCLAP::ValueArg<int> quantizationStartArg("q", "quantization", "Sets the starting number of bits for quantizing the first AC component. The program use the same number of bits for the remaining components when `--q_flat` is set. Otherwise, the program generates a custom quantization curve starting with the number of bits for the first AC component using the provided value based on the image data (can be slow).", false, 10, "integer");
+        TCLAP::SwitchArg useFlatQuantizationArg("u", "q_flat", "Sets a flat quantization curve. The DC component uses the same quantization as the one used for all spectral data in the OpenEXR file while the remaining AC components use the number of bits provided in `--quantization parameter`.");
         cmd.add(quantizationStartArg);
         cmd.add(useFlatQuantizationArg);
 
@@ -759,7 +759,7 @@ int main(int argc, char *argv[])
         allowedCompressionMethods.push_back("upperbound");
         allowedCompressionMethods.push_back("twobounds");
         TCLAP::ValuesConstraint<std::string> allowedCompressionMethodsVals(allowedCompressionMethods);
-        TCLAP::ValueArg<std::string> momentCompressionMethodArg("m", "method", "Moment compression method to use", false, "twobounds", &allowedCompressionMethodsVals);
+        TCLAP::ValueArg<std::string> momentCompressionMethodArg("m", "method", "Representation of moments to use.", false, "twobounds", &allowedCompressionMethodsVals);
         cmd.add(momentCompressionMethodArg);
 
         cmd.parse(argc, argv);
