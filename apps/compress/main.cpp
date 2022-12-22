@@ -471,18 +471,23 @@ double error_for_quantization_and_compression_curves(
 
 void compress_spectral_framebuffer(
     SpectralStorageMethod method,
+    // Input data
     const SpectralFramebuffer* framebuffer,
     uint32_t width, uint32_t height,
+    // Quantization
     int n_bits_dc,
     int n_bits_ac1,
     bool uses_constant_quantization,
     std::vector<int>& quantization_curve,
+    // Compression
     float compression_dc,
     float compression_ac1,
     bool uses_constant_compression,
     std::vector<float>& compression_curve,
+    // Result of compression
     std::vector<std::vector<float>>& compressed_moments,
     SGEGSpectralGroup& sg,
+    // Logging
     bool log,
     std::stringstream& log_stream)
 {
@@ -500,22 +505,31 @@ void compress_spectral_framebuffer(
     // TODO: this is invalid for polarization layers that can be negative
     // Condition buffers to ensure everything is in order
     std::vector<double> wavelengths(framebuffer->wavelengths_nm.size());
-    std::vector<double> spectral_image(framebuffer->image_data.size());
 
     #pragma omp parallel for
     for (size_t i = 0; i < wavelengths.size(); i++) {
         wavelengths[i] = framebuffer->wavelengths_nm[i];
     }
 
-    #pragma omp parallel for
-    for (size_t i = 0; i < spectral_image.size(); i++) {
-        double v = framebuffer->image_data[i];
+    std::vector<double> spectral_image(framebuffer->image_data.size());
 
-        if (std::isinf(v) || std::isnan(v) || v < 1e-8) {
-            v = 1e-8;
+    const char back_char = framebuffer->root_name.back();
+
+    // Check if we're dealing with a polarisation component
+    if (back_char == '1' || back_char == '2' || back_char == '3') {
+        // TODO
+        std::cout << "Warning: we are dealing with a polarisation layer, this is not yet supported and the result will be wrong." << std::endl;
+    } else {
+        #pragma omp parallel for
+        for (size_t i = 0; i < spectral_image.size(); i++) {
+            double v = framebuffer->image_data[i];
+
+            if (std::isinf(v) || std::isnan(v) || v < 1e-8) {
+                v = 1e-8;
+            }
+
+            spectral_image[i] = v;
         }
-
-        spectral_image[i] = v;
     }
 
     double quantization_curve_timing(0),
@@ -639,7 +653,6 @@ void compress_spectral_framebuffer(
             case TWOBOUNDS:
                 log_stream << "Method: twobounds" << std::endl;
                 break;
-
         }
         log_stream << "Quantization curve:" << std::endl;
         for (const int& q : quantization_curve) {
