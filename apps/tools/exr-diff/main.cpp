@@ -47,6 +47,7 @@
 #include "colormapdata.h"
 #include <lodepng.h>
 
+
 bool compare_spectral_images(
     const SpectralFramebuffer* img_a,
     const SpectralFramebuffer* img_b,
@@ -124,6 +125,11 @@ int main(int argc, char* argv[])
     std::string filename_a, filename_b;
     std::string filename_output;
 
+    bool custom_lower_bound_is_set = false;
+    bool custom_upper_bound_is_set = false;
+
+    float custom_lower_bound, custom_upper_bound;
+
     // Parse arguments
     try {
         TCLAP::CmdLine cmd("Compares two Spectral OpenEXR images");
@@ -132,16 +138,27 @@ int main(int argc, char* argv[])
         TCLAP::UnlabeledValueArg<std::string> inputBFileArg("FileB", "Specifies image to compare with (input).", true, "comparison.jxl", "path");
         TCLAP::UnlabeledValueArg<std::string> outputFileArg("Output", "Specifies the image to write into (output).", true, "output.png", "path");
 
-        // TCLAP::ValueArg<std::string> logFileArg("l", "log", "Specifies a file to log timings and quantization and compression curves into,", false, "log.txt", "path");
         cmd.add(inputAFileArg);
         cmd.add(inputBFileArg);
         cmd.add(outputFileArg);
+
+        TCLAP::ValueArg<float> lowerBoundArg("l", "lower", "Sets the lower bound for the colormap.", false, 0.f, "min");
+        TCLAP::ValueArg<float> upperBoundArg("u", "upper", "Sets the upper bouind for the colormap.", false, 0.f, "max");
+
+        cmd.add(lowerBoundArg);
+        cmd.add(upperBoundArg);
 
         cmd.parse(argc, argv);
 
         filename_a = inputAFileArg.getValue();
         filename_b = inputBFileArg.getValue();
         filename_output = outputFileArg.getValue();
+
+        custom_lower_bound_is_set  = lowerBoundArg.isSet();
+        custom_upper_bound_is_set = upperBoundArg.isSet();
+
+        custom_lower_bound  = lowerBoundArg.getValue();
+        custom_upper_bound = upperBoundArg.getValue();
     } catch (TCLAP::ArgException &e) {
         std::cerr << "Error: " << e.error() << " for arguemnt " << e.argId() << std::endl;
 
@@ -194,12 +211,26 @@ int main(int argc, char* argv[])
 
                 std::cout << "Error: [" << min_err << ", " << max_err << "]" << std::endl;
 
+                float lower, upper;
+
+                if (custom_upper_bound_is_set) {
+                    lower = custom_lower_bound;
+                } else {
+                    lower = 0;
+                }
+
+                if (custom_lower_bound_is_set) {
+                    upper = custom_upper_bound;
+                } else {
+                    upper = max_err;
+                }
+
                 // Creates an RGB visualisation
                 std::vector<uint8_t> framebuffer_rgba;
 
                 diff_to_rgba(
                     framebuffer_error,
-                    0, max_err,
+                    lower, upper,
                     turbo_colormap_data,
                     sizeof(turbo_colormap_data) / (3 * sizeof(float)),
                     framebuffer_rgba
