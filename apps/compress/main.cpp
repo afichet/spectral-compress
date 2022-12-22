@@ -34,21 +34,12 @@
 #include <iostream>
 #include <sstream>
 #include <limits>
-#include <regex>
 #include <string>
-#include <map>
-#include <set>
-#include <algorithm>
 #include <chrono>
 #include <sstream>
 #include <fstream>
 #include <cassert>
-
-#include <OpenEXR/ImfInputFile.h>
-#include <OpenEXR/ImfChannelList.h>
-#include <OpenEXR/ImfStringAttribute.h>
-#include <OpenEXR/ImfFrameBuffer.h>
-#include <OpenEXR/ImfHeader.h>
+#include <cstring>
 
 #include <tclap/CmdLine.h>
 
