@@ -6,9 +6,6 @@ path_data = '/home/afichet/spectral_images/EXRs/CAVE/'
 path_bin  = '/home/afichet/Repositories/spectral-compress/build/bin/compress'
 path_out  = 'cave'
 
-if not os.path.exists(path_out):
-    os.mkdir(path_out)
-
 techniques = ['linear', 'unbounded', 'unbounded_to_bounded', 'upperbound', 'twobounds']
 start_bits = [6, 8, 10, 12]
 # start_compress = [0.1]
