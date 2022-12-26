@@ -37,6 +37,25 @@
 #include <cstdint>
 #include <cstddef>
 
+
+/*****************************************************************************/
+/* Utility functions                                                         */
+/*****************************************************************************/
+
+void quantize_dequantize_single_image(
+    const std::vector<double>& input_image,
+    std::vector<double>& output_image,
+    size_t n_pixels, size_t n_moments,
+    size_t i, size_t n_bits);
+
+
+void quantize_dequantize_image(
+    const std::vector<double>& input_image,
+    std::vector<double>& output_image,
+    size_t n_pixels, size_t n_moments,
+    const std::vector<int>& quantization_curve);
+
+
 /*****************************************************************************/
 /* Create quantization curves                                                */
 /*****************************************************************************/

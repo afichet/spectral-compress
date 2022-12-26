@@ -239,9 +239,32 @@ public:
     static void split_extension(const char* filename, std::string& base_str, std::string& extension_str);
 
 
-    // TODO: Check this
     template<typename T>
-    static T error_images(
+    static T rmse_images(
+        const std::vector<T>& reference,
+        const std::vector<T>& comparison,
+        size_t n_pixels,
+        size_t n_bands)
+    {
+        T error = 0;
+
+        for (size_t px = 0; px < n_pixels; px++) {
+            for (size_t b = 0; b < n_bands; b++) {
+                const T ref = reference [px * n_bands + b];
+                const T cmp = comparison[px * n_bands + b] ;
+
+                const T diff = ref - cmp;
+
+                error += diff * diff;
+            }
+        }
+
+        return std::sqrt(error / (T)(n_pixels * n_bands));
+    }
+
+
+    template<typename T>
+    static T rrmse_images(
         const std::vector<T>& reference,
         const std::vector<T>& comparison,
         size_t n_pixels,
@@ -251,7 +274,7 @@ public:
 
         for (size_t px = 0; px < n_pixels; px++) {
             T px_sum_err = 0;
-            // T avg = 0;
+            T avg = 0;
 
             for (size_t b = 0; b < n_bands; b++) {
                 const T ref = reference [px * n_bands + b];
@@ -259,21 +282,80 @@ public:
 
                 const T diff = ref - cmp;
 
-                // avg += ref;
+                avg += ref;
                 px_sum_err += diff * diff;
             }
 
-            // avg /= (T)n_bands;
+            // TODO: Double check
+            px_sum_err /= (T)n_bands;
+            avg /= (T)n_bands;
 
-            // if (avg > 0) {
-            //     error += std::sqrt(px_sum_err) / avg;
-            // }
-
-            error += std::sqrt(px_sum_err);
+            if (avg > 0) {
+                error += std::sqrt(px_sum_err) / avg;
+            }
         }
 
         return error / (T)n_pixels;
     }
+
+
+    template<typename T>
+    static T max_error_images(
+        const std::vector<T>& reference,
+        const std::vector<T>& comparison,
+        size_t n_pixels,
+        size_t n_bands)
+    {
+        T max_error = 0;
+
+        for (size_t px = 0; px < n_pixels; px++) {
+            for (size_t b = 0; b < n_bands; b++) {
+                const T ref = reference [px * n_bands + b];
+                const T cmp = comparison[px * n_bands + b] ;
+
+                const T diff = ref - cmp;
+
+                max_error = std::max(max_error, std::abs(diff));
+            }
+        }
+
+        return max_error;
+    }
+    // // TODO: Check this
+    // template<typename T>
+    // static T error_images(
+    //     const std::vector<T>& reference,
+    //     const std::vector<T>& comparison,
+    //     size_t n_pixels,
+    //     size_t n_bands)
+    // {
+    //     T error = 0;
+
+    //     for (size_t px = 0; px < n_pixels; px++) {
+    //         T px_sum_err = 0;
+    //         // T avg = 0;
+
+    //         for (size_t b = 0; b < n_bands; b++) {
+    //             const T ref = reference [px * n_bands + b];
+    //             const T cmp = comparison[px * n_bands + b] ;
+
+    //             const T diff = ref - cmp;
+
+    //             // avg += ref;
+    //             px_sum_err += diff * diff;
+    //         }
+
+    //         // avg /= (T)n_bands;
+
+    //         // if (avg > 0) {
+    //         //     error += std::sqrt(px_sum_err) / avg;
+    //         // }
+
+    //         error += std::sqrt(px_sum_err);
+    //     }
+
+    //     return error / (T)n_pixels;
+    // }
 
 
     template<typename T>

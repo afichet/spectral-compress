@@ -51,6 +51,8 @@
 #include <curve_quantization.h>
 #include <curve_compression.h>
 
+#include "stats.h"
+
 /**
  * TODO:
  * - Add an argument
@@ -325,7 +327,7 @@ void compress_image(
 }
 
 
-double error_for_quantization_curve(
+stats_data stats_for_quantization_curve(
     SpectralStorageMethod method,
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,
@@ -339,45 +341,51 @@ double error_for_quantization_curve(
 {
     switch(method) {
         case LINEAR:
-            return linear_error_for_quantization_curve(
+            return linear_stats_for_quantization_curve(
                 wavelengths, spectral_image,
-                width * height, n_moments,
+                width, height,
+                n_moments,
                 compressed_moments, mins, maxs,
                 quantization_curve
             );
         case BOUNDED:
-            return bounded_error_for_quantization_curve(
+            return bounded_stats_for_quantization_curve(
                 wavelengths, spectral_image,
-                width * height, n_moments,
+                width, height,
+                n_moments,
                 compressed_moments, mins, maxs,
                 quantization_curve
             );
         case UNBOUNDED:
-            return unbounded_error_for_quantization_curve(
+            return unbounded_stats_for_quantization_curve(
                 wavelengths, spectral_image,
-                width * height, n_moments,
+                width, height,
+                n_moments,
                 compressed_moments, mins, maxs,
                 quantization_curve
             );
         case UNBOUNDED_TO_BOUNDED:
-            return unbounded_to_bounded_error_for_quantization_curve(
+            return unbounded_to_bounded_stats_for_quantization_curve(
                 wavelengths, spectral_image,
-                width * height, n_moments,
+                width, height,
+                n_moments,
                 compressed_moments, mins, maxs,
                 quantization_curve
             );
         case UPPERBOUND:
-            return upperbound_error_for_quantization_curve(
+            return upperbound_stats_for_quantization_curve(
                 wavelengths, spectral_image,
-                width * height, n_moments,
+                width, height,
+                n_moments,
                 compressed_moments, mins, maxs,
                 relative_scales, global_max,
                 quantization_curve
             );
         case TWOBOUNDS:
-            return twobounds_error_for_quantization_curve(
+            return twobounds_stats_for_quantization_curve(
                 wavelengths, spectral_image,
-                width * height, n_moments,
+                width, height,
+                n_moments,
                 compressed_moments, mins, maxs,
                 relative_scales, global_min, global_max,
                 quantization_curve
@@ -385,11 +393,11 @@ double error_for_quantization_curve(
     }
 
     assert(0);
-    return 0;
+    return stats_data();
 }
 
 
-double error_for_quantization_and_compression_curves(
+stats_data stats_for_quantization_and_compression_curves(
     SpectralStorageMethod method,
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,
@@ -404,7 +412,7 @@ double error_for_quantization_and_compression_curves(
 {
     switch(method) {
         case LINEAR:
-            return linear_error_for_compression_curve(
+            return linear_stats_for_compression_curve(
                 wavelengths, spectral_image,
                 width, height, n_moments,
                 compressed_moments, mins, maxs,
@@ -412,7 +420,7 @@ double error_for_quantization_and_compression_curves(
                 compression_curve
             );
         case BOUNDED:
-            return bounded_error_for_compression_curve(
+            return bounded_stats_for_compression_curve(
                 wavelengths, spectral_image,
                 width, height, n_moments,
                 compressed_moments, mins, maxs,
@@ -420,7 +428,7 @@ double error_for_quantization_and_compression_curves(
                 compression_curve
             );
         case UNBOUNDED:
-            return unbounded_error_for_compression_curve(
+            return unbounded_stats_for_compression_curve(
                 wavelengths, spectral_image,
                 width, height, n_moments,
                 compressed_moments, mins, maxs,
@@ -428,7 +436,7 @@ double error_for_quantization_and_compression_curves(
                 compression_curve
             );
         case UNBOUNDED_TO_BOUNDED:
-            return unbounded_to_bounded_error_for_compression_curve(
+            return unbounded_to_bounded_stats_for_compression_curve(
                 wavelengths, spectral_image,
                 width, height, n_moments,
                 compressed_moments, mins, maxs,
@@ -436,7 +444,7 @@ double error_for_quantization_and_compression_curves(
                 compression_curve
             );
         case UPPERBOUND:
-            return upperbound_error_for_compression_curve(
+            return upperbound_stats_for_compression_curve(
                 wavelengths, spectral_image,
                 width, height, n_moments,
                 compressed_moments, mins, maxs,
@@ -445,7 +453,7 @@ double error_for_quantization_and_compression_curves(
                 compression_curve
             );
         case TWOBOUNDS:
-            return twobounds_error_for_compression_curve(
+            return twobounds_stats_for_compression_curve(
                 wavelengths, spectral_image,
                 width, height, n_moments,
                 compressed_moments, mins, maxs,
@@ -456,7 +464,7 @@ double error_for_quantization_and_compression_curves(
     }
 
     assert(0);
-    return 0;
+    return stats_data();
 }
 
 
@@ -527,8 +535,8 @@ void compress_spectral_framebuffer(
            compression_curve_timing(0),
            compression_timing(0);
 
-    double quantization_error(0),
-           compression_error(0);
+    stats_data quantization_error,
+               compression_error;
 
     generate_quantization_curve(
         method,
@@ -565,7 +573,7 @@ void compress_spectral_framebuffer(
     // Compute errors (may be done twice if the quantization / compression
     // profile is built at runtime)
 
-    quantization_error = error_for_quantization_curve(
+    quantization_error = stats_for_quantization_curve(
         method,
         wavelengths, spectral_image,
         width, height, n_moments,
@@ -574,7 +582,7 @@ void compress_spectral_framebuffer(
         relative_scales, global_min_d, global_max_d
     );
 
-    compression_error = error_for_quantization_and_compression_curves(
+    compression_error = stats_for_quantization_and_compression_curves(
         method,
         wavelengths, spectral_image,
         width, height, n_moments,
@@ -649,13 +657,19 @@ void compress_spectral_framebuffer(
         for (const int& q : quantization_curve) {
             log_stream << q << " ";
         }
-        log_stream << std::endl << quantization_error << std::endl;
+        log_stream << std::endl;
+        log_stream << "rmse: " << quantization_error.rmse_error << std::endl;
+        log_stream << "rrmse: " << quantization_error.rrmse_error << std::endl;
+        log_stream << "max: " << quantization_error.max_error << std::endl;
 
         log_stream << "Compression curve:" << std::endl;
         for (const float& c : compression_curve) {
             log_stream << c << " ";
         }
-        log_stream << std::endl << compression_error << std::endl;
+        log_stream << std::endl;
+        log_stream << "rmse: " << compression_error.rmse_error << std::endl;
+        log_stream << "rrmse: " << compression_error.rrmse_error << std::endl;
+        log_stream << "max: " << compression_error.max_error << std::endl;
 
         log_stream << "Timings:" << std::endl;
         log_stream << "Quantization curve: " << quantization_curve_timing << " ms" << std::endl;

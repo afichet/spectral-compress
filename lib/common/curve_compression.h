@@ -36,6 +36,39 @@
 #include <cstdint>
 #include <cstddef>
 
+
+/*****************************************************************************/
+/* Utility functions                                                         */
+/*****************************************************************************/
+
+void compress_decompress_framebuffer(
+    const std::vector<float>& framebuffer_in,
+    std::vector<float>& framebuffer_out,
+    uint32_t width, uint32_t height,
+    uint32_t bits_per_sample,
+    uint32_t exponent_bits_per_sample,
+    float frame_distance,
+    uint32_t downsampling_ratio);
+
+
+void compress_decompress_single_image(
+    const std::vector<double>& input_image,
+    std::vector<double>& output_image,
+    uint32_t width, uint32_t height,
+    size_t n_moments,
+    uint32_t bits_per_sample,
+    size_t i, float frame_distance);
+
+
+void compress_decompress_image(
+    const std::vector<double>& input_framebuffers,
+    std::vector<double>& output_framebuffers,
+    uint32_t width, uint32_t height,
+    size_t n_moments,
+    const std::vector<int>& quantization_curve,
+    const std::vector<float>& compression_curve);
+
+
 /*****************************************************************************/
 /* Create compression curves                                                 */
 /*****************************************************************************/

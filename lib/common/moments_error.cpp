@@ -56,7 +56,7 @@ double linear_average_err(
         reconst_spectral_image
     );
 
-    return Util::error_images(
+    return Util::rmse_images(
         spectral_image,
         reconst_spectral_image,
         n_px, n_wl
@@ -84,7 +84,7 @@ double unbounded_average_err(
         reconst_spectral_image
     );
 
-    return Util::error_images(
+    return Util::rmse_images(
         spectral_image,
         reconst_spectral_image,
         n_px, n_wl
@@ -112,7 +112,7 @@ double bounded_average_err(
         reconst_spectral_image
     );
 
-    return Util::error_images(
+    return Util::rmse_images(
         spectral_image,
         reconst_spectral_image,
         n_px, n_wl
@@ -140,7 +140,7 @@ double unbounded_to_bounded_average_err(
         reconst_spectral_image
     );
 
-    return Util::error_images(
+    return Util::rmse_images(
         spectral_image,
         reconst_spectral_image,
         n_px, n_wl

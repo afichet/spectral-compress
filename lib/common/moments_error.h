@@ -100,7 +100,7 @@ double upperbound_average_err(
         reconst_spectral_image
     );
 
-    return Util::error_images(
+    return Util::rmse_images(
         spectral_image,
         reconst_spectral_image,
         n_px, n_wl
@@ -135,7 +135,7 @@ double twobounds_average_err(
         reconst_spectral_image
     );
 
-    return Util::error_images(
+    return Util::rmse_images(
         spectral_image,
         reconst_spectral_image,
         n_px, n_wl

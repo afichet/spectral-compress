@@ -313,18 +313,18 @@ void compress_decompress_single_image(
 
 
 void compress_decompress_image(
-    const std::vector<double>& input_framebuffers,
-    std::vector<double>& output_framebuffers,
+    const std::vector<double>& input_image,
+    std::vector<double>& output_image,
     uint32_t width, uint32_t height,
     size_t n_moments,
     const std::vector<int>& quantization_curve,
     const std::vector<float>& compression_curve)
 {
-    assert(input_framebuffers.size() == width * height * n_moments);
+    assert(input_image.size() == width * height * n_moments);
     assert(quantization_curve.size() == n_moments);
     assert(compression_curve.size() == n_moments);
 
-    output_framebuffers.resize(width * height * n_moments);
+    output_image.resize(width * height * n_moments);
 
     // JXL compression for every layers
     #pragma omp parallel for
@@ -334,7 +334,7 @@ void compress_decompress_image(
 
         // Copy cast to float
         for (size_t px = 0; px < width * height; px++) {
-            framebuffer_in[px] = input_framebuffers[px * n_moments + m];
+            framebuffer_in[px] = input_image[px * n_moments + m];
         }
 
         // Compress / decompress
@@ -362,7 +362,7 @@ void compress_decompress_image(
 
         // Copy cast to float
         for (size_t px = 0; px < width * height; px++) {
-            output_framebuffers[px * n_moments + m] = framebuffer_out[px];
+            output_image[px * n_moments + m] = framebuffer_out[px];
         }
     }
 }
@@ -1133,7 +1133,7 @@ double linear_error_for_compression_curve(
         decompressed_spectral_image
     );
 
-    return Util::error_images(
+    return Util::rmse_images(
         ref_spectral_image,
         decompressed_spectral_image,
         width * height,
@@ -1183,7 +1183,7 @@ double unbounded_error_for_compression_curve(
         decompressed_spectral_image
     );
 
-    return Util::error_images(
+    return Util::rmse_images(
         ref_spectral_image,
         decompressed_spectral_image,
         width * height,
@@ -1233,7 +1233,7 @@ double bounded_error_for_compression_curve(
         decompressed_spectral_image
     );
 
-    return Util::error_images(
+    return Util::rmse_images(
         ref_spectral_image,
         decompressed_spectral_image,
         width * height,
@@ -1283,7 +1283,7 @@ double unbounded_to_bounded_error_for_compression_curve(
         decompressed_spectral_image
     );
 
-    return Util::error_images(
+    return Util::rmse_images(
         ref_spectral_image,
         decompressed_spectral_image,
         width * height,
@@ -1338,7 +1338,7 @@ double upperbound_error_for_compression_curve(
         decompressed_spectral_image
     );
 
-    return Util::error_images(
+    return Util::rmse_images(
         ref_spectral_image,
         decompressed_spectral_image,
         width * height,
@@ -1395,7 +1395,7 @@ double twobounds_error_for_compression_curve(
         decompressed_spectral_image
     );
 
-    return Util::error_images(
+    return Util::rmse_images(
         ref_spectral_image,
         decompressed_spectral_image,
         width * height,

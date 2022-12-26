@@ -42,17 +42,48 @@
 
 
 void quantize_dequantize_single_image(
-    const std::vector<double>& src,
-    size_t n_px, size_t n_moments,
-    std::vector<double>& dest,
+    const std::vector<double>& input_image,
+    std::vector<double>& output_image,
+    size_t n_pixels, size_t n_moments,
     size_t i, size_t n_bits)
 {
-    dest.resize(src.size());
+    assert(input_image.size() == n_pixels * n_moments);
+    assert(i < n_moments);
 
-    std::memcpy(dest.data(), src.data(), sizeof(double) * src.size());
+    output_image.resize(input_image.size());
 
-    for (size_t px = 0; px < n_px; px++) {
-        dest[px * n_moments + i] = Util::quantize_dequantize(src[px * n_moments + i], n_bits);
+    std::memcpy(output_image.data(), input_image.data(), sizeof(double) * input_image.size());
+
+    #pragma omp parallel for
+    for (size_t px = 0; px < n_pixels; px++) {
+        output_image[px * n_moments + i] = Util::quantize_dequantize(input_image[px * n_moments + i], n_bits);
+    }
+}
+
+
+void quantize_dequantize_image(
+    const std::vector<double>& input_image,
+    std::vector<double>& output_image,
+    size_t n_pixels, size_t n_moments,
+    const std::vector<int>& quantization_curve)
+{
+    assert(input_image.size() == n_pixels * n_moments);
+    assert(quantization_curve.size() >= n_moments);
+
+    output_image.resize(input_image.size());
+
+    #pragma omp parallel for
+    for (size_t px = 0; px < n_pixels; px++) {
+        // We ignore moment 0
+        output_image[px * n_moments + 0] = input_image[px * n_moments + 0];
+
+        for (size_t m = 1; m < n_moments; m++) {
+            output_image[px * n_moments + m] =
+                Util::quantize_dequantize(
+                    input_image[px * n_moments + m],
+                    quantization_curve[m]
+                );
+        }
     }
 }
 
@@ -87,8 +118,8 @@ double linear_compute_quantization_curve(
 
     quantize_dequantize_single_image(
         norm_moments,
-        n_px, n_moments,
         quantized_moments,
+        n_px, n_moments,
         1, quantization_curve[1]
     );
 
@@ -106,8 +137,8 @@ double linear_compute_quantization_curve(
         for (size_t n_bits = quantization_curve[m] - 1; n_bits > 0; n_bits--) {
             quantize_dequantize_single_image(
                 norm_moments,
-                n_px, n_moments,
                 quantized_moments,
+                n_px, n_moments,
                 m, n_bits
             );
 
@@ -165,8 +196,8 @@ double unbounded_compute_quantization_curve(
 
     quantize_dequantize_single_image(
         norm_moments,
-        n_px, n_moments,
         quantized_moments,
+        n_px, n_moments,
         1, quantization_curve[1]
     );
 
@@ -184,8 +215,8 @@ double unbounded_compute_quantization_curve(
         for (size_t n_bits = quantization_curve[m] - 1; n_bits > 0; n_bits--) {
             quantize_dequantize_single_image(
                 norm_moments,
-                n_px, n_moments,
                 quantized_moments,
+                n_px, n_moments,
                 m, n_bits
             );
 
@@ -243,9 +274,8 @@ double bounded_compute_quantization_curve(
 
     quantize_dequantize_single_image(
         norm_moments,
-        n_px,
-        n_moments,
         quantized_moments,
+        n_px, n_moments,
         1, quantization_curve[1]
     );
 
@@ -263,9 +293,8 @@ double bounded_compute_quantization_curve(
         for (size_t n_bits = quantization_curve[m] - 1; n_bits > 0; n_bits--) {
             quantize_dequantize_single_image(
                 norm_moments,
-                n_px,
-                n_moments,
                 quantized_moments,
+                n_px, n_moments,
                 m, n_bits
             );
 
@@ -325,8 +354,8 @@ double unbounded_to_bounded_compute_quantization_curve(
 
     quantize_dequantize_single_image(
         norm_moments,
-        n_px, n_moments,
         quantized_moments,
+        n_px, n_moments,
         1, quantization_curve[1]
     );
 
@@ -344,8 +373,8 @@ double unbounded_to_bounded_compute_quantization_curve(
         for (size_t n_bits = quantization_curve[m] - 1; n_bits > 0; n_bits--) {
             quantize_dequantize_single_image(
                 norm_moments,
-                n_px, n_moments,
                 quantized_moments,
+                n_px, n_moments,
                 m, n_bits
             );
 
@@ -409,8 +438,8 @@ double upperbound_compute_quantization_curve(
 
     quantize_dequantize_single_image(
         normalized_moments_image,
-        n_px, n_moments,
         quantized_moments,
+        n_px, n_moments,
         1, quantization_curve[1]
     );
 
@@ -430,8 +459,8 @@ double upperbound_compute_quantization_curve(
         for (size_t n_bits = quantization_curve[m] - 1; n_bits > 0; n_bits--) {
             quantize_dequantize_single_image(
                 normalized_moments_image,
-                n_px, n_moments,
                 quantized_moments,
+                n_px, n_moments,
                 m, n_bits
             );
 
@@ -500,8 +529,8 @@ double twobounds_compute_quantization_curve(
 
     quantize_dequantize_single_image(
         normalized_moments_image,
-        n_px, n_moments,
         quantized_moments,
+        n_px, n_moments,
         1, quantization_curve[1]
     );
 
@@ -522,8 +551,8 @@ double twobounds_compute_quantization_curve(
         for (size_t n_bits = quantization_curve[m] - 1; n_bits > 0; n_bits--) {
             quantize_dequantize_single_image(
                 normalized_moments_image,
-                n_px, n_moments,
                 quantized_moments,
+                n_px, n_moments,
                 m, n_bits
             );
 
@@ -576,20 +605,14 @@ double linear_error_for_quantization_curve(
     assert(normalized_moments.size() == n_px * n_moments);
 
     // Quantize & dequantize each moment of the image
-    std::vector<double> quantized_moments(normalized_moments.size());
+    std::vector<double> quantized_moments;
 
-    for (size_t px = 0; px < n_px; px++) {
-        // We ignore moment 0
-        quantized_moments[px * n_moments + 0] = normalized_moments[px * n_moments + 0];
-
-        for (size_t m = 1; m < n_moments; m++) {
-            quantized_moments[px * n_moments + m] =
-                Util::quantize_dequantize(
-                    normalized_moments[px * n_moments + m],
-                    quantization_curve[m]
-                );
-        }
-    }
+    quantize_dequantize_image(
+        normalized_moments,
+        quantized_moments,
+        n_px, n_moments,
+        quantization_curve
+    );
 
     return linear_average_err(
         wavelengths,
@@ -613,20 +636,14 @@ double unbounded_error_for_quantization_curve(
     assert(normalized_moments.size() == n_px * n_moments);
 
     // Quantize & dequantize each moment of the image
-    std::vector<double> quantized_moments(normalized_moments.size());
+    std::vector<double> quantized_moments;
 
-    for (size_t px = 0; px < n_px; px++) {
-        // We ignore moment 0
-        quantized_moments[px * n_moments + 0] = normalized_moments[px * n_moments + 0];
-
-        for (size_t m = 1; m < n_moments; m++) {
-            quantized_moments[px * n_moments + m] =
-                Util::quantize_dequantize(
-                    normalized_moments[px * n_moments + m],
-                    quantization_curve[m]
-                );
-        }
-    }
+    quantize_dequantize_image(
+        normalized_moments,
+        quantized_moments,
+        n_px, n_moments,
+        quantization_curve
+    );
 
     return unbounded_average_err(
         wavelengths,
@@ -650,20 +667,14 @@ double bounded_error_for_quantization_curve(
     assert(normalized_moments.size() == n_px * n_moments);
 
     // Quantize & dequantize each moment of the image
-    std::vector<double> quantized_moments(normalized_moments.size());
+    std::vector<double> quantized_moments;
 
-    for (size_t px = 0; px < n_px; px++) {
-        // We ignore moment 0
-        quantized_moments[px * n_moments + 0] = normalized_moments[px * n_moments + 0];
-
-        for (size_t m = 1; m < n_moments; m++) {
-            quantized_moments[px * n_moments + m] =
-                Util::quantize_dequantize(
-                    normalized_moments[px * n_moments + m],
-                    quantization_curve[m]
-                );
-        }
-    }
+    quantize_dequantize_image(
+        normalized_moments,
+        quantized_moments,
+        n_px, n_moments,
+        quantization_curve
+    );
 
     return bounded_average_err(
         wavelengths,
@@ -687,20 +698,14 @@ double unbounded_to_bounded_error_for_quantization_curve(
     assert(normalized_moments.size() == n_px * n_moments);
 
     // Quantize & dequantize each moment of the image
-    std::vector<double> quantized_moments(normalized_moments.size());
+    std::vector<double> quantized_moments;
 
-    for (size_t px = 0; px < n_px; px++) {
-        // We ignore moment 0
-        quantized_moments[px * n_moments + 0] = normalized_moments[px * n_moments + 0];
-
-        for (size_t m = 1; m < n_moments; m++) {
-            quantized_moments[px * n_moments + m] =
-                Util::quantize_dequantize(
-                    normalized_moments[px * n_moments + m],
-                    quantization_curve[m]
-                );
-        }
-    }
+    quantize_dequantize_image(
+        normalized_moments,
+        quantized_moments,
+        n_px, n_moments,
+        quantization_curve
+    );
 
     return unbounded_to_bounded_average_err(
         wavelengths,
@@ -726,20 +731,14 @@ double upperbound_error_for_quantization_curve(
     assert(normalized_moments.size() == n_px * n_moments);
 
     // Quantize & dequantize each moment of the image
-    std::vector<double> quantized_moments(normalized_moments.size());
+    std::vector<double> quantized_moments;
 
-    for (size_t px = 0; px < n_px; px++) {
-        // We ignore moment 0
-        quantized_moments[px * n_moments + 0] = normalized_moments[px * n_moments + 0];
-
-        for (size_t m = 1; m < n_moments; m++) {
-            quantized_moments[px * n_moments + m] =
-                Util::quantize_dequantize(
-                    normalized_moments[px * n_moments + m],
-                    quantization_curve[m]
-                );
-        }
-    }
+    quantize_dequantize_image(
+        normalized_moments,
+        quantized_moments,
+        n_px, n_moments,
+        quantization_curve
+    );
 
     return upperbound_average_err(
         wavelengths,
@@ -768,20 +767,14 @@ double twobounds_error_for_quantization_curve(
     assert(normalized_moments.size() == n_px * n_moments);
 
     // Quantize & dequantize each moment of the image
-    std::vector<double> quantized_moments(normalized_moments.size());
+    std::vector<double> quantized_moments;
 
-    for (size_t px = 0; px < n_px; px++) {
-        // We ignore moment 0
-        quantized_moments[px * n_moments + 0] = normalized_moments[px * n_moments + 0];
-
-        for (size_t m = 1; m < n_moments; m++) {
-            quantized_moments[px * n_moments + m] =
-                Util::quantize_dequantize(
-                    normalized_moments[px * n_moments + m],
-                    quantization_curve[m]
-                );
-        }
-    }
+    quantize_dequantize_image(
+        normalized_moments,
+        quantized_moments,
+        n_px, n_moments,
+        quantization_curve
+    );
 
     return twobounds_average_err(
         wavelengths,
