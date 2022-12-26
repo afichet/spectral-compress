@@ -10,7 +10,7 @@ if not os.path.exists(path_out):
     os.mkdir(path_out)
 
 techniques = ['linear', 'unbounded', 'unbounded_to_bounded', 'upperbound', 'twobounds']
-start_bits = [8, 6, 8, 10, 12]
+start_bits = [6, 8, 10, 12]
 # start_compress = [0.1]
 flat_quantization = [True, False]
 flat_compression  = [True, False]
