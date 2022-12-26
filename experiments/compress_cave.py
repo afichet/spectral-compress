@@ -18,7 +18,8 @@ flat_compression  = [True, False]
 flat_curves = [True, False]
 
 def run_compressor(
-    input_file, output_file, log_file,
+    input_file, output_file,
+    log_file, binlog_file,
     technique,
     n_bits_start, flat_quantization,
     compression_start, flat_compression):
@@ -32,6 +33,7 @@ def run_compressor(
     args = [path_bin,
         spectral_image, output_file,
         '-l', log_file,
+        '-k', binlog_file,
         '-m', tech,
         '-q', str(n_bits_start),
         '-a', str(0.1),
@@ -67,9 +69,11 @@ for d in os.listdir(path_data):
 
                 output_file = os.path.join(path_curves, d[:-4] + '.jxl')
                 log_file    = os.path.join(path_curves, d[:-4] + '.txt')
+                binlog_file = os.path.join(path_curves, d[:-4] + '.bin')
 
                 print(spectral_image, output_file)
 
                 run_compressor(
-                    spectral_image, output_file, log_file,
+                    spectral_image, output_file,
+                    log_file, binlog_file,
                     tech, bits, flat, 0.1, flat)
