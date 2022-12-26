@@ -488,7 +488,9 @@ void compress_spectral_framebuffer(
     SGEGSpectralGroup& sg,
     // Logging
     bool log,
-    std::stringstream& log_stream)
+    std::stringstream& log_stream,
+    stats_data &quantization_error,
+    stats_data &compression_error)
 {
     const uint32_t n_moments = framebuffer->wavelengths_nm.size();
     const uint32_t n_pixels = width * height;
@@ -534,9 +536,6 @@ void compress_spectral_framebuffer(
     double quantization_curve_timing(0),
            compression_curve_timing(0),
            compression_timing(0);
-
-    stats_data quantization_error,
-               compression_error;
 
     generate_quantization_curve(
         method,
@@ -727,7 +726,11 @@ int main(int argc, char *argv[])
 {
     std::string filename_in, filename_out;
     bool log_is_active = false;
-    std::string log_filepath;
+
+    bool has_txt_log;
+    bool has_bin_log;
+
+    std::string log_filepath, binarylog_filepath;
     std::stringstream log_content;
 
     float compression_dc = .1f;
@@ -749,9 +752,11 @@ int main(int argc, char *argv[])
         TCLAP::UnlabeledValueArg<std::string> inputFileArg("Input", "Specifies the Spectral OpenEXR file to compress from (input).", true, "input.exr", "path");
         TCLAP::UnlabeledValueArg<std::string> outputFileArg("Output", "Specifies the JPEG XL file to compress spectral data to (output).", true, "output.jxl", "path");
         TCLAP::ValueArg<std::string> logFileArg("l", "log", "Specifies a file to log timings and quantization and compression curves into,", false, "log.txt", "path");
+        TCLAP::ValueArg<std::string> binarylogFileArg("k", "binary_log", "Specifies a file to log timings into in binary form,", false, "log.bin", "path");
         cmd.add(inputFileArg);
         cmd.add(outputFileArg);
         cmd.add(logFileArg);
+        cmd.add(binarylogFileArg);
 
         // Compresion tweaking
         FrameDistanceConstraint frameDistanceConstraint;
@@ -784,10 +789,16 @@ int main(int argc, char *argv[])
 
         filename_in     = inputFileArg.getValue();
         filename_out    = outputFileArg.getValue();
-        log_is_active   = logFileArg.isSet();
+        has_txt_log     = logFileArg.isSet();
+        has_bin_log     = binarylogFileArg.isSet();
+        log_is_active   = logFileArg.isSet() || binarylogFileArg.isSet();
 
-        if (log_is_active) {
+        if (has_txt_log) {
             log_filepath = logFileArg.getValue();
+        }
+
+        if (has_bin_log) {
+            binarylog_filepath = binarylogFileArg.getValue();
         }
 
         compression_dc       = frameDistanceDCArg.getValue();
@@ -829,6 +840,9 @@ int main(int argc, char *argv[])
     JXLImage jxl_out(exr_in.width(), exr_in.height());
     SGEGBox box;
 
+    // Errors
+    std::vector<stats_data> quantization_errors, compression_errors;
+
     box.exr_attributes = exr_in.getAttributesData();
 
     // Run compression for each spectral group
@@ -849,6 +863,8 @@ int main(int argc, char *argv[])
         std::vector<int> quantization_curve;
         std::vector<float> compression_curve;
 
+        stats_data quantization_error, compression_error;
+
         compress_spectral_framebuffer(
             method,
             fb,
@@ -858,8 +874,13 @@ int main(int argc, char *argv[])
             compressed_moments,
             sg,
             log_is_active,
-            log_content
+            log_content,
+            quantization_error,
+            compression_error
         );
+
+        quantization_errors.push_back(quantization_error);
+        compression_errors.push_back(compression_error);
 
         assert(quantization_curve.size() == compressed_moments.size());
         assert(compression_curve.size() == compressed_moments.size());
@@ -928,6 +949,27 @@ int main(int argc, char *argv[])
 
         std::ofstream log_file(log_filepath);
         log_file << log_content.str();
+    }
+
+    // Saves in binary form
+    if (has_bin_log) {
+        FILE *f = fopen(binarylog_filepath.c_str(), "wb");
+
+        uint32_t n = quantization_errors.size();
+
+        fwrite(&n, sizeof(uint32_t), 1, f);
+
+        for (size_t i = 0; i < quantization_errors.size(); i++) {
+            fwrite(&quantization_errors[i].rmse_error, sizeof(double), 1, f);
+            fwrite(&quantization_errors[i].rrmse_error, sizeof(double), 1, f);
+            fwrite(&quantization_errors[i].max_error, sizeof(double), 1, f);
+
+            fwrite(&compression_errors[i].rmse_error, sizeof(double), 1, f);
+            fwrite(&compression_errors[i].rrmse_error, sizeof(double), 1, f);
+            fwrite(&compression_errors[i].max_error, sizeof(double), 1, f);
+        }
+
+        fclose(f);
     }
 
 #ifndef NDEBUG
