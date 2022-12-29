@@ -366,4 +366,10 @@ public:
         return std::round(src * (T)v) / (T)v;
     }
 
+
+    static bool ends_with(std::string const & value, std::string const & ending)
+    {
+        if (ending.size() > value.size()) return false;
+        return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+    }
 };

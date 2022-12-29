@@ -18,8 +18,8 @@ add_subdirectory(eval-quantization)
 # Image conversion tools
 add_subdirectory(cave-to-exr)
 add_subdirectory(envi-to-exr)
-
 add_subdirectory(exr-diff)
+add_subdirectory(exr-png)
 
 # REMOVE!
 add_subdirectory(temp-diff)
