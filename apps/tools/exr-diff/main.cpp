@@ -53,7 +53,8 @@ bool compare_spectral_images(
     const SpectralFramebuffer* img_b,
     uint32_t width, uint32_t height,
     std::vector<float>& diff_image,
-    float& min_val, float& max_val)
+    float& min_val, float& max_val,
+    float& avg_err)
 {
     // Check if dimensions match
     if (img_a->wavelengths_nm.size() != img_b->wavelengths_nm.size()) {
@@ -93,6 +94,14 @@ bool compare_spectral_images(
         max_val = std::max(max_val, diff_image[i]);
     }
 
+    avg_err = 0;
+
+    for (size_t i = 0; i < width * height; i++) {
+        avg_err += diff_image[i];
+    }
+
+    avg_err /= (float)(width * height);
+
     return true;
 }
 
@@ -125,10 +134,14 @@ int main(int argc, char* argv[])
     std::string filename_a, filename_b;
     std::string filename_output;
 
+    float custom_lower_bound, custom_upper_bound;
+
     bool custom_lower_bound_is_set = false;
     bool custom_upper_bound_is_set = false;
 
-    float custom_lower_bound, custom_upper_bound;
+    std::string error_output;
+
+    bool error_output_is_set = false;
 
     // Parse arguments
     try {
@@ -148,21 +161,33 @@ int main(int argc, char* argv[])
         cmd.add(lowerBoundArg);
         cmd.add(upperBoundArg);
 
+        TCLAP::ValueArg<std::string> errorFileArg("e", "error", "Sets a file where to write error log.", false, "error.bin", "path");
+
+        cmd.add(errorFileArg);
+
         cmd.parse(argc, argv);
 
         filename_a = inputAFileArg.getValue();
         filename_b = inputBFileArg.getValue();
         filename_output = outputFileArg.getValue();
 
-        custom_lower_bound_is_set  = lowerBoundArg.isSet();
+        custom_lower_bound_is_set = lowerBoundArg.isSet();
         custom_upper_bound_is_set = upperBoundArg.isSet();
 
         custom_lower_bound  = lowerBoundArg.getValue();
         custom_upper_bound = upperBoundArg.getValue();
+
+        error_output_is_set = errorFileArg.isSet();
+        error_output = errorFileArg.getValue();
     } catch (TCLAP::ArgException &e) {
         std::cerr << "Error: " << e.error() << " for arguemnt " << e.argId() << std::endl;
-
         return 1;
+    }
+
+    FILE* f_err = NULL;
+
+    if (error_output_is_set) {
+        f_err = fopen(error_output.c_str(), "wb");
     }
 
     EXRSpectralImage exr_in_a(filename_a);
@@ -200,16 +225,20 @@ int main(int argc, char* argv[])
 
                 // Do the comparison
                 std::vector<float> framebuffer_error;
-                float min_err, max_err;
+                float min_err, max_err, avg_err;
 
                 compare_spectral_images(
                     fb_a, fb_b,
                     width, height,
                     framebuffer_error,
-                    min_err, max_err
+                    min_err, max_err,
+                    avg_err
                 );
 
-                std::cout << "Error: [" << min_err << ", " << max_err << "]" << std::endl;
+                if (error_output_is_set) {
+                    fwrite(&avg_err, sizeof(float), 1, f_err);
+                }
+                // std::cout << "Error: [" << min_err << ", " << max_err << "]" << std::endl;
 
                 float lower, upper;
 
@@ -242,6 +271,10 @@ int main(int argc, char* argv[])
                 break;
             }
         }
+    }
+
+    if (error_output_is_set) {
+        fclose(f_err);
     }
 
     return 0;
