@@ -1,0 +1,111 @@
+\section{Balloons}
+
+\begin{tabularx}{\textwidth}{cX}
+    \raisebox{-0.5\height}{\includegraphics[height=3cm]{cave/balloons_ms.png}}
+    &
+    \begin{tabular}{l}
+        File size: 6 MiB\\
+        Bands: 32
+    \end{tabular}\\
+\end{tabularx}
+
+\begin{figure}[h]
+    \begin{subfigure}{.5\linewidth}
+        \resizebox*{\linewidth}{!}{\input{cave/balloons_ms_err_q.pgf}}
+    \end{subfigure}\hfill%
+    \begin{subfigure}{.5\linewidth}
+        \resizebox*{\linewidth}{!}{\input{cave/balloons_ms_err_c.pgf}}
+    \end{subfigure}
+    \begin{subfigure}{.5\linewidth}
+        \resizebox*{\linewidth}{!}{\input{cave/balloons_ms_ratio.pgf}}
+    \end{subfigure}\hfill%
+    \begin{subfigure}{.5\linewidth}
+        \resizebox*{\linewidth}{!}{\input{cave/balloons_ms_err_size.pgf}}
+    \end{subfigure}
+\end{figure}
+\clearpage
+
+
+\begin{tabularx}{\linewidth}{l c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}}
+    \cline{2-6}
+        & \multicolumn{5}{c}{6 bits}\\
+    \cline{2-6}
+        & linear & unbounded & utb & upperbound & twobounds \\
+    \cline{1-6}
+    \rotatebox[origin=c]{90}{RGB}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/linear/6/dynamic/balloons_ms.png}}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/unbounded/6/dynamic/balloons_ms.png}}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/unbounded_to_bounded/6/dynamic/balloons_ms.png}}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/upperbound/6/dynamic/balloons_ms.png}}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/twobounds/6/dynamic/balloons_ms.png}}
+    \\
+    \rotatebox[origin=c]{90}{diff}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/linear/6/dynamic/balloons_ms_diff.png}}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/unbounded/6/dynamic/balloons_ms_diff.png}}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/unbounded_to_bounded/6/dynamic/balloons_ms_diff.png}}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/upperbound/6/dynamic/balloons_ms_diff.png}}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/twobounds/6/dynamic/balloons_ms_diff.png}}
+\end{tabularx}
+
+\begin{tabularx}{\linewidth}{l c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}}
+    \cline{2-6}
+        & \multicolumn{5}{c}{8 bits}\\
+    \cline{2-6}
+        & linear & unbounded & utb & upperbound & twobounds \\
+    \cline{1-6}
+    \rotatebox[origin=c]{90}{RGB}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/linear/8/dynamic/balloons_ms.png}}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/unbounded/8/dynamic/balloons_ms.png}}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/unbounded_to_bounded/8/dynamic/balloons_ms.png}}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/upperbound/8/dynamic/balloons_ms.png}}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/twobounds/8/dynamic/balloons_ms.png}}
+    \\
+    \rotatebox[origin=c]{90}{diff}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/linear/8/dynamic/balloons_ms_diff.png}}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/unbounded/8/dynamic/balloons_ms_diff.png}}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/unbounded_to_bounded/8/dynamic/balloons_ms_diff.png}}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/upperbound/8/dynamic/balloons_ms_diff.png}}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/twobounds/8/dynamic/balloons_ms_diff.png}}
+\end{tabularx}
+
+\begin{tabularx}{\linewidth}{l c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}}
+    \cline{2-6}
+        & \multicolumn{5}{c}{10 bits}\\
+    \cline{2-6}
+        & linear & unbounded & utb & upperbound & twobounds \\
+    \cline{1-6}
+    \rotatebox[origin=c]{90}{RGB}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/linear/10/dynamic/balloons_ms.png}}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/unbounded/10/dynamic/balloons_ms.png}}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/unbounded_to_bounded/10/dynamic/balloons_ms.png}}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/upperbound/10/dynamic/balloons_ms.png}}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/twobounds/10/dynamic/balloons_ms.png}}
+    \\
+    \rotatebox[origin=c]{90}{diff}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/linear/10/dynamic/balloons_ms_diff.png}}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/unbounded/10/dynamic/balloons_ms_diff.png}}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/unbounded_to_bounded/10/dynamic/balloons_ms_diff.png}}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/upperbound/10/dynamic/balloons_ms_diff.png}}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/twobounds/10/dynamic/balloons_ms_diff.png}}
+\end{tabularx}
+
+\begin{tabularx}{\linewidth}{l c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}}
+    \cline{2-6}
+        & \multicolumn{5}{c}{12 bits}\\
+    \cline{2-6}
+        & linear & unbounded & utb & upperbound & twobounds \\
+    \cline{1-6}
+    \rotatebox[origin=c]{90}{RGB}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/linear/12/dynamic/balloons_ms.png}}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/unbounded/12/dynamic/balloons_ms.png}}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/unbounded_to_bounded/12/dynamic/balloons_ms.png}}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/upperbound/12/dynamic/balloons_ms.png}}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/twobounds/12/dynamic/balloons_ms.png}}
+    \\
+    \rotatebox[origin=c]{90}{diff}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/linear/12/dynamic/balloons_ms_diff.png}}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/unbounded/12/dynamic/balloons_ms_diff.png}}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/unbounded_to_bounded/12/dynamic/balloons_ms_diff.png}}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/upperbound/12/dynamic/balloons_ms_diff.png}}
+        & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/twobounds/12/dynamic/balloons_ms_diff.png}}
+\end{tabularx}
