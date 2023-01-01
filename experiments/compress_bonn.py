@@ -63,13 +63,13 @@ for d in os.listdir(path_data):
                     else:
                         path_curves = os.path.join(path_bits, 'dynamic')
 
-                output_file = os.path.join(path_curves, d[:-4] + '.jxl')
-                log_file    = os.path.join(path_curves, d[:-4] + '.txt')
-                binlog_file = os.path.join(path_curves, d[:-4] + '.bin')
+                    output_file = os.path.join(path_curves, d[:-4] + '.jxl')
+                    log_file    = os.path.join(path_curves, d[:-4] + '.txt')
+                    binlog_file = os.path.join(path_curves, d[:-4] + '.bin')
 
-                print(spectral_image, output_file)
+                    print(spectral_image, output_file)
 
-                run_compressor(
-                    spectral_image, output_file,
-                    log_file, binlog_file,
-                    tech, bits, flat, 0.1, flat)
+                    run_compressor(
+                        spectral_image, output_file,
+                        log_file, binlog_file,
+                        tech, bits, flat, 0.1, flat)
