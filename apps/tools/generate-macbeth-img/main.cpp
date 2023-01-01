@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Alban Fichet
+ * Copyright 2022 - 2023 Alban Fichet
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -37,6 +37,8 @@
 #include <iostream>
 #include <vector>
 #include <cstring>
+#include <cassert>
+
 
 int main(int argc, char* argv[])
 {
@@ -48,9 +50,15 @@ int main(int argc, char* argv[])
         exit(0);
     }
 
-    size_t width = 6;
-    size_t height = 4;
-    size_t n_bands = 36;
+    const size_t patch_sz = 50;
+
+    const size_t n_patches_x = 6;
+    const size_t n_patches_y = 4;
+
+    const size_t width  = n_patches_x * patch_sz;
+    const size_t height = n_patches_y * patch_sz;
+
+    const size_t n_bands = 36;
 
     EXRSpectralImage image_out(width, height);
 
@@ -60,12 +68,16 @@ int main(int argc, char* argv[])
     std::vector<float> framebuffer(width * height * n_bands);
 
     for (size_t y = 0; y < height; y++) {
+        const size_t v = (y * n_patches_y) / height;
+        assert(v < n_patches_y);
+
         for (size_t x = 0; x < width; x++) {
-            const size_t patch_idx =  y * width + x;
+            const size_t u = (x * n_patches_x) / width;
+            assert(u < n_patches_x);
 
             std::memcpy(
-                &framebuffer[n_bands * patch_idx],
-                macbeth_patches[patch_idx],
+                &framebuffer[n_bands * (y * width + x)],
+                macbeth_patches[v * n_patches_x + u],
                 n_bands * sizeof(float)
             );
         }
