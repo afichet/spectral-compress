@@ -9,3 +9,4 @@
 # add_subdirectory(validate-image)
 # add_subdirectory(quantization)
 # add_subdirectory(misc-tests)
+add_subdirectory(jxl-tests)
