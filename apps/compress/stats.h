@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Alban Fichet
+ * Copyright 2022 - 2023 Alban Fichet
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -37,18 +37,54 @@
 #include <cstdint>
 #include <cstddef>
 
+#include <Util.h>
+
 struct stats_data {
     double rmse_error;
     double rrmse_error;
+    double avg_error;
     double max_error;
 };
 
+template<typename T>
 stats_data compute_stats(
-    const std::vector<double>& reference,
-    const std::vector<double>& comparison,
+    const std::vector<T>& reference,
+    const std::vector<T>& comparison,
     uint32_t width, uint32_t height,
-    size_t n_wavelengths
-);
+    size_t n_wavelengths)
+{
+        stats_data ret;
+
+    ret.rmse_error = Util::rmse_images(
+        reference,
+        comparison,
+        width * height,
+        n_wavelengths
+    );
+
+    ret.rrmse_error = Util::rrmse_images(
+        reference,
+        comparison,
+        width * height,
+        n_wavelengths
+    );
+
+    ret.avg_error = Util::avg_err_images(
+        reference,
+        comparison,
+        width * height,
+        n_wavelengths
+    );
+
+    ret.max_error = Util::max_error_images(
+        reference,
+        comparison,
+        width * height,
+        n_wavelengths
+    );
+
+    return ret;
+}
 
 /*****************************************************************************/
 /* Stats for quantization curves                                             */

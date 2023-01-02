@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Alban Fichet
+ * Copyright 2022 - 2023 Alban Fichet
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -41,39 +41,6 @@
 #include <moments_image.h>
 
 #include <Util.h>
-
-
-stats_data compute_stats(
-    const std::vector<double>& reference,
-    const std::vector<double>& comparison,
-    uint32_t width, uint32_t height,
-    size_t n_wavelengths)
-{
-    stats_data ret;
-
-    ret.rmse_error =  Util::rmse_images(
-        reference,
-        comparison,
-        width * height,
-        n_wavelengths
-    );
-
-    ret.rrmse_error = Util::rrmse_images(
-        reference,
-        comparison,
-        width * height,
-        n_wavelengths
-    );
-
-    ret.max_error = Util::max_error_images(
-        reference,
-        comparison,
-        width * height,
-        n_wavelengths
-    );
-
-    return ret;
-}
 
 
 /*****************************************************************************/

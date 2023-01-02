@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Alban Fichet
+ * Copyright 2022 - 2023 Alban Fichet
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -165,7 +165,6 @@ void generate_compression_curve(
         }
 
         timing = 0;
-        // TODO error
     } else {
         auto clock_start = std::chrono::steady_clock::now();
 
@@ -657,18 +656,20 @@ void compress_spectral_framebuffer(
             log_stream << q << " ";
         }
         log_stream << std::endl;
-        log_stream << "rmse: " << quantization_error.rmse_error << std::endl;
+        log_stream << "rmse: "  << quantization_error.rmse_error << std::endl;
         log_stream << "rrmse: " << quantization_error.rrmse_error << std::endl;
-        log_stream << "max: " << quantization_error.max_error << std::endl;
+        log_stream << "avg: "   << quantization_error.avg_error << std::endl;
+        log_stream << "max: "   << quantization_error.max_error << std::endl;
 
         log_stream << "Compression curve:" << std::endl;
         for (const float& c : compression_curve) {
             log_stream << c << " ";
         }
         log_stream << std::endl;
-        log_stream << "rmse: " << compression_error.rmse_error << std::endl;
+        log_stream << "rmse: "  << compression_error.rmse_error << std::endl;
         log_stream << "rrmse: " << compression_error.rrmse_error << std::endl;
-        log_stream << "max: " << compression_error.max_error << std::endl;
+        log_stream << "avg: "   << compression_error.avg_error << std::endl;
+        log_stream << "max: "   << compression_error.max_error << std::endl;
 
         log_stream << "Timings:" << std::endl;
         log_stream << "Quantization curve: " << quantization_curve_timing << " ms" << std::endl;
@@ -724,11 +725,12 @@ public:
 
 int main(int argc, char *argv[])
 {
-    std::string filename_in, filename_out;
+    std::string filename_in, filename_out, filename_dump;
     bool log_is_active = false;
 
     bool has_txt_log;
     bool has_bin_log;
+    bool has_dump_file;
 
     std::string log_filepath, binarylog_filepath;
     std::stringstream log_content;
@@ -753,10 +755,12 @@ int main(int argc, char *argv[])
         TCLAP::UnlabeledValueArg<std::string> outputFileArg("Output", "Specifies the JPEG XL file to compress spectral data to (output).", true, "output.jxl", "path");
         TCLAP::ValueArg<std::string> logFileArg("l", "log", "Specifies a file to log timings and quantization and compression curves into,", false, "log.txt", "path");
         TCLAP::ValueArg<std::string> binarylogFileArg("k", "binary_log", "Specifies a file to log timings into in binary form,", false, "log.bin", "path");
+        TCLAP::ValueArg<std::string> dumpFileArg("d", "dump", "Saves a dump file before applying JXL compression", false, "dump.bin", "path");
         cmd.add(inputFileArg);
         cmd.add(outputFileArg);
         cmd.add(logFileArg);
         cmd.add(binarylogFileArg);
+        cmd.add(dumpFileArg);
 
         // Compresion tweaking
         FrameDistanceConstraint frameDistanceConstraint;
@@ -792,6 +796,7 @@ int main(int argc, char *argv[])
         has_txt_log     = logFileArg.isSet();
         has_bin_log     = binarylogFileArg.isSet();
         log_is_active   = logFileArg.isSet() || binarylogFileArg.isSet();
+        has_dump_file   = dumpFileArg.isSet();
 
         if (has_txt_log) {
             log_filepath = logFileArg.getValue();
@@ -799,6 +804,10 @@ int main(int argc, char *argv[])
 
         if (has_bin_log) {
             binarylog_filepath = binarylogFileArg.getValue();
+        }
+
+        if (has_dump_file) {
+            filename_dump = dumpFileArg.getValue();
         }
 
         compression_dc       = frameDistanceDCArg.getValue();
@@ -941,7 +950,13 @@ int main(int argc, char *argv[])
     jxl_out.setBox(box);
     jxl_out.write(filename_out);
 
+    if (has_dump_file) {
+        jxl_out.dump(filename_dump);
+    }
+
     clock_end = std::chrono::steady_clock::now();
+
+    // Logging stuff
 
     if (log_is_active) {
         auto diff = clock_end - clock_start;
@@ -951,7 +966,7 @@ int main(int argc, char *argv[])
         log_file << log_content.str();
     }
 
-    // Saves in binary form
+    // Saves log in binary form
     if (has_bin_log) {
         FILE *f = fopen(binarylog_filepath.c_str(), "wb");
 
@@ -971,12 +986,6 @@ int main(int argc, char *argv[])
 
         fclose(f);
     }
-
-#ifndef NDEBUG
-    // Test dump
-    jxl_out.dump("jxl_dump");
-    exr_in.dump("exr_dump");
-#endif // NDEBUG
 
     return 0;
 }

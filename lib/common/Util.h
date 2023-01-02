@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Alban Fichet
+ * Copyright 2022 - 2023 Alban Fichet
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -237,6 +237,43 @@ public:
 
 
     static void split_extension(const char* filename, std::string& base_str, std::string& extension_str);
+
+    template<typename T, typename Q>
+    static void cast_vector(const std::vector<T>& in, std::vector<Q>& out) {
+        out.reserve(in.size());
+
+        for (const T& v: in) {
+            out.push_back((Q)v);
+        }
+    }
+
+
+    template<typename T>
+    static T avg_err_images(
+        const std::vector<T>& reference,
+        const std::vector<T>& comparison,
+        size_t n_pixels,
+        size_t n_bands)
+    {
+        T error = 0;
+
+        for (size_t px = 0; px < n_pixels; px++) {
+            T px_err = 0;
+
+            for (size_t b = 0; b < n_bands; b++) {
+                const T ref = reference [px * n_bands + b];
+                const T cmp = comparison[px * n_bands + b];
+
+                const T diff = ref - cmp;
+
+                px_err += diff * diff;
+            }
+
+            error += std::sqrt(px_err);
+        }
+
+        return error /= (T)(n_bands * n_pixels);
+    }
 
 
     template<typename T>
