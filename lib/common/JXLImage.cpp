@@ -268,8 +268,6 @@ void JXLImage::write(const char* filename, int effort) const {
     std::string base, ext;
     Util::split_extension(filename, base, ext);
 
-    // TODO: use parts to allow different downsampling factors
-
     for (uint32_t part = 0; part < _n_parts; part++) {
         std::string curr_filename;
 
@@ -281,6 +279,8 @@ void JXLImage::write(const char* filename, int effort) const {
             curr_filename = ss.str();
         }
 
+        std::vector<float> quantized_framebuffer;
+
         const int start_framebuffer_idx = part * JXL_MAX_FRAMEBUFFERS;
         const int end_framebuffer_idx = std::min(start_framebuffer_idx + JXL_MAX_FRAMEBUFFERS, (int)_framebuffers.size()) - 1;
         const int n_framebuffers = end_framebuffer_idx - start_framebuffer_idx + 1;
@@ -289,9 +289,6 @@ void JXLImage::write(const char* filename, int effort) const {
         assert(end_framebuffer_idx >= start_framebuffer_idx);
         assert(end_framebuffer_idx < (int)_framebuffers.size());
         assert(n_framebuffers <= JXL_MAX_FRAMEBUFFERS);
-
-        // std::cout << "start fb idx: " << start_framebuffer_idx << std::endl;
-        // std::cout << "end_fb idx: " << end_framebuffer_idx << std::endl;
 
         JxlEncoderStatus           status;
         JxlEncoderPtr              enc;
@@ -311,15 +308,13 @@ void JXLImage::write(const char* filename, int effort) const {
             JxlThreadParallelRunner,
             runner.get()
         );
-
         CHECK_JXL_ENC_STATUS(status);
 
-        // ------------------------------------------------------------------------
+        // --------------------------------------------------------------------
 
         // We save the box just for the 1st image
         if (part == 0) {
             status = JxlEncoderUseBoxes(enc.get());
-
             CHECK_JXL_ENC_STATUS(status);
 
             char tp[4] = {'s','g','e','g'};
@@ -328,7 +323,6 @@ void JXLImage::write(const char* filename, int effort) const {
             _sgeg_box.getRaw(raw_box);
 
             status = JxlEncoderAddBox(enc.get(), tp, raw_box.data(), raw_box.size(), JXL_FALSE);
-
             CHECK_JXL_ENC_STATUS(status);
         }
 
@@ -347,10 +341,9 @@ void JXLImage::write(const char* filename, int effort) const {
         basic_info.uses_original_profile    = JXL_TRUE;
 
         status = JxlEncoderSetBasicInfo(enc.get(), &basic_info);
-
         CHECK_JXL_ENC_STATUS(status);
 
-        // ------------------------------------------------------------------------
+        // --------------------------------------------------------------------
 
         JxlEncoderFrameSettings* frame_settings = JxlEncoderFrameSettingsCreate(enc.get(), nullptr);
 
@@ -358,18 +351,21 @@ void JXLImage::write(const char* filename, int effort) const {
         JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_EFFORT, effort);
         CHECK_JXL_ENC_STATUS(status);
 
-        if (_framebuffers[start_framebuffer_idx]->getFramedistance() > 0) {
+        const bool encodes_lossless = _framebuffers[start_framebuffer_idx]->getFramedistance() == 0;
+
+        if (encodes_lossless) {
+            status = JxlEncoderSetFrameLossless(frame_settings, JXL_TRUE);
+        } else {
             status = JxlEncoderSetFrameLossless(frame_settings, JXL_FALSE);
             status = JxlEncoderSetFrameDistance(frame_settings, _framebuffers[start_framebuffer_idx]->getFramedistance());
-        } else {
-            status = JxlEncoderSetFrameLossless(frame_settings, JXL_TRUE);
         }
         CHECK_JXL_ENC_STATUS(status);
 
         status = JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_RESAMPLING, _framebuffers[start_framebuffer_idx]->getDownsamplingFactor());
         CHECK_JXL_ENC_STATUS(status);
 
-        // TODO: Fixme!
+        // --------------------------------------------------------------------
+
         switch (_framebuffers[start_framebuffer_idx]->getNColorChannels()) {
             case 1:
                 color_encoding.color_space = JXL_COLOR_SPACE_GRAY;
@@ -391,18 +387,39 @@ void JXLImage::write(const char* filename, int effort) const {
         // TODO set name
 
         status = JxlEncoderSetColorEncoding(enc.get(), &color_encoding);
-
         CHECK_JXL_ENC_STATUS(status);
 
         const JxlPixelFormat format = _framebuffers[start_framebuffer_idx]->getPixelFormat();
         const size_t data_size      = _framebuffers[start_framebuffer_idx]->getPixelData().size() * sizeof(float);
 
-        status = JxlEncoderAddImageFrame(
-            frame_settings,
-            &format,
-            _framebuffers[start_framebuffer_idx]->getPixelData().data(),
-            data_size
-        );
+        // FIXME: There is a bug in the current JXL implementation: it ignores
+        //        the quantization when the compression is not lossless.
+        //        This issue is addressed with a hack.
+        if (encodes_lossless || basic_info.exponent_bits_per_sample != 0) {
+            status = JxlEncoderAddImageFrame(
+                frame_settings,
+                &format,
+                _framebuffers[start_framebuffer_idx]->getPixelData().data(),
+                data_size
+            );
+        } else {
+            quantized_framebuffer.resize(_width * _height);
+
+            #pragma omp parallel for
+            for (size_t i = 0; i < _width * _height; i++) {
+                quantized_framebuffer[i] = Util::quantize_dequantize(
+                    _framebuffers[start_framebuffer_idx]->getPixelData()[i],
+                    basic_info.bits_per_sample
+                );
+            }
+
+            status = JxlEncoderAddImageFrame(
+                frame_settings,
+                &format,
+                quantized_framebuffer.data(),
+                data_size
+            );
+        }
 
         CHECK_JXL_ENC_STATUS(status);
 
@@ -423,15 +440,21 @@ void JXLImage::write(const char* filename, int effort) const {
 
             JxlEncoderFrameSettings* frame_settings = JxlEncoderFrameSettingsCreate(enc.get(), nullptr);
 
+            status = JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_EFFORT, effort);
+            CHECK_JXL_ENC_STATUS(status);
+
             // Set compression quality
-            JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_EFFORT, 9);
+            // FIXME: Not supported yet in the version of libjxl used (0.7)
+            //        at the time of writing this code
             // JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_EXTRA_CHANNEL_RESAMPLING, downsampling);
             // status = JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_EXTRA_CHANNEL_RESAMPLING, 4);
             // CHECK_JXL_ENC_STATUS(status);
 
-            // Set compression quality
-            // NOTE: this does absolutely nothing at the time this code was written.
-            // We expect a support for custom compression ratios in libjxl in a near future.
+            // FIXME: This does absolutely nothing at the time this code was
+            //        written. In a near future, we expect a support for custom
+            //        compression ratio per subimage in libjxl.
+            //        Also, when implementing, worth checking if the
+            //        quantization works as expected.
             if (fb->getFramedistance() > 0) {
                 status = JxlEncoderSetFrameLossless(frame_settings, JXL_FALSE);
                 status = JxlEncoderSetFrameDistance(frame_settings, fb->getFramedistance());
@@ -455,7 +478,6 @@ void JXLImage::write(const char* filename, int effort) const {
                 fb->getPixelDataConst().data(),
                 data_size,
                 i - 1);
-
             CHECK_JXL_ENC_STATUS(status);
         }
 
@@ -470,7 +492,6 @@ void JXLImage::write(const char* filename, int effort) const {
 
         status = JXL_ENC_NEED_MORE_OUTPUT;
 
-        // for (status = JXL_ENC_NEED_MORE_OUTPUT ;; status == JXL_ENC_NEED_MORE_OUTPUT) {
         while (status == JXL_ENC_NEED_MORE_OUTPUT) {
             status = JxlEncoderProcessOutput(enc.get(), &next_out, &avail_out);
 
