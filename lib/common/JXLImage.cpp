@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Alban Fichet
+ * Copyright 2022 - 2023 Alban Fichet
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -261,7 +261,7 @@ size_t JXLImage::appendFramebuffer(
 }
 
 
-void JXLImage::write(const char* filename) const {
+void JXLImage::write(const char* filename, int effort) const {
     // Currently, JXL supports up to 256 framebuffers per image
     // we may need more than that so, in such scenario, we are
     // going to write multiple images
@@ -355,7 +355,7 @@ void JXLImage::write(const char* filename) const {
         JxlEncoderFrameSettings* frame_settings = JxlEncoderFrameSettingsCreate(enc.get(), nullptr);
 
         // Set compression quality
-        JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_EFFORT, 9);
+        JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_EFFORT, effort);
         CHECK_JXL_ENC_STATUS(status);
 
         if (_framebuffers[start_framebuffer_idx]->getFramedistance() > 0) {
@@ -495,9 +495,9 @@ void JXLImage::write(const char* filename) const {
 }
 
 
-void JXLImage::write(const std::string& filename) const
+void JXLImage::write(const std::string& filename, int effort) const
 {
-    write(filename.c_str());
+    write(filename.c_str(), effort);
 }
 
 

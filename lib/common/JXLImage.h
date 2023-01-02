@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Alban Fichet
+ * Copyright 2022 - 2023 Alban Fichet
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -128,8 +128,8 @@ public:
         float    enc_framedistance = .1f,
         const char* name = nullptr);
 
-    void write(const char* filename) const;
-    void write(const std::string& filename) const;
+    void write(const char* filename, int effort = 7) const;
+    void write(const std::string& filename, int effort = 7) const;
 
     void setBox(const SGEGBox& box);
     const SGEGBox& getBox() const { return _sgeg_box; }
