@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Alban Fichet
+ * Copyright 2022 - 2023 Alban Fichet
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -37,9 +37,7 @@
 
 #include <JXLImage.h>
 #include <EXRSpectralImage.h>
-// TODO: remove
-// #include <EXRImage.h>
-
+#include <Util.h>
 #include <moments_image.h>
 #include <moments.h>
 
@@ -58,7 +56,7 @@ void decompress_spectral_framebuffer(
     const size_t n_pixels = compressed_moments[0].size();
 
     size_t n_moments = 0;
-    
+
     switch (sg.method) {
         case LINEAR:
         case BOUNDED:
@@ -76,15 +74,15 @@ void decompress_spectral_framebuffer(
             break;
     }
 
-    std::vector<double> wavelengths_d(sg.wavelengths.size());
-    std::vector<double> compressed_moments_d(n_moments * n_pixels);
-    std::vector<double> mins_d(n_moments - 1), maxs_d(n_moments - 1);
+    std::vector<double> wavelengths_d;
+    std::vector<double> mins_d, maxs_d;
     std::vector<double> spectral_framebuffer_d;
+    std::vector<double> compressed_moments_d(n_moments * n_pixels);
     std::vector<uint8_t> relative_scales;
 
-    for (size_t i = 0; i < sg.wavelengths.size(); i++) {
-        wavelengths_d[i] = sg.wavelengths[i];
-    }
+    Util::cast_vector(sg.wavelengths, wavelengths_d);
+    Util::cast_vector(sg.mins, mins_d);
+    Util::cast_vector(sg.maxs, maxs_d);
 
     for (size_t px = 0; px < n_pixels; px++) {
         for (size_t m = 0; m < n_moments; m++) {
@@ -92,11 +90,6 @@ void decompress_spectral_framebuffer(
         }
     }
 
-    for (size_t i = 0; i < n_moments - 1; i++) {
-        mins_d[i] = sg.mins[i];
-        maxs_d[i] = sg.maxs[i];
-    }
-    
     switch (sg.method) {
         case LINEAR:
             linear_decompress_spectral_image(
@@ -107,7 +100,7 @@ void decompress_spectral_framebuffer(
                 spectral_framebuffer_d
             );
             break;
-        
+
         case BOUNDED:
             bounded_decompress_spectral_image(
                 wavelengths_d,
@@ -175,19 +168,14 @@ void decompress_spectral_framebuffer(
                 spectral_framebuffer_d
             );
 
-            break;     
+            break;
 
         default:
             std::cerr << "Unimplemented" << std::endl;
             break;
     }
 
-    spectral_framebuffer.resize(spectral_framebuffer_d.size());
-
-    #pragma omp parallel for
-    for (size_t i = 0; i < spectral_framebuffer_d.size(); i++) {
-        spectral_framebuffer[i] = spectral_framebuffer_d[i];
-    }
+    Util::cast_vector(spectral_framebuffer_d, spectral_framebuffer);
 }
 
 
