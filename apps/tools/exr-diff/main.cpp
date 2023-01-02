@@ -71,18 +71,18 @@ bool compare_spectral_images(
     diff_image.resize(width * height);
 
     #pragma omp parallel for
-    for (size_t i = 0; i < width * height; i++) {
-        diff_image[i] = 0;
+    for (size_t px = 0; px < width * height; px++) {
+        diff_image[px] = 0;
 
         float diff = 0;
 
         for (size_t b = 0; b < n_bands; b++) {
-            float d = data_a[i * n_bands + b] - data_b[i * n_bands + b];
+            float d = data_a[px * n_bands + b] - data_b[px * n_bands + b];
 
             diff += d*d;
         }
 
-        diff_image[i] = std::sqrt(diff) / n_bands;
+        diff_image[px] = std::sqrt(diff) / (float)n_bands;
     }
 
     // Compute min max (cannot be multi-threaded)
@@ -96,8 +96,8 @@ bool compare_spectral_images(
 
     avg_err = 0;
 
-    for (size_t i = 0; i < width * height; i++) {
-        avg_err += diff_image[i];
+    for (size_t px = 0; px < width * height; px++) {
+        avg_err += diff_image[px];
     }
 
     avg_err /= (float)(width * height);
