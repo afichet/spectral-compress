@@ -53,6 +53,8 @@
 #include <stdexcept>
 #include <iostream>
 
+#define DEBLOG
+
 // ----------------------------------------------------------------------------
 
 #define CHECK_JXL_ENC_STATUS(status)                                          \
@@ -421,9 +423,6 @@ double linear_compute_compression_curve(
     std::vector<double> normalized_moments;
     std::vector<double> mins, maxs;
 
-    const float frame_distance_inc = 0.1f;
-    const float max_frame_distance = 15.0f;
-
     linear_compress_spectral_image(
         wavelengths, spectral_image,
         width * height, n_moments,
@@ -477,10 +476,26 @@ double linear_compute_compression_curve(
         mins, maxs
     );
 
+    const float frame_distance_stop_inc = 0.1f;
+    const float max_frame_distance = 15.0f;
+
+#ifdef DEBLOG
+    std::cout << "Starting compression curve computation..." << std::endl;
+    std::cout << "start err: " << base_err << std::endl;
+#endif // DEBLOG
+
     for (size_t m = 2; m < n_moments; m++) {
         compression_curve[m] = compression_curve[m - 1];
 
-        for (float frame_distance = compression_curve[m] + frame_distance_inc; frame_distance <= max_frame_distance; frame_distance += frame_distance_inc) {
+#ifdef DEBLOG
+        std::cout << "    INIT ~ moment[" << m << "] d: " << compression_curve[m] << std::endl;
+#endif // DEBLOG
+
+        float low = compression_curve[m];
+        float high = max_frame_distance;
+        float frame_distance = (low + high) / 2.f;
+
+        while(low <= high) {
             compress_decompress_single_image(
                 q_normalized_moments,
                 compressed_decompressed_moments,
@@ -500,12 +515,40 @@ double linear_compute_compression_curve(
                 mins, maxs
             );
 
-            if (curr_err >= base_err) {
-                break;
+            float next_frame_distance;
+
+            // Move left of right depending on the error
+            if (base_err < curr_err) {
+                // mv left
+                high = frame_distance;
+                next_frame_distance = (low + high) / 2.f;
+
+                if (next_frame_distance - low < frame_distance_stop_inc) {
+                    frame_distance = low;
+                    break;
+                }
+            } else {
+                // mv right
+                low = frame_distance;
+                next_frame_distance = (low + high) / 2.f;
+
+                if (high - next_frame_distance < frame_distance_stop_inc) {
+                    break;
+                }
             }
 
-            compression_curve[m] = frame_distance;
+            frame_distance = next_frame_distance;
+
+#ifdef DEBLOG
+            std::cout << "           moment[" << m << "] d: " << frame_distance << " e: " << curr_err << std::endl;
+#endif // DEBLOG
         }
+
+        compression_curve[m] = frame_distance;
+
+#ifdef DEBLOG
+        std::cout << "    END  ~ moment[" << m << "] d: " << compression_curve[m] << std::endl;
+#endif // DEBLOG
     }
 
     return linear_error_for_compression_curve(
@@ -539,9 +582,6 @@ double unbounded_compute_compression_curve(
 
     std::vector<double> normalized_moments;
     std::vector<double> mins, maxs;
-
-    const float frame_distance_inc = 0.1f;
-    const float max_frame_distance = 15.0f;
 
     unbounded_compress_spectral_image(
         wavelengths, spectral_image,
@@ -596,10 +636,26 @@ double unbounded_compute_compression_curve(
         mins, maxs
     );
 
+    const float frame_distance_stop_inc = 0.1f;
+    const float max_frame_distance = 15.0f;
+
+#ifdef DEBLOG
+    std::cout << "Starting compression curve computation..." << std::endl;
+    std::cout << "start err: " << base_err << std::endl;
+#endif // DEBLOG
+
     for (size_t m = 2; m < n_moments; m++) {
         compression_curve[m] = compression_curve[m - 1];
 
-        for (float frame_distance = compression_curve[m] + frame_distance_inc; frame_distance <= max_frame_distance; frame_distance += frame_distance_inc) {
+#ifdef DEBLOG
+        std::cout << "    INIT ~ moment[" << m << "] d: " << compression_curve[m] << std::endl;
+#endif // DEBLOG
+
+        float low = compression_curve[m];
+        float high = max_frame_distance;
+        float frame_distance = (low + high) / 2.f;
+
+        while(low <= high) {
             compress_decompress_single_image(
                 q_normalized_moments,
                 compressed_decompressed_moments,
@@ -619,12 +675,40 @@ double unbounded_compute_compression_curve(
                 mins, maxs
             );
 
-            if (curr_err >= base_err) {
-                break;
+            float next_frame_distance;
+
+            // Move left of right depending on the error
+            if (base_err < curr_err) {
+                // mv left
+                high = frame_distance;
+                next_frame_distance = (low + high) / 2.f;
+
+                if (next_frame_distance - low < frame_distance_stop_inc) {
+                    frame_distance = low;
+                    break;
+                }
+            } else {
+                // mv right
+                low = frame_distance;
+                next_frame_distance = (low + high) / 2.f;
+
+                if (high - next_frame_distance < frame_distance_stop_inc) {
+                    break;
+                }
             }
 
-            compression_curve[m] = frame_distance;
+            frame_distance = next_frame_distance;
+
+#ifdef DEBLOG
+            std::cout << "           moment[" << m << "] d: " << frame_distance << " e: " << curr_err << std::endl;
+#endif // DEBLOG
         }
+
+        compression_curve[m] = frame_distance;
+
+#ifdef DEBLOG
+        std::cout << "    END  ~ moment[" << m << "] d: " << compression_curve[m] << std::endl;
+#endif // DEBLOG
     }
 
     return unbounded_error_for_compression_curve(
@@ -658,9 +742,6 @@ double bounded_compute_compression_curve(
 
     std::vector<double> normalized_moments;
     std::vector<double> mins, maxs;
-
-    const float frame_distance_inc = 0.1f;
-    const float max_frame_distance = 15.0f;
 
     bounded_compress_spectral_image(
         wavelengths, spectral_image,
@@ -715,10 +796,26 @@ double bounded_compute_compression_curve(
         mins, maxs
     );
 
+    const float frame_distance_stop_inc = 0.1f;
+    const float max_frame_distance = 15.0f;
+
+#ifdef DEBLOG
+    std::cout << "Starting compression curve computation..." << std::endl;
+    std::cout << "start err: " << base_err << std::endl;
+#endif // DEBLOG
+
     for (size_t m = 2; m < n_moments; m++) {
         compression_curve[m] = compression_curve[m - 1];
 
-        for (float frame_distance = compression_curve[m] + frame_distance_inc; frame_distance <= max_frame_distance; frame_distance += frame_distance_inc) {
+#ifdef DEBLOG
+        std::cout << "    INIT ~ moment[" << m << "] d: " << compression_curve[m] << std::endl;
+#endif // DEBLOG
+
+        float low = compression_curve[m];
+        float high = max_frame_distance;
+        float frame_distance = (low + high) / 2.f;
+
+        while(low <= high) {
             compress_decompress_single_image(
                 q_normalized_moments,
                 compressed_decompressed_moments,
@@ -738,12 +835,40 @@ double bounded_compute_compression_curve(
                 mins, maxs
             );
 
-            if (curr_err >= base_err) {
-                break;
+            float next_frame_distance;
+
+            // Move left of right depending on the error
+            if (base_err < curr_err) {
+                // mv left
+                high = frame_distance;
+                next_frame_distance = (low + high) / 2.f;
+
+                if (next_frame_distance - low < frame_distance_stop_inc) {
+                    frame_distance = low;
+                    break;
+                }
+            } else {
+                // mv right
+                low = frame_distance;
+                next_frame_distance = (low + high) / 2.f;
+
+                if (high - next_frame_distance < frame_distance_stop_inc) {
+                    break;
+                }
             }
 
-            compression_curve[m] = frame_distance;
+            frame_distance = next_frame_distance;
+
+#ifdef DEBLOG
+            std::cout << "           moment[" << m << "] d: " << frame_distance << " e: " << curr_err << std::endl;
+#endif // DEBLOG
         }
+
+        compression_curve[m] = frame_distance;
+
+#ifdef DEBLOG
+        std::cout << "    END  ~ moment[" << m << "] d: " << compression_curve[m] << std::endl;
+#endif // DEBLOG
     }
 
     return bounded_error_for_compression_curve(
@@ -777,9 +902,6 @@ double unbounded_to_bounded_compute_compression_curve(
 
     std::vector<double> normalized_moments;
     std::vector<double> mins, maxs;
-
-    const float frame_distance_inc = 0.1f;
-    const float max_frame_distance = 15.0f;
 
     unbounded_to_bounded_compress_spectral_image(
         wavelengths, spectral_image,
@@ -834,10 +956,26 @@ double unbounded_to_bounded_compute_compression_curve(
         mins, maxs
     );
 
+    const float frame_distance_stop_inc = 0.1f;
+    const float max_frame_distance = 15.0f;
+
+#ifdef DEBLOG
+    std::cout << "Starting compression curve computation..." << std::endl;
+    std::cout << "start err: " << base_err << std::endl;
+#endif // DEBLOG
+
     for (size_t m = 2; m < n_moments; m++) {
         compression_curve[m] = compression_curve[m - 1];
 
-        for (float frame_distance = compression_curve[m] + frame_distance_inc; frame_distance <= max_frame_distance; frame_distance += frame_distance_inc) {
+#ifdef DEBLOG
+        std::cout << "    INIT ~ moment[" << m << "] d: " << compression_curve[m] << std::endl;
+#endif // DEBLOG
+
+        float low = compression_curve[m];
+        float high = max_frame_distance;
+        float frame_distance = (low + high) / 2.f;
+
+        while(low <= high) {
             compress_decompress_single_image(
                 q_normalized_moments,
                 compressed_decompressed_moments,
@@ -857,12 +995,40 @@ double unbounded_to_bounded_compute_compression_curve(
                 mins, maxs
             );
 
-            if (curr_err >= base_err) {
-                break;
+            float next_frame_distance;
+
+            // Move left of right depending on the error
+            if (base_err < curr_err) {
+                // mv left
+                high = frame_distance;
+                next_frame_distance = (low + high) / 2.f;
+
+                if (next_frame_distance - low < frame_distance_stop_inc) {
+                    frame_distance = low;
+                    break;
+                }
+            } else {
+                // mv right
+                low = frame_distance;
+                next_frame_distance = (low + high) / 2.f;
+
+                if (high - next_frame_distance < frame_distance_stop_inc) {
+                    break;
+                }
             }
 
-            compression_curve[m] = frame_distance;
+            frame_distance = next_frame_distance;
+
+#ifdef DEBLOG
+            std::cout << "           moment[" << m << "] d: " << frame_distance << " e: " << curr_err << std::endl;
+#endif // DEBLOG
         }
+
+        compression_curve[m] = frame_distance;
+
+#ifdef DEBLOG
+        std::cout << "    END  ~ moment[" << m << "] d: " << compression_curve[m] << std::endl;
+#endif // DEBLOG
     }
 
     return unbounded_to_bounded_error_for_compression_curve(
@@ -898,9 +1064,6 @@ double upperbound_compute_compression_curve(
     std::vector<double> mins, maxs;
     std::vector<uint8_t> relative_scales;
     double global_max;
-
-    const float frame_distance_inc = 0.1f;
-    const float max_frame_distance = 15.0f;
 
     upperbound_compress_spectral_image(
         wavelengths, spectral_image,
@@ -960,10 +1123,26 @@ double upperbound_compute_compression_curve(
         global_max
     );
 
+    const float frame_distance_stop_inc = 0.1f;
+    const float max_frame_distance = 15.0f;
+
+#ifdef DEBLOG
+    std::cout << "Starting compression curve computation..." << std::endl;
+    std::cout << "start err: " << base_err << std::endl;
+#endif // DEBLOG
+
     for (size_t m = 2; m < n_moments; m++) {
         compression_curve[m] = compression_curve[m - 1];
 
-        for (float frame_distance = compression_curve[m] + frame_distance_inc; frame_distance <= max_frame_distance; frame_distance += frame_distance_inc) {
+#ifdef DEBLOG
+        std::cout << "    INIT ~ moment[" << m << "] d: " << compression_curve[m] << std::endl;
+#endif // DEBLOG
+
+        float low = compression_curve[m];
+        float high = max_frame_distance;
+        float frame_distance = (low + high) / 2.f;
+
+        while(low <= high) {
             compress_decompress_single_image(
                 q_normalized_moments,
                 compressed_decompressed_moments,
@@ -985,12 +1164,40 @@ double upperbound_compute_compression_curve(
                 global_max
             );
 
-            if (curr_err >= base_err) {
-                break;
+            float next_frame_distance;
+
+            // Move left of right depending on the error
+            if (base_err < curr_err) {
+                // mv left
+                high = frame_distance;
+                next_frame_distance = (low + high) / 2.f;
+
+                if (next_frame_distance - low < frame_distance_stop_inc) {
+                    frame_distance = low;
+                    break;
+                }
+            } else {
+                // mv right
+                low = frame_distance;
+                next_frame_distance = (low + high) / 2.f;
+
+                if (high - next_frame_distance < frame_distance_stop_inc) {
+                    break;
+                }
             }
 
-            compression_curve[m] = frame_distance;
+            frame_distance = next_frame_distance;
+
+#ifdef DEBLOG
+            std::cout << "           moment[" << m << "] d: " << frame_distance << " e: " << curr_err << std::endl;
+#endif // DEBLOG
         }
+
+        compression_curve[m] = frame_distance;
+
+#ifdef DEBLOG
+        std::cout << "    END  ~ moment[" << m << "] d: " << compression_curve[m] << std::endl;
+#endif // DEBLOG
     }
 
     return upperbound_error_for_compression_curve(
@@ -1029,9 +1236,6 @@ double twobounds_compute_compression_curve(
     std::vector<uint8_t> relative_scales;
     double global_min, global_max;
 
-    const float frame_distance_inc = 0.1f;
-    const float max_frame_distance = 15.0f;
-
     twobounds_compress_spectral_image(
         wavelengths, spectral_image,
         width * height, n_moments,
@@ -1047,6 +1251,8 @@ double twobounds_compute_compression_curve(
     assert(maxs.size() == n_moments - 1);
     assert(relative_scales.size() == width * height);
 
+    // Quantize / dequantize each moment based on the provided quantization
+    // curve
     std::vector<double> q_normalized_moments(normalized_moments.size());
 
     #pragma omp parallel for
@@ -1090,10 +1296,26 @@ double twobounds_compute_compression_curve(
         global_max
     );
 
+    const float frame_distance_stop_inc = 0.1f;
+    const float max_frame_distance = 15.0f;
+
+#ifdef DEBLOG
+    std::cout << "Starting compression curve computation..." << std::endl;
+    std::cout << "start err: " << base_err << std::endl;
+#endif // DEBLOG
+
     for (size_t m = 2; m < n_moments; m++) {
         compression_curve[m] = compression_curve[m - 1];
 
-        for (float frame_distance = compression_curve[m] + frame_distance_inc; frame_distance <= max_frame_distance; frame_distance += frame_distance_inc) {
+#ifdef DEBLOG
+        std::cout << "    INIT ~ moment[" << m << "] d: " << compression_curve[m] << std::endl;
+#endif // DEBLOG
+
+        float low = compression_curve[m];
+        float high = max_frame_distance;
+        float frame_distance = (low + high) / 2.f;
+
+        while(low <= high) {
             compress_decompress_single_image(
                 q_normalized_moments,
                 compressed_decompressed_moments,
@@ -1116,12 +1338,40 @@ double twobounds_compute_compression_curve(
                 global_max
             );
 
-            if (curr_err >= base_err) {
-                break;
+            float next_frame_distance;
+
+            // Move left of right depending on the error
+            if (base_err < curr_err) {
+                // mv left
+                high = frame_distance;
+                next_frame_distance = (low + high) / 2.f;
+
+                if (next_frame_distance - low < frame_distance_stop_inc) {
+                    frame_distance = low;
+                    break;
+                }
+            } else {
+                // mv right
+                low = frame_distance;
+                next_frame_distance = (low + high) / 2.f;
+
+                if (high - next_frame_distance < frame_distance_stop_inc) {
+                    break;
+                }
             }
 
-            compression_curve[m] = frame_distance;
+            frame_distance = next_frame_distance;
+
+#ifdef DEBLOG
+            std::cout << "           moment[" << m << "] d: " << frame_distance << " e: " << curr_err << std::endl;
+#endif // DEBLOG
         }
+
+        compression_curve[m] = frame_distance;
+
+#ifdef DEBLOG
+        std::cout << "    END  ~ moment[" << m << "] d: " << compression_curve[m] << std::endl;
+#endif // DEBLOG
     }
 
     return twobounds_error_for_compression_curve(
@@ -1138,7 +1388,6 @@ double twobounds_compute_compression_curve(
         effort
     );
 }
-
 
 
 /*****************************************************************************/
