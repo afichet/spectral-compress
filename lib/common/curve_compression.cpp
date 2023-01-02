@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Alban Fichet
+ * Copyright 2022 - 2023 Alban Fichet
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -83,7 +83,8 @@ void compress_decompress_framebuffer(
     uint32_t bits_per_sample,
     uint32_t exponent_bits_per_sample,
     float frame_distance,
-    uint32_t downsampling_ratio)
+    uint32_t downsampling_ratio,
+    int effort)
 {
     assert(framebuffer_in.size() == width * height);
     framebuffer_out.resize(framebuffer_in.size());
@@ -119,13 +120,11 @@ void compress_decompress_framebuffer(
     basic_info.uses_original_profile    = JXL_TRUE;
 
     enc_status = JxlEncoderSetBasicInfo(enc.get(), &basic_info);
-
     CHECK_JXL_ENC_STATUS(enc_status);
 
     JxlEncoderFrameSettings* frame_settings = JxlEncoderFrameSettingsCreate(enc.get(), nullptr);
 
-    // Set compression quality
-    JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_EFFORT, 9);
+    JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_EFFORT, effort);
     CHECK_JXL_ENC_STATUS(enc_status);
 
     if (frame_distance > 0) {
@@ -139,14 +138,13 @@ void compress_decompress_framebuffer(
     enc_status = JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_RESAMPLING, downsampling_ratio);
     CHECK_JXL_ENC_STATUS(enc_status);
 
-    color_encoding.color_space = JXL_COLOR_SPACE_GRAY;
+    color_encoding.color_space       = JXL_COLOR_SPACE_GRAY;
     color_encoding.white_point       = JXL_WHITE_POINT_D65;
     color_encoding.primaries         = JXL_PRIMARIES_SRGB;
     color_encoding.transfer_function = JXL_TRANSFER_FUNCTION_LINEAR;
     color_encoding.rendering_intent  = JXL_RENDERING_INTENT_PERCEPTUAL;
 
     enc_status = JxlEncoderSetColorEncoding(enc.get(), &color_encoding);
-
     CHECK_JXL_ENC_STATUS(enc_status);
 
     JxlPixelFormat format;
@@ -202,14 +200,12 @@ void compress_decompress_framebuffer(
         JxlThreadParallelRunner,
         runner.get()
     );
-
     CHECK_JXL_DEC_STATUS(dec_status);
 
     dec_status = JxlDecoderSubscribeEvents(
         dec.get(),
         JXL_DEC_BASIC_INFO |
         JXL_DEC_FULL_IMAGE);
-
     CHECK_JXL_DEC_STATUS(dec_status);
 
     JxlDecoderSetInput(dec.get(), compressed.data(), compressed.size());
@@ -277,7 +273,8 @@ void compress_decompress_single_image(
     uint32_t width, uint32_t height,
     size_t n_moments,
     uint32_t bits_per_sample,
-    size_t i, float frame_distance)
+    size_t i, float frame_distance,
+    int effort)
 {
     assert(input_image.size() == width * height * n_moments);
 
@@ -293,7 +290,8 @@ void compress_decompress_single_image(
         input_framebuffer,
         compressed_framebuffer,
         width, height, bits_per_sample,
-        0, frame_distance, 1
+        0, frame_distance, 1,
+        effort
     );
 
     // Copy back the data to the output image
@@ -318,7 +316,8 @@ void compress_decompress_image(
     uint32_t width, uint32_t height,
     size_t n_moments,
     const std::vector<int>& quantization_curve,
-    const std::vector<float>& compression_curve)
+    const std::vector<float>& compression_curve,
+    int effort)
 {
     assert(input_image.size() == width * height * n_moments);
     assert(quantization_curve.size() == n_moments);
@@ -351,14 +350,14 @@ void compress_decompress_image(
             }
         }
 
-        // TODO: double check that the quantization is applied
         compress_decompress_framebuffer(
             framebuffer_in,
             framebuffer_out,
             width, height,
             bps, exponent_bits,
             compression_curve[m],
-            1);
+            1,
+            effort);
 
         // Copy cast to float
         for (size_t px = 0; px < width * height; px++) {
@@ -380,7 +379,8 @@ double linear_compute_compression_curve(
     const std::vector<int>& quantization_curve,
     float compression_dc,
     float compression_ac1,
-    std::vector<float>& compression_curve)
+    std::vector<float>& compression_curve,
+    int effort)
 {
     assert(spectral_image.size() == width * height * wavelengths.size());
     assert(quantization_curve.size() == n_moments);
@@ -432,7 +432,8 @@ double linear_compute_compression_curve(
         compressed_decompressed_moments,
         width, height, n_moments,
         quantization_curve[1],
-        1, compression_curve[1]
+        1, compression_curve[1],
+        effort
     );
 
     assert(compressed_decompressed_moments.size() == quantized_moments.size());
@@ -454,7 +455,8 @@ double linear_compute_compression_curve(
                 compressed_decompressed_moments,
                 width, height, n_moments,
                 quantization_curve[m],
-                m, frame_distance
+                m, frame_distance,
+                effort
             );
 
             assert(compressed_decompressed_moments.size() == quantized_moments.size());
@@ -482,7 +484,8 @@ double linear_compute_compression_curve(
         normalized_moments,
         mins, maxs,
         quantization_curve,
-        compression_curve
+        compression_curve,
+        effort
     );
 }
 
@@ -495,7 +498,8 @@ double unbounded_compute_compression_curve(
     const std::vector<int>& quantization_curve,
     float compression_dc,
     float compression_ac1,
-    std::vector<float>& compression_curve)
+    std::vector<float>& compression_curve,
+    int effort)
 {
     assert(spectral_image.size() == width * height * wavelengths.size());
     assert(quantization_curve.size() == n_moments);
@@ -547,7 +551,8 @@ double unbounded_compute_compression_curve(
         compressed_decompressed_moments,
         width, height, n_moments,
         quantization_curve[1],
-        1, compression_curve[1]
+        1, compression_curve[1],
+        effort
     );
 
     assert(compressed_decompressed_moments.size() == quantized_moments.size());
@@ -569,7 +574,8 @@ double unbounded_compute_compression_curve(
                 compressed_decompressed_moments,
                 width, height, n_moments,
                 quantization_curve[m],
-                m, frame_distance
+                m, frame_distance,
+                effort
             );
 
             assert(compressed_decompressed_moments.size() == quantized_moments.size());
@@ -597,7 +603,8 @@ double unbounded_compute_compression_curve(
         normalized_moments,
         mins, maxs,
         quantization_curve,
-        compression_curve
+        compression_curve,
+        effort
     );
 }
 
@@ -610,7 +617,8 @@ double bounded_compute_compression_curve(
     const std::vector<int>& quantization_curve,
     float compression_dc,
     float compression_ac1,
-    std::vector<float>& compression_curve)
+    std::vector<float>& compression_curve,
+    int effort)
 {
     assert(spectral_image.size() == width * height * wavelengths.size());
     assert(quantization_curve.size() == n_moments);
@@ -662,7 +670,8 @@ double bounded_compute_compression_curve(
         compressed_decompressed_moments,
         width, height, n_moments,
         quantization_curve[1],
-        1, compression_curve[1]
+        1, compression_curve[1],
+        effort
     );
 
     assert(compressed_decompressed_moments.size() == quantized_moments.size());
@@ -684,7 +693,8 @@ double bounded_compute_compression_curve(
                 compressed_decompressed_moments,
                 width, height, n_moments,
                 quantization_curve[m],
-                m, frame_distance
+                m, frame_distance,
+                effort
             );
 
             assert(compressed_decompressed_moments.size() == quantized_moments.size());
@@ -712,7 +722,8 @@ double bounded_compute_compression_curve(
         normalized_moments,
         mins, maxs,
         quantization_curve,
-        compression_curve
+        compression_curve,
+        effort
     );
 }
 
@@ -725,7 +736,8 @@ double unbounded_to_bounded_compute_compression_curve(
     const std::vector<int>& quantization_curve,
     float compression_dc,
     float compression_ac1,
-    std::vector<float>& compression_curve)
+    std::vector<float>& compression_curve,
+    int effort)
 {
     assert(spectral_image.size() == width * height * wavelengths.size());
     assert(quantization_curve.size() == n_moments);
@@ -777,7 +789,8 @@ double unbounded_to_bounded_compute_compression_curve(
         compressed_decompressed_moments,
         width, height, n_moments,
         quantization_curve[1],
-        1, compression_curve[1]
+        1, compression_curve[1],
+        effort
     );
 
     assert(compressed_decompressed_moments.size() == quantized_moments.size());
@@ -799,7 +812,8 @@ double unbounded_to_bounded_compute_compression_curve(
                 compressed_decompressed_moments,
                 width, height, n_moments,
                 quantization_curve[m],
-                m, frame_distance
+                m, frame_distance,
+                effort
             );
 
             assert(compressed_decompressed_moments.size() == quantized_moments.size());
@@ -827,7 +841,8 @@ double unbounded_to_bounded_compute_compression_curve(
         normalized_moments,
         mins, maxs,
         quantization_curve,
-        compression_curve
+        compression_curve,
+        effort
     );
 }
 
@@ -840,7 +855,8 @@ double upperbound_compute_compression_curve(
     const std::vector<int>& quantization_curve,
     float compression_dc,
     float compression_ac1,
-    std::vector<float>& compression_curve)
+    std::vector<float>& compression_curve,
+    int effort)
 {
     assert(spectral_image.size() == width * height * wavelengths.size());
     assert(quantization_curve.size() == n_moments);
@@ -897,7 +913,8 @@ double upperbound_compute_compression_curve(
         compressed_decompressed_moments,
         width, height, n_moments,
         quantization_curve[1],
-        1, compression_curve[1]
+        1, compression_curve[1],
+        effort
     );
 
     assert(compressed_decompressed_moments.size() == quantized_moments.size());
@@ -921,7 +938,8 @@ double upperbound_compute_compression_curve(
                 compressed_decompressed_moments,
                 width, height, n_moments,
                 quantization_curve[m],
-                m, frame_distance
+                m, frame_distance,
+                effort
             );
 
             assert(compressed_decompressed_moments.size() == quantized_moments.size());
@@ -953,7 +971,8 @@ double upperbound_compute_compression_curve(
         relative_scales,
         global_max,
         quantization_curve,
-        compression_curve
+        compression_curve,
+        effort
     );
 }
 
@@ -966,7 +985,8 @@ double twobounds_compute_compression_curve(
     const std::vector<int>& quantization_curve,
     float compression_dc,
     float compression_ac1,
-    std::vector<float>& compression_curve)
+    std::vector<float>& compression_curve,
+    int effort)
 {
     assert(spectral_image.size() == width * height * wavelengths.size());
     assert(quantization_curve.size() == n_moments);
@@ -1024,7 +1044,8 @@ double twobounds_compute_compression_curve(
         compressed_decompressed_moments,
         width, height, n_moments,
         quantization_curve[1],
-        1, compression_curve[1]
+        1, compression_curve[1],
+        effort
     );
 
     assert(compressed_decompressed_moments.size() == quantized_moments.size());
@@ -1049,7 +1070,8 @@ double twobounds_compute_compression_curve(
                 compressed_decompressed_moments,
                 width, height, n_moments,
                 quantization_curve[m],
-                m, frame_distance
+                m, frame_distance,
+                effort
             );
 
             assert(compressed_decompressed_moments.size() == quantized_moments.size());
@@ -1083,9 +1105,11 @@ double twobounds_compute_compression_curve(
         global_min,
         global_max,
         quantization_curve,
-        compression_curve
+        compression_curve,
+        effort
     );
 }
+
 
 
 /*****************************************************************************/
@@ -1101,7 +1125,8 @@ double linear_error_for_compression_curve(
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
     const std::vector<int>& quantization_curve,
-    const std::vector<float>& compression_curve)
+    const std::vector<float>& compression_curve,
+    int effort)
 {
     assert(ref_spectral_image.size() == width * height * wavelengths.size());
     assert(normalized_moments.size() == width * height * n_moments);
@@ -1118,7 +1143,8 @@ double linear_error_for_compression_curve(
         width, height,
         n_moments,
         quantization_curve,
-        compression_curve
+        compression_curve,
+        effort
     );
 
     // Unpack the moments
@@ -1151,7 +1177,8 @@ double unbounded_error_for_compression_curve(
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
     const std::vector<int>& quantization_curve,
-    const std::vector<float>& compression_curve)
+    const std::vector<float>& compression_curve,
+    int effort)
 {
     assert(ref_spectral_image.size() == width * height * wavelengths.size());
     assert(normalized_moments.size() == width * height * n_moments);
@@ -1168,7 +1195,8 @@ double unbounded_error_for_compression_curve(
         width, height,
         n_moments,
         quantization_curve,
-        compression_curve
+        compression_curve,
+        effort
     );
 
     // Unpack the moments
@@ -1201,7 +1229,8 @@ double bounded_error_for_compression_curve(
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
     const std::vector<int>& quantization_curve,
-    const std::vector<float>& compression_curve)
+    const std::vector<float>& compression_curve,
+    int effort)
 {
     assert(ref_spectral_image.size() == width * height * wavelengths.size());
     assert(normalized_moments.size() == width * height * n_moments);
@@ -1218,7 +1247,8 @@ double bounded_error_for_compression_curve(
         width, height,
         n_moments,
         quantization_curve,
-        compression_curve
+        compression_curve,
+        effort
     );
 
     // Unpack the moments
@@ -1251,7 +1281,8 @@ double unbounded_to_bounded_error_for_compression_curve(
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
     const std::vector<int>& quantization_curve,
-    const std::vector<float>& compression_curve)
+    const std::vector<float>& compression_curve,
+    int effort)
 {
     assert(ref_spectral_image.size() == width * height * wavelengths.size());
     assert(normalized_moments.size() == width * height * n_moments);
@@ -1268,7 +1299,8 @@ double unbounded_to_bounded_error_for_compression_curve(
         width, height,
         n_moments,
         quantization_curve,
-        compression_curve
+        compression_curve,
+        effort
     );
 
     // Unpack the moments
@@ -1303,7 +1335,8 @@ double upperbound_error_for_compression_curve(
     const std::vector<uint8_t>& relative_scales,
     double global_max,
     const std::vector<int>& quantization_curve,
-    const std::vector<float>& compression_curve)
+    const std::vector<float>& compression_curve,
+    int effort)
 {
     assert(ref_spectral_image.size() == width * height * wavelengths.size());
     assert(normalized_moments.size() == width * height * n_moments);
@@ -1321,7 +1354,8 @@ double upperbound_error_for_compression_curve(
         width, height,
         n_moments,
         quantization_curve,
-        compression_curve
+        compression_curve,
+        effort
     );
 
     // Unpack the moments
@@ -1359,7 +1393,8 @@ double twobounds_error_for_compression_curve(
     double global_min,
     double global_max,
     const std::vector<int>& quantization_curve,
-    const std::vector<float>& compression_curve)
+    const std::vector<float>& compression_curve,
+    int effort)
 {
     assert(ref_spectral_image.size() == width * height * wavelengths.size());
     assert(normalized_moments.size() == width * height * n_moments);
@@ -1377,7 +1412,8 @@ double twobounds_error_for_compression_curve(
         width, height,
         n_moments,
         quantization_curve,
-        compression_curve
+        compression_curve,
+        effort
     );
 
     // Unpack the moments

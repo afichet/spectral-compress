@@ -320,7 +320,8 @@ stats_data linear_stats_for_compression_curve(
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
     const std::vector<int>& quantization_curve,
-    const std::vector<float>& compression_curve)
+    const std::vector<float>& compression_curve,
+    int effort)
 {
     assert(ref_spectral_image.size() == width * height * wavelengths.size());
     assert(normalized_moments.size() == width * height * n_moments);
@@ -337,7 +338,8 @@ stats_data linear_stats_for_compression_curve(
         width, height,
         n_moments,
         quantization_curve,
-        compression_curve
+        compression_curve,
+        effort
     );
 
     // Unpack the moments
@@ -370,7 +372,8 @@ stats_data unbounded_stats_for_compression_curve(
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
     const std::vector<int>& quantization_curve,
-    const std::vector<float>& compression_curve)
+    const std::vector<float>& compression_curve,
+    int effort)
 {
     assert(ref_spectral_image.size() == width * height * wavelengths.size());
     assert(normalized_moments.size() == width * height * n_moments);
@@ -387,7 +390,8 @@ stats_data unbounded_stats_for_compression_curve(
         width, height,
         n_moments,
         quantization_curve,
-        compression_curve
+        compression_curve,
+        effort
     );
 
     // Unpack the moments
@@ -420,7 +424,8 @@ stats_data bounded_stats_for_compression_curve(
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
     const std::vector<int>& quantization_curve,
-    const std::vector<float>& compression_curve)
+    const std::vector<float>& compression_curve,
+    int effort)
 {
     assert(ref_spectral_image.size() == width * height * wavelengths.size());
     assert(normalized_moments.size() == width * height * n_moments);
@@ -437,7 +442,8 @@ stats_data bounded_stats_for_compression_curve(
         width, height,
         n_moments,
         quantization_curve,
-        compression_curve
+        compression_curve,
+        effort
     );
 
     // Unpack the moments
@@ -470,7 +476,8 @@ stats_data unbounded_to_bounded_stats_for_compression_curve(
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
     const std::vector<int>& quantization_curve,
-    const std::vector<float>& compression_curve)
+    const std::vector<float>& compression_curve,
+    int effort)
 {
     assert(ref_spectral_image.size() == width * height * wavelengths.size());
     assert(normalized_moments.size() == width * height * n_moments);
@@ -487,7 +494,8 @@ stats_data unbounded_to_bounded_stats_for_compression_curve(
         width, height,
         n_moments,
         quantization_curve,
-        compression_curve
+        compression_curve,
+        effort
     );
 
     // Unpack the moments
@@ -522,7 +530,8 @@ stats_data upperbound_stats_for_compression_curve(
     const std::vector<uint8_t>& relative_scales,
     double global_max,
     const std::vector<int>& quantization_curve,
-    const std::vector<float>& compression_curve)
+    const std::vector<float>& compression_curve,
+    int effort)
 {
     assert(ref_spectral_image.size() == width * height * wavelengths.size());
     assert(normalized_moments.size() == width * height * n_moments);
@@ -540,7 +549,8 @@ stats_data upperbound_stats_for_compression_curve(
         width, height,
         n_moments,
         quantization_curve,
-        compression_curve
+        compression_curve,
+        effort
     );
 
     // Unpack the moments
@@ -578,7 +588,8 @@ stats_data twobounds_stats_for_compression_curve(
     double global_min,
     double global_max,
     const std::vector<int>& quantization_curve,
-    const std::vector<float>& compression_curve)
+    const std::vector<float>& compression_curve,
+    int effort)
 {
     assert(ref_spectral_image.size() == width * height * wavelengths.size());
     assert(normalized_moments.size() == width * height * n_moments);
@@ -590,34 +601,87 @@ stats_data twobounds_stats_for_compression_curve(
 
     std::vector<double> compressed_decompressed_normalized_moments;
 
+    // compress_decompress_image(
+    //     normalized_moments,
+    //     compressed_decompressed_normalized_moments,
+    //     width, height,
+    //     n_moments,
+    //     quantization_curve,
+    //     compression_curve,
+    //     effort
+    // );
+
+    // std::vector<double> decompressed_spectral_image;
+
+    // twobounds_decompress_spectral_image(
+    //     wavelengths,
+    //     compressed_decompressed_normalized_moments,
+    //     mins, maxs,
+    //     relative_scales,
+    //     global_min,
+    //     global_max,
+    //     width * height,
+    //     n_moments,
+    //     decompressed_spectral_image
+    // );
+
+    // return compute_stats(
+    //     ref_spectral_image,
+    //     decompressed_spectral_image,
+    //     width, height,
+    //     wavelengths.size()
+    // );
+
+    // TODO remove
+    std::vector<float> normalized_moments_f;
+    std::vector<double> normalized_moments_d;
+
+    Util::cast_vector(normalized_moments, normalized_moments_f);
+    Util::cast_vector(normalized_moments_f, normalized_moments_d);
+
     compress_decompress_image(
-        normalized_moments,
+        normalized_moments_d,
         compressed_decompressed_normalized_moments,
         width, height,
         n_moments,
         quantization_curve,
-        compression_curve
+        compression_curve,
+        effort
     );
 
     // Unpack the moments
     std::vector<double> decompressed_spectral_image;
 
+    // TODO: remove this mess
+    std::vector<float> mins_f, maxs_f;
+    std::vector<double> mins_d, maxs_d;
+
+    Util::cast_vector(mins, mins_f);
+    Util::cast_vector(maxs, maxs_f);
+
+    Util::cast_vector(mins_f, mins_d);
+    Util::cast_vector(maxs_f, maxs_d);
+    float g_min = global_min;
+    float g_max = global_max;
+
     twobounds_decompress_spectral_image(
         wavelengths,
         compressed_decompressed_normalized_moments,
-        mins, maxs,
+        mins_d, maxs_d,
         relative_scales,
-        global_min,
-        global_max,
+        (double)g_min,
+        (double)g_max,
         width * height,
         n_moments,
         decompressed_spectral_image
     );
 
-    return compute_stats(
+    stats_data st = compute_stats(
         ref_spectral_image,
         decompressed_spectral_image,
         width, height,
         wavelengths.size()
     );
+
+    return st;
 }

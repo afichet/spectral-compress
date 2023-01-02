@@ -407,7 +407,8 @@ stats_data stats_for_quantization_and_compression_curves(
     const std::vector<double>& compressed_moments,
     const std::vector<double>& mins, const std::vector<double>& maxs,
     const std::vector<uint8_t>& relative_scales,
-    double& global_min, double& global_max)
+    double& global_min, double& global_max,
+    int effort)
 {
     switch(method) {
         case LINEAR:
@@ -416,7 +417,8 @@ stats_data stats_for_quantization_and_compression_curves(
                 width, height, n_moments,
                 compressed_moments, mins, maxs,
                 quantization_curve,
-                compression_curve
+                compression_curve,
+                effort
             );
         case BOUNDED:
             return bounded_stats_for_compression_curve(
@@ -424,7 +426,8 @@ stats_data stats_for_quantization_and_compression_curves(
                 width, height, n_moments,
                 compressed_moments, mins, maxs,
                 quantization_curve,
-                compression_curve
+                compression_curve,
+                effort
             );
         case UNBOUNDED:
             return unbounded_stats_for_compression_curve(
@@ -432,7 +435,8 @@ stats_data stats_for_quantization_and_compression_curves(
                 width, height, n_moments,
                 compressed_moments, mins, maxs,
                 quantization_curve,
-                compression_curve
+                compression_curve,
+                effort
             );
         case UNBOUNDED_TO_BOUNDED:
             return unbounded_to_bounded_stats_for_compression_curve(
@@ -440,7 +444,8 @@ stats_data stats_for_quantization_and_compression_curves(
                 width, height, n_moments,
                 compressed_moments, mins, maxs,
                 quantization_curve,
-                compression_curve
+                compression_curve,
+                effort
             );
         case UPPERBOUND:
             return upperbound_stats_for_compression_curve(
@@ -449,7 +454,8 @@ stats_data stats_for_quantization_and_compression_curves(
                 compressed_moments, mins, maxs,
                 relative_scales, global_max,
                 quantization_curve,
-                compression_curve
+                compression_curve,
+                effort
             );
         case TWOBOUNDS:
             return twobounds_stats_for_compression_curve(
@@ -458,7 +464,8 @@ stats_data stats_for_quantization_and_compression_curves(
                 compressed_moments, mins, maxs,
                 relative_scales, global_min, global_max,
                 quantization_curve,
-                compression_curve
+                compression_curve,
+                effort
             );
     }
 
@@ -482,6 +489,7 @@ void compress_spectral_framebuffer(
     float compression_ac1,
     bool uses_constant_compression,
     std::vector<float>& compression_curve,
+    int effort,
     // Result of compression
     std::vector<std::vector<float>>& compressed_moments,
     SGEGSpectralGroup& sg,
@@ -587,7 +595,8 @@ void compress_spectral_framebuffer(
         quantization_curve,
         compression_curve,
         compressed_moments_d, mins_d, maxs_d,
-        relative_scales, global_min_d, global_max_d
+        relative_scales, global_min_d, global_max_d,
+        effort
     );
 
     // Give back data to the caller
@@ -723,6 +732,26 @@ public:
 };
 
 
+class CompressionEffortConstraint: public TCLAP::Constraint<int>
+{
+public:
+    virtual std::string description() const
+    {
+        return "Sets the compression effort for JXL.";
+    }
+
+    virtual std::string shortID() const
+    {
+        return "1..9";
+    }
+
+    virtual bool check(const int &value) const
+    {
+        return (value >= 1) && (value <= 9);
+    }
+};
+
+
 int main(int argc, char *argv[])
 {
     std::string filename_in, filename_out, filename_dump;
@@ -738,6 +767,7 @@ int main(int argc, char *argv[])
     float compression_dc = .1f;
     float compression_ac1 = .1f;
     bool use_flat_compression = false;
+    int compression_effort = 7;
 
     int n_bits_ac1 = 10;
     bool use_flat_quantization = false;
@@ -764,12 +794,16 @@ int main(int argc, char *argv[])
 
         // Compresion tweaking
         FrameDistanceConstraint frameDistanceConstraint;
+        CompressionEffortConstraint compressionEffortConstraint;
+
         TCLAP::ValueArg<float> frameDistanceDCArg("a", "frame_distance_dc", "Sets the distance level for lossy compression (compression rate) on the DC component.", false, .1f, &frameDistanceConstraint);
         TCLAP::ValueArg<float> frameDistanceACArg("b", "frame_distance_ac", "Sets the distance level for lossy compression (compression rate) on the first AC component. The program uses the same compression ratio for the remaining components when `--c_flat` is set. Otherwise, the program generates a compression curve starting with the distance parameter for the first AC component using the provided value based on the image data (can be slow).", false, .1f, &frameDistanceConstraint);
         TCLAP::SwitchArg useFlatCompressionArg("c", "c_flat", "Sets a flat compression curve. All AC components use the same distance level as the first AC component set by `--frame_distance_ac` while the DC components uses the distance level provided by `--frame_distance_dc` parameter.");
+        TCLAP::ValueArg<int> compressionEffortArg("e", "effort", "Sets the compression effort: 1 = fast, 9 = slow.", false, 7, &compressionEffortConstraint);
         cmd.add(frameDistanceDCArg);
         cmd.add(frameDistanceACArg);
         cmd.add(useFlatCompressionArg);
+        cmd.add(compressionEffortArg);
 
         // Quantization tweaking
         TCLAP::ValueArg<int> quantizationStartArg("q", "quantization", "Sets the starting number of bits for quantizing the first AC component. The program use the same number of bits for the remaining components when `--q_flat` is set. Otherwise, the program generates a custom quantization curve starting with the number of bits for the first AC component using the provided value based on the image data (can be slow).", false, 10, "integer");
@@ -813,6 +847,7 @@ int main(int argc, char *argv[])
         compression_dc       = frameDistanceDCArg.getValue();
         compression_ac1      = frameDistanceACArg.getValue();
         use_flat_compression = useFlatCompressionArg.getValue();
+        compression_effort   = compressionEffortArg.getValue();
 
         n_bits_ac1            = quantizationStartArg.getValue();
         use_flat_quantization = useFlatQuantizationArg.getValue();
@@ -879,7 +914,7 @@ int main(int argc, char *argv[])
             fb,
             exr_in.width(), exr_in.height(),
             n_bits_dc,      n_bits_ac1,      use_flat_quantization, quantization_curve,
-            compression_dc, compression_ac1, use_flat_compression,  compression_curve,
+            compression_dc, compression_ac1, use_flat_compression,  compression_curve, compression_effort,
             compressed_moments,
             sg,
             log_is_active,
@@ -948,7 +983,7 @@ int main(int argc, char *argv[])
     }
 
     jxl_out.setBox(box);
-    jxl_out.write(filename_out);
+    jxl_out.write(filename_out, compression_effort);
 
     if (has_dump_file) {
         jxl_out.dump(filename_dump);

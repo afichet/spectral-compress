@@ -182,7 +182,8 @@ stats_data linear_stats_for_compression_curve(
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
     const std::vector<int>& quantization_curve,
-    const std::vector<float>& compression_curve);
+    const std::vector<float>& compression_curve,
+    int effort);
 
 
 stats_data unbounded_stats_for_compression_curve(
@@ -194,7 +195,8 @@ stats_data unbounded_stats_for_compression_curve(
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
     const std::vector<int>& quantization_curve,
-    const std::vector<float>& compression_curve);
+    const std::vector<float>& compression_curve,
+    int effort);
 
 
 stats_data bounded_stats_for_compression_curve(
@@ -206,7 +208,8 @@ stats_data bounded_stats_for_compression_curve(
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
     const std::vector<int>& quantization_curve,
-    const std::vector<float>& compression_curve);
+    const std::vector<float>& compression_curve,
+    int effort);
 
 
 stats_data unbounded_to_bounded_stats_for_compression_curve(
@@ -218,7 +221,8 @@ stats_data unbounded_to_bounded_stats_for_compression_curve(
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
     const std::vector<int>& quantization_curve,
-    const std::vector<float>& compression_curve);
+    const std::vector<float>& compression_curve,
+    int effort);
 
 
 stats_data upperbound_stats_for_compression_curve(
@@ -232,7 +236,8 @@ stats_data upperbound_stats_for_compression_curve(
     const std::vector<uint8_t>& relative_scales,
     double global_max,
     const std::vector<int>& quantization_curve,
-    const std::vector<float>& compression_curve);
+    const std::vector<float>& compression_curve,
+    int effort);
 
 
 stats_data twobounds_stats_for_compression_curve(
@@ -247,4 +252,5 @@ stats_data twobounds_stats_for_compression_curve(
     double global_min,
     double global_max,
     const std::vector<int>& quantization_curve,
-    const std::vector<float>& compression_curve);
+    const std::vector<float>& compression_curve,
+    int effort);

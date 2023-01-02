@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Alban Fichet
+ * Copyright 2022 - 2023 Alban Fichet
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -48,7 +48,8 @@ void compress_decompress_framebuffer(
     uint32_t bits_per_sample,
     uint32_t exponent_bits_per_sample,
     float frame_distance,
-    uint32_t downsampling_ratio);
+    uint32_t downsampling_ratio,
+    int effort);
 
 
 void compress_decompress_single_image(
@@ -57,7 +58,8 @@ void compress_decompress_single_image(
     uint32_t width, uint32_t height,
     size_t n_moments,
     uint32_t bits_per_sample,
-    size_t i, float frame_distance);
+    size_t i, float frame_distance,
+    int effort);
 
 
 void compress_decompress_image(
@@ -66,7 +68,8 @@ void compress_decompress_image(
     uint32_t width, uint32_t height,
     size_t n_moments,
     const std::vector<int>& quantization_curve,
-    const std::vector<float>& compression_curve);
+    const std::vector<float>& compression_curve,
+    int effort);
 
 
 /*****************************************************************************/
@@ -81,7 +84,8 @@ double linear_compute_compression_curve(
     const std::vector<int>& quantization_curve,
     float compression_dc,
     float compression_ac1,
-    std::vector<float>& compression_curve);
+    std::vector<float>& compression_curve,
+    int effort = 7);
 
 
 double unbounded_compute_compression_curve(
@@ -92,7 +96,8 @@ double unbounded_compute_compression_curve(
     const std::vector<int>& quantization_curve,
     float compression_dc,
     float compression_ac1,
-    std::vector<float>& compression_curve);
+    std::vector<float>& compression_curve,
+    int effort = 7);
 
 
 double bounded_compute_compression_curve(
@@ -103,7 +108,8 @@ double bounded_compute_compression_curve(
     const std::vector<int>& quantization_curve,
     float compression_dc,
     float compression_ac1,
-    std::vector<float>& compression_curve);
+    std::vector<float>& compression_curve,
+    int effort = 7);
 
 
 double unbounded_to_bounded_compute_compression_curve(
@@ -114,7 +120,8 @@ double unbounded_to_bounded_compute_compression_curve(
     const std::vector<int>& quantization_curve,
     float compression_dc,
     float compression_ac1,
-    std::vector<float>& compression_curve);
+    std::vector<float>& compression_curve,
+    int effort = 7);
 
 
 double upperbound_compute_compression_curve(
@@ -125,7 +132,8 @@ double upperbound_compute_compression_curve(
     const std::vector<int>& quantization_curve,
     float compression_dc,
     float compression_ac1,
-    std::vector<float>& compression_curve);
+    std::vector<float>& compression_curve,
+    int effort = 7);
 
 
 double twobounds_compute_compression_curve(
@@ -136,7 +144,8 @@ double twobounds_compute_compression_curve(
     const std::vector<int>& quantization_curve,
     float compression_dc,
     float compression_ac1,
-    std::vector<float>& compression_curve);
+    std::vector<float>& compression_curve,
+    int effort = 7);
 
 
 /*****************************************************************************/
@@ -152,7 +161,8 @@ double linear_error_for_compression_curve(
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
     const std::vector<int>& quantization_curve,
-    const std::vector<float>& compression_curve);
+    const std::vector<float>& compression_curve,
+    int effort);
 
 
 double unbounded_error_for_compression_curve(
@@ -164,7 +174,8 @@ double unbounded_error_for_compression_curve(
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
     const std::vector<int>& quantization_curve,
-    const std::vector<float>& compression_curve);
+    const std::vector<float>& compression_curve,
+    int effort);
 
 
 double bounded_error_for_compression_curve(
@@ -176,7 +187,8 @@ double bounded_error_for_compression_curve(
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
     const std::vector<int>& quantization_curve,
-    const std::vector<float>& compression_curve);
+    const std::vector<float>& compression_curve,
+    int effort);
 
 
 double unbounded_to_bounded_error_for_compression_curve(
@@ -188,7 +200,8 @@ double unbounded_to_bounded_error_for_compression_curve(
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
     const std::vector<int>& quantization_curve,
-    const std::vector<float>& compression_curve);
+    const std::vector<float>& compression_curve,
+    int effort);
 
 
 double upperbound_error_for_compression_curve(
@@ -202,7 +215,8 @@ double upperbound_error_for_compression_curve(
     const std::vector<uint8_t>& relative_scales,
     double global_max,
     const std::vector<int>& quantization_curve,
-    const std::vector<float>& compression_curve);
+    const std::vector<float>& compression_curve,
+    int effort);
 
 
 double twobounds_error_for_compression_curve(
@@ -217,4 +231,5 @@ double twobounds_error_for_compression_curve(
     double global_min,
     double global_max,
     const std::vector<int>& quantization_curve,
-    const std::vector<float>& compression_curve);
+    const std::vector<float>& compression_curve,
+    int effort);
