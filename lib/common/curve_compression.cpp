@@ -90,6 +90,8 @@ void compress_decompress_framebuffer(
     framebuffer_out.resize(framebuffer_in.size());
 
     // 1. Compress the framebuffer using JXL
+    std::vector<float> quantized_framebuffer;
+
     JxlEncoderStatus           enc_status;
     JxlEncoderPtr              enc;
     JxlThreadParallelRunnerPtr runner;
@@ -108,6 +110,7 @@ void compress_decompress_framebuffer(
         JxlThreadParallelRunner,
         runner.get()
     );
+    CHECK_JXL_ENC_STATUS(enc_status);
 
     JxlEncoderInitBasicInfo(&basic_info);
 
@@ -127,11 +130,13 @@ void compress_decompress_framebuffer(
     JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_EFFORT, effort);
     CHECK_JXL_ENC_STATUS(enc_status);
 
-    if (frame_distance > 0) {
+    const bool encodes_lossless = frame_distance == 0;
+
+    if (encodes_lossless) {
+        enc_status = JxlEncoderSetFrameLossless(frame_settings, JXL_TRUE);
+    } else {
         enc_status = JxlEncoderSetFrameLossless(frame_settings, JXL_FALSE);
         enc_status = JxlEncoderSetFrameDistance(frame_settings, frame_distance);
-    } else {
-        enc_status = JxlEncoderSetFrameLossless(frame_settings, JXL_TRUE);
     }
     CHECK_JXL_ENC_STATUS(enc_status);
 
@@ -153,12 +158,34 @@ void compress_decompress_framebuffer(
     format.endianness   = JXL_NATIVE_ENDIAN;
     format.align        = 0;
 
-    enc_status = JxlEncoderAddImageFrame(
-        frame_settings,
-        &format,
-        framebuffer_in.data(),
-        width * height * sizeof(float)
-    );
+    // FIXME: There is a bug in the current JXL implementation: it ignores
+    //        the quantization when the compression is not lossless.
+    //        This issue is addressed with a hack.
+    if (encodes_lossless || exponent_bits_per_sample != 0) {
+        enc_status = JxlEncoderAddImageFrame(
+            frame_settings,
+            &format,
+            framebuffer_in.data(),
+            width * height * sizeof(float)
+        );
+    } else {
+        quantized_framebuffer.resize(width * height);
+
+        #pragma omp parallel for
+        for (size_t i = 0; i < width * height; i++) {
+            quantized_framebuffer[i] = Util::quantize_dequantize(
+                framebuffer_in[i],
+                basic_info.bits_per_sample
+            );
+        }
+
+        enc_status = JxlEncoderAddImageFrame(
+            frame_settings,
+            &format,
+            quantized_framebuffer.data(),
+            width * height * sizeof(float)
+        );
+    }
 
     CHECK_JXL_ENC_STATUS(enc_status);
 
@@ -282,6 +309,7 @@ void compress_decompress_single_image(
     std::vector<float> input_framebuffer(width * height);
     std::vector<float> compressed_framebuffer;
 
+    #pragma omp parallel for
     for (size_t px = 0; px < width * height; px++) {
         input_framebuffer[px] = (float)input_image[px * n_moments + i];
     }
@@ -304,6 +332,7 @@ void compress_decompress_single_image(
     );
 
     // Change what has changed
+    #pragma omp parallel for
     for (size_t px = 0; px < width * height; px++) {
         output_image[px * n_moments + i] = (double)compressed_framebuffer[px];
     }
@@ -332,6 +361,7 @@ void compress_decompress_image(
         std::vector<float> framebuffer_out;
 
         // Copy cast to float
+        #pragma omp parallel for
         for (size_t px = 0; px < width * height; px++) {
             framebuffer_in[px] = input_image[px * n_moments + m];
         }
@@ -360,6 +390,7 @@ void compress_decompress_image(
             effort);
 
         // Copy cast to float
+        #pragma omp parallel for
         for (size_t px = 0; px < width * height; px++) {
             output_image[px * n_moments + m] = framebuffer_out[px];
         }
@@ -404,17 +435,17 @@ double linear_compute_compression_curve(
     assert(mins.size() == n_moments - 1);
     assert(maxs.size() == n_moments - 1);
 
-    // TODO: Check if this is really necessary, it is skipped in other parts of the code
     // Quantize / dequantize each moment based on the provided quantization
     // curve
-    std::vector<double> quantized_moments(normalized_moments.size());
+    std::vector<double> q_normalized_moments(normalized_moments.size());
 
+    #pragma omp parallel for
     for (size_t px = 0; px < width * height; px++) {
         // We ignore moment 0
-        quantized_moments[px * n_moments + 0] = normalized_moments[px * n_moments + 0];
+        q_normalized_moments[px * n_moments + 0] = normalized_moments[px * n_moments + 0];
 
         for (size_t m = 1; m < n_moments; m++) {
-            quantized_moments[px * n_moments + m] =
+            q_normalized_moments[px * n_moments + m] =
                 Util::quantize_dequantize(
                     normalized_moments[px * n_moments + m],
                     quantization_curve[m]
@@ -428,7 +459,7 @@ double linear_compute_compression_curve(
     std::vector<double> compressed_decompressed_moments;
 
     compress_decompress_single_image(
-        quantized_moments,
+        q_normalized_moments,
         compressed_decompressed_moments,
         width, height, n_moments,
         quantization_curve[1],
@@ -436,7 +467,7 @@ double linear_compute_compression_curve(
         effort
     );
 
-    assert(compressed_decompressed_moments.size() == quantized_moments.size());
+    assert(compressed_decompressed_moments.size() == q_normalized_moments.size());
 
     const double base_err = linear_average_err(
         wavelengths,
@@ -451,7 +482,7 @@ double linear_compute_compression_curve(
 
         for (float frame_distance = compression_curve[m] + frame_distance_inc; frame_distance <= max_frame_distance; frame_distance += frame_distance_inc) {
             compress_decompress_single_image(
-                quantized_moments,
+                q_normalized_moments,
                 compressed_decompressed_moments,
                 width, height, n_moments,
                 quantization_curve[m],
@@ -459,7 +490,7 @@ double linear_compute_compression_curve(
                 effort
             );
 
-            assert(compressed_decompressed_moments.size() == quantized_moments.size());
+            assert(compressed_decompressed_moments.size() == q_normalized_moments.size());
 
             const double curr_err = linear_average_err(
                 wavelengths,
@@ -523,17 +554,17 @@ double unbounded_compute_compression_curve(
     assert(mins.size() == n_moments - 1);
     assert(maxs.size() == n_moments - 1);
 
-    // TODO: Check if this is really necessary, it is skipped in other parts of the code
     // Quantize / dequantize each moment based on the provided quantization
     // curve
-    std::vector<double> quantized_moments(normalized_moments.size());
+    std::vector<double> q_normalized_moments(normalized_moments.size());
 
+    #pragma omp parallel for
     for (size_t px = 0; px < width * height; px++) {
         // We ignore moment 0
-        quantized_moments[px * n_moments + 0] = normalized_moments[px * n_moments + 0];
+        q_normalized_moments[px * n_moments + 0] = normalized_moments[px * n_moments + 0];
 
         for (size_t m = 1; m < n_moments; m++) {
-            quantized_moments[px * n_moments + m] =
+            q_normalized_moments[px * n_moments + m] =
                 Util::quantize_dequantize(
                     normalized_moments[px * n_moments + m],
                     quantization_curve[m]
@@ -547,7 +578,7 @@ double unbounded_compute_compression_curve(
     std::vector<double> compressed_decompressed_moments;
 
     compress_decompress_single_image(
-        quantized_moments,
+        q_normalized_moments,
         compressed_decompressed_moments,
         width, height, n_moments,
         quantization_curve[1],
@@ -555,7 +586,7 @@ double unbounded_compute_compression_curve(
         effort
     );
 
-    assert(compressed_decompressed_moments.size() == quantized_moments.size());
+    assert(compressed_decompressed_moments.size() == q_normalized_moments.size());
 
     const double base_err = unbounded_average_err(
         wavelengths,
@@ -570,7 +601,7 @@ double unbounded_compute_compression_curve(
 
         for (float frame_distance = compression_curve[m] + frame_distance_inc; frame_distance <= max_frame_distance; frame_distance += frame_distance_inc) {
             compress_decompress_single_image(
-                quantized_moments,
+                q_normalized_moments,
                 compressed_decompressed_moments,
                 width, height, n_moments,
                 quantization_curve[m],
@@ -578,7 +609,7 @@ double unbounded_compute_compression_curve(
                 effort
             );
 
-            assert(compressed_decompressed_moments.size() == quantized_moments.size());
+            assert(compressed_decompressed_moments.size() == q_normalized_moments.size());
 
             const double curr_err = unbounded_average_err(
                 wavelengths,
@@ -642,17 +673,17 @@ double bounded_compute_compression_curve(
     assert(mins.size() == n_moments - 1);
     assert(maxs.size() == n_moments - 1);
 
-    // TODO: Check if this is really necessary, it is skipped in other parts of the code
     // Quantize / dequantize each moment based on the provided quantization
     // curve
-    std::vector<double> quantized_moments(normalized_moments.size());
+    std::vector<double> q_normalized_moments(normalized_moments.size());
 
+    #pragma omp parallel for
     for (size_t px = 0; px < width * height; px++) {
         // We ignore moment 0
-        quantized_moments[px * n_moments + 0] = normalized_moments[px * n_moments + 0];
+        q_normalized_moments[px * n_moments + 0] = normalized_moments[px * n_moments + 0];
 
         for (size_t m = 1; m < n_moments; m++) {
-            quantized_moments[px * n_moments + m] =
+            q_normalized_moments[px * n_moments + m] =
                 Util::quantize_dequantize(
                     normalized_moments[px * n_moments + m],
                     quantization_curve[m]
@@ -666,7 +697,7 @@ double bounded_compute_compression_curve(
     std::vector<double> compressed_decompressed_moments;
 
     compress_decompress_single_image(
-        quantized_moments,
+        q_normalized_moments,
         compressed_decompressed_moments,
         width, height, n_moments,
         quantization_curve[1],
@@ -674,7 +705,7 @@ double bounded_compute_compression_curve(
         effort
     );
 
-    assert(compressed_decompressed_moments.size() == quantized_moments.size());
+    assert(compressed_decompressed_moments.size() == q_normalized_moments.size());
 
     const double base_err = bounded_average_err(
         wavelengths,
@@ -689,7 +720,7 @@ double bounded_compute_compression_curve(
 
         for (float frame_distance = compression_curve[m] + frame_distance_inc; frame_distance <= max_frame_distance; frame_distance += frame_distance_inc) {
             compress_decompress_single_image(
-                quantized_moments,
+                q_normalized_moments,
                 compressed_decompressed_moments,
                 width, height, n_moments,
                 quantization_curve[m],
@@ -697,7 +728,7 @@ double bounded_compute_compression_curve(
                 effort
             );
 
-            assert(compressed_decompressed_moments.size() == quantized_moments.size());
+            assert(compressed_decompressed_moments.size() == q_normalized_moments.size());
 
             const double curr_err = bounded_average_err(
                 wavelengths,
@@ -761,17 +792,17 @@ double unbounded_to_bounded_compute_compression_curve(
     assert(mins.size() == n_moments - 1);
     assert(maxs.size() == n_moments - 1);
 
-    // TODO: Check if this is really necessary, it is skipped in other parts of the code
     // Quantize / dequantize each moment based on the provided quantization
     // curve
-    std::vector<double> quantized_moments(normalized_moments.size());
+    std::vector<double> q_normalized_moments(normalized_moments.size());
 
+    #pragma omp parallel for
     for (size_t px = 0; px < width * height; px++) {
         // We ignore moment 0
-        quantized_moments[px * n_moments + 0] = normalized_moments[px * n_moments + 0];
+        q_normalized_moments[px * n_moments + 0] = normalized_moments[px * n_moments + 0];
 
         for (size_t m = 1; m < n_moments; m++) {
-            quantized_moments[px * n_moments + m] =
+            q_normalized_moments[px * n_moments + m] =
                 Util::quantize_dequantize(
                     normalized_moments[px * n_moments + m],
                     quantization_curve[m]
@@ -785,7 +816,7 @@ double unbounded_to_bounded_compute_compression_curve(
     std::vector<double> compressed_decompressed_moments;
 
     compress_decompress_single_image(
-        quantized_moments,
+        q_normalized_moments,
         compressed_decompressed_moments,
         width, height, n_moments,
         quantization_curve[1],
@@ -793,7 +824,7 @@ double unbounded_to_bounded_compute_compression_curve(
         effort
     );
 
-    assert(compressed_decompressed_moments.size() == quantized_moments.size());
+    assert(compressed_decompressed_moments.size() == q_normalized_moments.size());
 
     const double base_err = unbounded_to_bounded_average_err(
         wavelengths,
@@ -808,7 +839,7 @@ double unbounded_to_bounded_compute_compression_curve(
 
         for (float frame_distance = compression_curve[m] + frame_distance_inc; frame_distance <= max_frame_distance; frame_distance += frame_distance_inc) {
             compress_decompress_single_image(
-                quantized_moments,
+                q_normalized_moments,
                 compressed_decompressed_moments,
                 width, height, n_moments,
                 quantization_curve[m],
@@ -816,7 +847,7 @@ double unbounded_to_bounded_compute_compression_curve(
                 effort
             );
 
-            assert(compressed_decompressed_moments.size() == quantized_moments.size());
+            assert(compressed_decompressed_moments.size() == q_normalized_moments.size());
 
             const double curr_err = unbounded_to_bounded_average_err(
                 wavelengths,
@@ -885,17 +916,17 @@ double upperbound_compute_compression_curve(
     assert(maxs.size() == n_moments - 1);
     assert(relative_scales.size() == width * height);
 
-    // TODO: Check if this is really necessary, it is skipped in other parts of the code
     // Quantize / dequantize each moment based on the provided quantization
     // curve
-    std::vector<double> quantized_moments(normalized_moments.size());
+    std::vector<double> q_normalized_moments(normalized_moments.size());
 
+    #pragma omp parallel for
     for (size_t px = 0; px < width * height; px++) {
         // We ignore moment 0
-        quantized_moments[px * n_moments + 0] = normalized_moments[px * n_moments + 0];
+        q_normalized_moments[px * n_moments + 0] = normalized_moments[px * n_moments + 0];
 
         for (size_t m = 1; m < n_moments; m++) {
-            quantized_moments[px * n_moments + m] =
+            q_normalized_moments[px * n_moments + m] =
                 Util::quantize_dequantize(
                     normalized_moments[px * n_moments + m],
                     quantization_curve[m]
@@ -909,7 +940,7 @@ double upperbound_compute_compression_curve(
     std::vector<double> compressed_decompressed_moments;
 
     compress_decompress_single_image(
-        quantized_moments,
+        q_normalized_moments,
         compressed_decompressed_moments,
         width, height, n_moments,
         quantization_curve[1],
@@ -917,7 +948,7 @@ double upperbound_compute_compression_curve(
         effort
     );
 
-    assert(compressed_decompressed_moments.size() == quantized_moments.size());
+    assert(compressed_decompressed_moments.size() == q_normalized_moments.size());
 
     const double base_err = upperbound_average_err(
         wavelengths,
@@ -934,7 +965,7 @@ double upperbound_compute_compression_curve(
 
         for (float frame_distance = compression_curve[m] + frame_distance_inc; frame_distance <= max_frame_distance; frame_distance += frame_distance_inc) {
             compress_decompress_single_image(
-                quantized_moments,
+                q_normalized_moments,
                 compressed_decompressed_moments,
                 width, height, n_moments,
                 quantization_curve[m],
@@ -942,7 +973,7 @@ double upperbound_compute_compression_curve(
                 effort
             );
 
-            assert(compressed_decompressed_moments.size() == quantized_moments.size());
+            assert(compressed_decompressed_moments.size() == q_normalized_moments.size());
 
             const double curr_err = upperbound_average_err(
                 wavelengths,
@@ -1016,17 +1047,15 @@ double twobounds_compute_compression_curve(
     assert(maxs.size() == n_moments - 1);
     assert(relative_scales.size() == width * height);
 
-    // TODO: Check if this is really necessary, it is skipped in other parts of the code
-    // Quantize / dequantize each moment based on the provided quantization
-    // curve
-    std::vector<double> quantized_moments(normalized_moments.size());
+    std::vector<double> q_normalized_moments(normalized_moments.size());
 
+    #pragma omp parallel for
     for (size_t px = 0; px < width * height; px++) {
         // We ignore moment 0
-        quantized_moments[px * n_moments + 0] = normalized_moments[px * n_moments + 0];
+        q_normalized_moments[px * n_moments + 0] = normalized_moments[px * n_moments + 0];
 
         for (size_t m = 1; m < n_moments; m++) {
-            quantized_moments[px * n_moments + m] =
+            q_normalized_moments[px * n_moments + m] =
                 Util::quantize_dequantize(
                     normalized_moments[px * n_moments + m],
                     quantization_curve[m]
@@ -1040,7 +1069,7 @@ double twobounds_compute_compression_curve(
     std::vector<double> compressed_decompressed_moments;
 
     compress_decompress_single_image(
-        quantized_moments,
+        q_normalized_moments,
         compressed_decompressed_moments,
         width, height, n_moments,
         quantization_curve[1],
@@ -1048,7 +1077,7 @@ double twobounds_compute_compression_curve(
         effort
     );
 
-    assert(compressed_decompressed_moments.size() == quantized_moments.size());
+    assert(compressed_decompressed_moments.size() == q_normalized_moments.size());
 
     const double base_err = twobounds_average_err(
         wavelengths,
@@ -1066,7 +1095,7 @@ double twobounds_compute_compression_curve(
 
         for (float frame_distance = compression_curve[m] + frame_distance_inc; frame_distance <= max_frame_distance; frame_distance += frame_distance_inc) {
             compress_decompress_single_image(
-                quantized_moments,
+                q_normalized_moments,
                 compressed_decompressed_moments,
                 width, height, n_moments,
                 quantization_curve[m],
@@ -1074,7 +1103,7 @@ double twobounds_compute_compression_curve(
                 effort
             );
 
-            assert(compressed_decompressed_moments.size() == quantized_moments.size());
+            assert(compressed_decompressed_moments.size() == q_normalized_moments.size());
 
             const double curr_err = twobounds_average_err(
                 wavelengths,
