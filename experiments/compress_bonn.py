@@ -78,6 +78,5 @@ for d in os.listdir(path_data):
                             spectral_image, output_file,
                             log_file, binlog_file, dump_file,
                             tech,
-                            bits, c_flat,
-                            c_dc, c_ac,
-                            False)
+                            bits, q_flat,
+                            c_dc, c_ac, c_flat)
