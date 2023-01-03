@@ -154,6 +154,7 @@ void generate_compression_curve(
     float compression_ac1,
     bool uses_constant_compression,
     std::vector<float>& compression_curve,
+    float effort,
     double& timing)
 {
     if (uses_constant_compression) {
@@ -175,7 +176,8 @@ void generate_compression_curve(
                     width, height, n_moments,
                     quantization_curve,
                     compression_dc, compression_ac1,
-                    compression_curve
+                    compression_curve,
+                    effort
                 );
                 break;
             case BOUNDED:
@@ -184,7 +186,8 @@ void generate_compression_curve(
                     width, height, n_moments,
                     quantization_curve,
                     compression_dc, compression_ac1,
-                    compression_curve
+                    compression_curve,
+                    effort
                 );
                 break;
             case UNBOUNDED:
@@ -193,7 +196,8 @@ void generate_compression_curve(
                     width, height, n_moments,
                     quantization_curve,
                     compression_dc, compression_ac1,
-                    compression_curve
+                    compression_curve,
+                    effort
                 );
                 break;
             case UNBOUNDED_TO_BOUNDED:
@@ -202,7 +206,8 @@ void generate_compression_curve(
                     width, height, n_moments,
                     quantization_curve,
                     compression_dc, compression_ac1,
-                    compression_curve
+                    compression_curve,
+                    effort
                 );
                 break;
             case UPPERBOUND:
@@ -211,7 +216,8 @@ void generate_compression_curve(
                     width, height, n_moments,
                     quantization_curve,
                     compression_dc, compression_ac1,
-                    compression_curve
+                    compression_curve,
+                    effort
                 );
                 break;
             case TWOBOUNDS:
@@ -220,7 +226,8 @@ void generate_compression_curve(
                     width, height, n_moments,
                     quantization_curve,
                     compression_dc, compression_ac1,
-                    compression_curve
+                    compression_curve,
+                    effort
                 );
                 break;
         }
@@ -562,6 +569,7 @@ void compress_spectral_framebuffer(
         compression_dc, compression_ac1,
         uses_constant_compression,
         compression_curve,
+        effort,
         compression_curve_timing
     );
 
