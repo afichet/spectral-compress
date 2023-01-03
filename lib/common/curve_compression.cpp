@@ -53,6 +53,9 @@
 #include <stdexcept>
 #include <iostream>
 
+
+#include <half.h>
+
 #define DEBLOG
 
 // ----------------------------------------------------------------------------
@@ -164,12 +167,36 @@ void compress_decompress_framebuffer(
     //        the quantization when the compression is not lossless.
     //        This issue is addressed with a hack.
     if (encodes_lossless || exponent_bits_per_sample != 0) {
-        enc_status = JxlEncoderAddImageFrame(
-            frame_settings,
-            &format,
-            framebuffer_in.data(),
-            width * height * sizeof(float)
-        );
+        // When we are dealing with lossless file and halfs, libjxl
+        // triggers an error if the half rounding cause imprecision.
+        // So we explicitely cast to half and back to float before
+        // providing the buffer.
+        if (exponent_bits_per_sample == 5 && bits_per_sample == 16) {
+            quantized_framebuffer.resize(width * height);
+
+            #pragma omp parallel for
+            for (size_t i = 0; i < width * height; i++) {
+                quantized_framebuffer[i] =
+                    imath_half_to_float(
+                        imath_float_to_half(framebuffer_in[i]
+                    )
+                );
+            }
+
+            enc_status = JxlEncoderAddImageFrame(
+                frame_settings,
+                &format,
+                quantized_framebuffer.data(),
+                width * height * sizeof(float)
+            );
+        } else {
+            enc_status = JxlEncoderAddImageFrame(
+                frame_settings,
+                &format,
+                framebuffer_in.data(),
+                width * height * sizeof(float)
+            );
+        }
     } else {
         quantized_framebuffer.resize(width * height);
 
@@ -196,11 +223,10 @@ void compress_decompress_framebuffer(
     std::vector<uint8_t> compressed(64);
 
     uint8_t* next_out = compressed.data();
-    size_t avail_out = compressed.size() - (next_out - compressed.data());
+    size_t avail_out  = compressed.size();
 
     enc_status = JXL_ENC_NEED_MORE_OUTPUT;
 
-    // for (status = JXL_ENC_NEED_MORE_OUTPUT ;; status == JXL_ENC_NEED_MORE_OUTPUT) {
     while (enc_status == JXL_ENC_NEED_MORE_OUTPUT) {
         enc_status = JxlEncoderProcessOutput(enc.get(), &next_out, &avail_out);
 

@@ -41,6 +41,8 @@
 #include <stdexcept>
 #include <sstream>
 
+#include <half.h>
+
 // ----------------------------------------------------------------------------
 
 #define JXL_MAX_FRAMEBUFFERS 1
@@ -396,12 +398,37 @@ void JXLImage::write(const char* filename, int effort) const {
         //        the quantization when the compression is not lossless.
         //        This issue is addressed with a hack.
         if (encodes_lossless || basic_info.exponent_bits_per_sample != 0) {
-            status = JxlEncoderAddImageFrame(
-                frame_settings,
-                &format,
-                _framebuffers[start_framebuffer_idx]->getPixelData().data(),
-                data_size
-            );
+            // When we are dealing with lossless file and halfs, libjxl
+            // triggers an error if the half rounding cause imprecision.
+            // So we explicitely cast to half and back to float before
+            // providing the buffer.
+            if (encodes_lossless && basic_info.exponent_bits_per_sample == 5
+             && basic_info.bits_per_sample == 16) {
+                quantized_framebuffer.resize(_width * _height);
+
+                #pragma omp parallel for
+                for (size_t i = 0; i < _width * _height; i++) {
+                    quantized_framebuffer[i] =
+                        imath_half_to_float(
+                            imath_float_to_half(_framebuffers[start_framebuffer_idx]->getPixelData()[i]
+                        )
+                    );
+                }
+
+                status = JxlEncoderAddImageFrame(
+                  frame_settings,
+                  &format,
+                  quantized_framebuffer.data(),
+                  data_size
+                );
+            } else {
+                status = JxlEncoderAddImageFrame(
+                    frame_settings,
+                    &format,
+                    _framebuffers[start_framebuffer_idx]->getPixelData().data(),
+                    data_size
+                );
+            }
         } else {
             quantized_framebuffer.resize(_width * _height);
 
@@ -488,7 +515,7 @@ void JXLImage::write(const char* filename, int effort) const {
         std::vector<uint8_t> compressed(64);
 
         uint8_t* next_out = compressed.data();
-        size_t avail_out = compressed.size() - (next_out - compressed.data());
+        size_t avail_out  = compressed.size();
 
         status = JXL_ENC_NEED_MORE_OUTPUT;
 
