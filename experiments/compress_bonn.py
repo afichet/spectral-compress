@@ -2,10 +2,9 @@
 
 import os, subprocess
 
-from common import get_path_bonn_in, get_path_bonn_out
+from common import get_path_bonn_in, get_path_bonn_out, run_compressor
 
 path_data = '/home/afichet/spectral_images/EXRs/Bonn/'
-path_bin  = '/home/afichet/Repositories/spectral-compress/build/bin/compress'
 path_out  = 'bonn'
 
 techniques = ['linear', 'unbounded', 'unbounded_to_bounded', 'upperbound', 'twobounds']
@@ -15,40 +14,6 @@ flat_quantization = [True, False]
 
 c_dc = 0
 c_ac = 1
-
-def run_compressor(
-    input_file, output_file,
-    log_file, binlog_file, dump_file,
-    technique,
-    n_bits_start, flat_quantization,
-    compression_ac, compression_start_dc, flat_compression):
-
-    fp, fn = os.path.split(output_file)
-    os.makedirs(fp, exist_ok=True)
-
-    fp, fn = os.path.split(log_file)
-    os.makedirs(fp, exist_ok=True)
-
-    args = [path_bin,
-        spectral_image, output_file,
-        '-l', log_file,
-        '-k', binlog_file,
-        '-d', dump_file,
-        '-m', tech,
-        '-q', str(n_bits_start),
-        '-a', str(compression_ac),
-        '-b', str(compression_start_dc),
-        '-e', str(7)
-        ]
-
-    if flat_quantization:
-        args.append('--q_flat')
-
-    if flat_compression:
-        args.append('--c_flat')
-
-    subprocess.run(args)
-
 
 for d in os.listdir(path_data):
     for type in ['diffuse', 'specular']:

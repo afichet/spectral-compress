@@ -5,24 +5,28 @@ import os, subprocess
 path_bin  = '/home/afichet/Repositories/spectral-compress/build/bin/'
 
 def run_compressor(
-    input_file, output_file,
-    log_file, binlog_file,
-    technique,
-    n_bits_start, flat_quantization,
-    compression_start, flat_compression):
+    input_file: str, output_file: str,
+    log_file: str, binlog_file: str, dump_file: str,
+    technique: str,
+    n_bits_start: int, flat_quantization: bool,
+    compression_ac: float, compression_start_dc: float, flat_compression: bool):
 
-    for f in [output_file, log_file, binlog_file]:
-        fp, fn = os.path.split(binlog_file)
-        os.makedirs(fp, exist_ok=True)
+    fp, fn = os.path.split(output_file)
+    os.makedirs(fp, exist_ok=True)
+
+    fp, fn = os.path.split(log_file)
+    os.makedirs(fp, exist_ok=True)
 
     args = [os.path.join(path_bin, 'compress'),
         input_file, output_file,
         '-l', log_file,
         '-k', binlog_file,
+        '-d', dump_file,
         '-m', technique,
         '-q', str(n_bits_start),
-        '-a', str(0.1),
-        '-b', str(compression_start),
+        '-a', str(compression_ac),
+        '-b', str(compression_start_dc),
+        '-e', str(7)
         ]
 
     if flat_quantization:
@@ -32,7 +36,6 @@ def run_compressor(
         args.append('--c_flat')
 
     subprocess.run(args)
-    # print(' '.join(args))
 
 
 def run_decompressor(input_file, output_file):
@@ -72,13 +75,24 @@ def run_diff(file_a, file_b, max_err, output_file, diff_error_file):
     subprocess.run(args)
 
 
-def get_path_cave(start, dataset_name, technique, n_bits_start, flat_curves):
+def get_path_cave_in(folder, dataset_name):
+    return os.path.join(folder, dataset_name + '.exr')
+
+
+def get_path_cave_out(
+    start, dataset_name,
+    technique,
+    n_bits_start,
+    c_dc, c_ac,
+    flat_q, flat_c):
     return os.path.join(
         start,
         dataset_name,
         technique,
         str(n_bits_start),
-        'flat' if flat_curves else 'dynamic'
+        str(c_dc), str(c_ac),
+        'q_flat' if flat_q else 'q_dynamic'
+        'c_flat' if flat_c else 'c_dynamic'
     )
 
 
@@ -88,6 +102,7 @@ def get_path_bonn_in(folder, dataset_name, type):
         dataset_name,
         type + '.exr'
     )
+
 
 def get_path_bonn_out(
     start, dataset_name, type,
