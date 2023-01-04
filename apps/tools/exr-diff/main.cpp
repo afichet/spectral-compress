@@ -78,12 +78,14 @@ void compare_spectral_images(
         double diff = 0;
 
         for (size_t b = 0; b < n_bands; b++) {
-            double d = (double)data_a[px * n_bands + b] - (double)data_b[px * n_bands + b];
+            double d =
+                (double)data_a[px * n_bands + b]
+              - (double)data_b[px * n_bands + b];
 
             diff += d*d;
         }
 
-        diff_image[px] = std::sqrt(diff) / (float)n_bands;
+        diff_image[px] = std::sqrt(diff) / (double)n_bands;
     }
 
     // Compute min max (cannot be multi-threaded)
@@ -120,7 +122,9 @@ void diff_to_rgba(
 
     for (size_t i = 0; i < diff_image.size(); i++) {
         const T v = std::max((T)0, std::min((T)1, (diff_image[i] - lower_bound) / (upper_bound - lower_bound)));
-        const size_t idx_lut = (size_t)std::round(v * lut_size);
+        const size_t idx_lut = (size_t)std::round(v * (lut_size - 1));
+
+        assert(idx_lut < lut_size);
 
         rgba_image[4 * i + 0] = std::round(255.f * v * lut[3 * idx_lut + 0]);
         rgba_image[4 * i + 1] = std::round(255.f * v * lut[3 * idx_lut + 1]);
