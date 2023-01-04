@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Alban Fichet
+ * Copyright 2022 - 2023 Alban Fichet
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions

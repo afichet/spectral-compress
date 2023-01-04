@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Alban Fichet
+ * Copyright 2022 - 2023 Alban Fichet
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -54,7 +54,7 @@ int main(int argc, char* argv[])
     const SGEGBox& box = jxl_in.getBox();
 
     box.print();
-    
+
     for (size_t i = 0; i < box.gray_groups.size(); i++) {
         const SGEGGrayGroup& gg = box.gray_groups[i];
 

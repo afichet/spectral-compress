@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Alban Fichet
+ * Copyright 2022 - 2023 Alban Fichet
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -38,7 +38,7 @@
 #include <OpenEXR/ImfIO.h>
 
 
-class EXRArrayStream : public Imf::OStream, public Imf::IStream 
+class EXRArrayStream : public Imf::OStream, public Imf::IStream
 {
 public:
     EXRArrayStream();
@@ -50,7 +50,7 @@ public:
     virtual bool read(char c[/*n*/], int n);
 
     virtual uint64_t tellp();
-    
+
     virtual uint64_t tellg();
 
     virtual void seekp(uint64_t pos);

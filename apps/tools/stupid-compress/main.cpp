@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Alban Fichet
+ * Copyright 2022 - 2023 Alban Fichet
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -65,7 +65,7 @@ int main(int argc, char* argv[])
         const char* layer_name = fb->getName();
 
         gg.layer_index = jxl_out.appendFramebuffer(fb->getPixelDataConst(), 1, 32, 8, 1, framedistance, fb->getName());
-        
+
         gg.layer_name.resize(std::strlen(layer_name) + 1);
         std::memcpy(gg.layer_name.data(), layer_name, gg.layer_name.size() * sizeof(char));
 

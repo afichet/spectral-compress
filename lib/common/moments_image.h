@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Alban Fichet
+ * Copyright 2022 - 2023 Alban Fichet
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -561,7 +561,7 @@ void twobounds_compress_spectral_image(
     for (size_t px = 0; px < n_pixels; px++) {
         const double m_rounded = r_min + (double)relative_scales[px] / max_q * (r_max - r_min);
         const double scaling = m_rounded;
-        
+
         normalized_moments_image[px * n_moments] *= scaling;
     }
 }

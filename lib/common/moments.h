@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Alban Fichet
+ * Copyright 2022 - 2023 Alban Fichet
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -43,10 +43,10 @@
 
 /**
  * @brief Computes corresponding phases from given wavelengths
- * 
+ *
  * @param wavelengths   Wavelenghts to be converted to phases.
  * @param n_wavelengths Number of wavelengths in the array.
- * @param phases        Computed phases. Must be allocated with `n_wavelength` 
+ * @param phases        Computed phases. Must be allocated with `n_wavelength`
  *                      elements.
  */
 extern "C"
@@ -57,7 +57,7 @@ void wavelengths_to_phases(
 
 #ifdef __cplusplus
 void wavelengths_to_phases(
-    const std::vector<double>& wavelengths, 
+    const std::vector<double>& wavelengths,
     std::vector<double>& phases);
 #endif // __cplusplus
 
@@ -87,7 +87,7 @@ void compute_basis_moments_to_signal(
 
 /**
  * @brief Computes moments from a given signal
- * 
+ *
  * @param phases    Phases at which the signal was sampled.
  * @param n_phases  Number of samples.
  * @param signal    Sampled value of the signal at the corresponding phases.
@@ -100,25 +100,25 @@ void compute_moments(
     const double phases[],
     size_t n_phases,
     const double signal[],
-    size_t n_moments, 
+    size_t n_moments,
     double moments[]);
 
 #ifdef __cplusplus
 void compute_moments(
-    const std::vector<double>& phases, 
-    const std::vector<double>& signal, 
+    const std::vector<double>& phases,
+    const std::vector<double>& signal,
     size_t n_moments,
     std::vector<double>& moments);
 #endif // __cplusplus
 
 /**
  * @brief Computes a density matching the given moments
- * 
+ *
  * @param phases    Phases where the density shall be computed.
  * @param n_phases  Size of phases array.
  * @param moments   Trigonometric moments.
  * @param n_moments Number of trigonometric moments.
- * @param density   Computed density. Must be allocated with `n_phases` 
+ * @param density   Computed density. Must be allocated with `n_phases`
  *                  elements.
  */
 extern "C"
@@ -131,19 +131,19 @@ void compute_density(
 
 #ifdef __cplusplus
 void compute_density(
-    const std::vector<double>& phases, 
+    const std::vector<double>& phases,
     const std::vector<double>& moments,
     std::vector<double>& density);
 #endif // __cplusplus
 
 /**
  * @brief Computes a bounded density matching the given moments
- * 
+ *
  * @param phases    Phases where the density shall be computed.
  * @param n_phases  Size of phases array.
  * @param moments   Trigonometric moments.
  * @param n_moments Number of trigonometric moments.
- * @param density   Computed density. Must be allocated with `n_phases` 
+ * @param density   Computed density. Must be allocated with `n_phases`
  *                  elements.
  */
 extern "C"
@@ -167,7 +167,7 @@ void bounded_compute_density_lagrange(
 
 /**
  * @brief Compress a set of moment
- * 
+ *
  * @param moments             Moments to compress.
  * @param n_moments           Number of moments.
  * @param compressed_moments  Computed compressed moments. Must be allocated
@@ -187,7 +187,7 @@ void unbounded_compress_moments(
 
 /**
  * @brief Compress a set of bounded moment
- * 
+ *
  * @param moments             Moments to compress.
  * @param n_moments           Number of moments.
  * @param compressed_moments  Computed compressed moments. Must be allocated
@@ -207,10 +207,10 @@ void bounded_compress_moments(
 
 /**
  * @brief Compress a set of moment
- * 
+ *
  * This uses zeroth moment to rescale the other moment in order to
  * use the bounded compression method
- * 
+ *
  * @param moments             Moments to compress.
  * @param n_moments           Number of moments.
  * @param compressed_moments  Computed compressed moments. Must be allocated
@@ -234,10 +234,10 @@ void unbounded_to_bounded_compress_moments(
 
 /**
  * @brief Decompress a set of compressed moments.
- * 
+ *
  * @param compressed_moments   Compressed moments.
  * @param n_compressed_moments Number of compressed moments.
- * @param moments              Computed moments. Must be allocated with 
+ * @param moments              Computed moments. Must be allocated with
  *                             `n_compressed_moments` elements.
  */
 extern "C"
@@ -255,10 +255,10 @@ void unbounded_decompress_moments(
 
 /**
  * @brief Decompress a set of compressed bounded moments.
- * 
+ *
  * @param compressed_moments   Compressed moments.
  * @param n_compressed_moments Number of compressed moments.
- * @param moments              Computed moments. Must be allocated with 
+ * @param moments              Computed moments. Must be allocated with
  *                             `n_compressed_moments` elements.
  */
 extern "C"
@@ -276,10 +276,10 @@ void bounded_decompress_moments(
 
 /**
  * @brief Decompress a set of compressed moments.
- * 
+ *
  * @param compressed_moments   Compressed moments.
  * @param n_compressed_moments Number of compressed moments.
- * @param moments              Computed moments. Must be allocated with 
+ * @param moments              Computed moments. Must be allocated with
  *                             `n_compressed_moments` elements.
  */
 extern "C"
@@ -304,7 +304,7 @@ void unbounded_to_bounded_decompress_moments(
 /**
  * @brief Use the Levinson algorithm to solve Toepliz matrix multiplied with
  * unit vector
- * 
+ *
  * @param first_column First column of the Toeplitz matrix.
  * @param size         Size of the column.
  * @param solution     Solution of the equation. Must be allocated with `size`
@@ -324,7 +324,7 @@ void solve_levinson(
 
 /**
  * @brief Get the dot products computed from the Levinson algorithm
- * 
+ *
  * @param first_column First column of the Toeplitz matrix.
  * @param size         Size of the column.
  * @param dot_product  Dot product computed by the Levinson algorithm. Must be
@@ -344,7 +344,7 @@ void solve_levinson(
 
 /**
  * @brief Computes the solution given the dot products
- * 
+ *
  * @param dot_product  Dot products.
  * @param size         Size of the dot products.
  * @param first_column Solution. Must be allocated with `size` elements.
@@ -391,4 +391,3 @@ void compute_lagrange_multipliers(
     const std::vector<std::complex<double>>& evaluation_polynomial,
     std::vector<std::complex<double>>& lagrange_multipliers);
 #endif // __cplusplus
-

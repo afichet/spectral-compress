@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Alban Fichet
+ * Copyright 2022 - 2023 Alban Fichet
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -63,8 +63,8 @@ void wavelengths_to_phases(
 }
 
 void wavelengths_to_phases(
-    const std::vector<double>& wavelengths, 
-    std::vector<double>& phases) 
+    const std::vector<double>& wavelengths,
+    std::vector<double>& phases)
 {
     phases.resize(wavelengths.size());
     wavelengths_to_phases(wavelengths.data(), wavelengths.size(), phases.data());
@@ -86,7 +86,7 @@ void compute_basis_signal_to_moments(
     for (size_t i = 0; i < n_phases; i++) {
         compute_moments(
             phases, n_phases,
-            signal.col(i).data(), 
+            signal.col(i).data(),
             n_phases,
             &basis[i * n_phases]
         );
@@ -135,7 +135,7 @@ void compute_moments(
     const double og_phases[],
     size_t n_phases,
     const double og_signal[],
-    size_t n_moments, 
+    size_t n_moments,
     double moments[])
 {
     assert(og_phases[0] >= -M_PI);
@@ -171,7 +171,7 @@ void compute_moments(
         assert(phases[i] >= -M_PI);
         assert(signal[i] >= 0);
     }
-   
+
     std::vector<std::complex<double>> t_moments(n_moments);
     const std::complex<double> J = std::complex<double>(0., 1.);
 
@@ -189,22 +189,22 @@ void compute_moments(
             //     gradient / (double)(k*k),
             //     y_intercept / (double)k);
 
-            const std::complex<double> common_summands = 
+            const std::complex<double> common_summands =
                 std::complex<double>(gradient / k_d, y_intercept) / k_d;
 
-            t_moments[k] += 
+            t_moments[k] +=
                   (common_summands + gradient * J * phases[i + 1] / k_d) * std::exp(-J * k_d * phases[i + 1])
                 - (common_summands + gradient * J * phases[i    ] / k_d) * std::exp(-J * k_d * phases[i    ]);
         }
 
-        // t_moments[0] += 
+        // t_moments[0] +=
         //     (.5 * gradient * phases[i + 1] * phases[i + 1] + y_intercept * phases[i + 1])
         //   - (.5 * gradient * phases[i    ] * phases[i    ] + y_intercept * phases[i    ]);
 
         // t_moments[0] += .5 * d_signal * (phases[i + 1] + phases[i]) + y_intercept * d_phases;
-        t_moments[0] += 
-            d_signal * (phases[i + 1] + phases[i]) / 2. 
-            + signal[i] * d_phases 
+        t_moments[0] +=
+            d_signal * (phases[i + 1] + phases[i]) / 2.
+            + signal[i] * d_phases
             - d_signal * phases[i];
      }
 
@@ -215,9 +215,9 @@ void compute_moments(
 }
 
 void compute_moments(
-    const std::vector<double>& phases, 
-    const std::vector<double>& signal, 
-    size_t n_moments, 
+    const std::vector<double>& phases,
+    const std::vector<double>& signal,
+    size_t n_moments,
     std::vector<double>& moments)
 {
     assert(phases.size() == signal.size());
@@ -243,7 +243,7 @@ void compute_density(
 {
     if (moments[0] > 0) {
         std::vector<double> v(n_moments);
-    
+
         for (size_t i = 0; i < v.size(); i++) {
             v[i] = moments[i] / (2. * M_PI);
         }
@@ -269,22 +269,22 @@ void compute_density(
     } else {
         for (size_t p = 0; p < n_phases; p++) {
             density[p] = 0;
-        }    
+        }
     }
 }
 
 void compute_density(
-    const std::vector<double>& phases, 
+    const std::vector<double>& phases,
     const std::vector<double>& moments,
     std::vector<double>& density)
 {
     density.resize(phases.size());
 
     compute_density(
-        phases.data(), 
-        phases.size(), 
-        moments.data(), 
-        moments.size(), 
+        phases.data(),
+        phases.size(),
+        moments.data(),
+        moments.size(),
         density.data());
 }
 
@@ -858,7 +858,7 @@ void exponential_moments_to_moments(
 
     memset(moments, 0, exponential_moments.size() * sizeof(double));
     moments[0] = std::arg(exponential_moments[0]) / M_PI + .5f;
-    
+
     const std::complex<double> exp_0 = std::exp(J * M_PI * (moments[0] - .5f)) / (4. * M_PI);
 
     for (size_t i = 1; i < exponential_moments.size(); i++) {
@@ -867,7 +867,7 @@ void exponential_moments_to_moments(
         for (size_t k = 1; k < i; k++) {
             sum += moments[i - k] * exponential_moments[k] * (double)(i - k);
         }
-        
+
         moments[i] = (exponential_moments[i] / (J * 2. * M_PI * exp_0) - 1. / ((double)i * exp_0) * sum).real();
     }
 }
@@ -882,7 +882,7 @@ void compute_lagrange_multipliers(
 
     for (size_t i = 0; i < exponential_moments.size(); i++) {
         autocorrelation[i] = 0;
-        
+
         for (size_t k = 0; k < exponential_moments.size() - i; k++) {
             autocorrelation[i] += std::conj(evaluation_polynomial[i + k]) * evaluation_polynomial[k];
         }

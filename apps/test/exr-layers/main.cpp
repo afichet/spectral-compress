@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Alban Fichet
+ * Copyright 2022 - 2023 Alban Fichet
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -48,7 +48,7 @@
 double to_nm(
     const std::string& value,
     const std::string& prefix,
-    const std::string& units) 
+    const std::string& units)
 {
     std::string centralValueStr(value);
     std::replace(
@@ -101,7 +101,7 @@ double to_nm(
 }
 
 
-struct SpectralFramebuffer 
+struct SpectralFramebuffer
 {
     std::string root_name;
     std::vector<float> wavelengths_nm;
@@ -124,7 +124,7 @@ public:
     , _pos(0)
     {}
 
-    
+
     ArrayStream(const std::vector<uint8_t> data)
     : OStream("mem")
     , IStream("mem")
@@ -145,7 +145,7 @@ public:
         _pos += n;
     }
 
-    
+
     virtual bool read(char c[/*n*/], int n) {
         const uint64_t remaining_bytes = _content.size() - _pos;
 
@@ -160,22 +160,22 @@ public:
         return _pos == _content.size();
     }
 
-    
+
     virtual uint64_t tellp () {
         return _pos;
     }
 
-    
+
     virtual uint64_t tellg() {
         return _pos;
     }
 
-    
+
     virtual void seekp(uint64_t pos) {
         _pos = pos;
     }
 
-    
+
     virtual void seekg(uint64_t pos) {
         _pos = pos;
     }
@@ -213,7 +213,7 @@ int main(int argc, char *argv[])
     const std::regex expr(
         "^(.*)((S([0-3]))|T)\\.(\\d*,?\\d*([Ee][+-]?\\d+)?)(Y|Z|E|P|T|G|M|k|h|"
         "da|d|c|m|u|n|p)?(m|Hz)$");
-    
+
     // map for keys wl spectral channels
     // map for other framebuffers
 
@@ -221,7 +221,7 @@ int main(int argc, char *argv[])
     std::set<std::string> extra_channels;
 
     std::set<std::string> ignored_channels;
-        
+
     const Imf::ChannelList &exr_channels = exr_header.channels();
 
     for (Imf::ChannelList::ConstIterator channel = exr_channels.begin();
@@ -236,13 +236,13 @@ int main(int argc, char *argv[])
         if (matched) {
             std::string root   = matches[1].str();
             std::string prefix = root + matches[2].str();
-            
+
             std::cout << "matched: " << prefix << std::endl;
 
             if (spectral_channels[prefix].size() == 0) {
                 ignored_channels.insert(root + "R");
                 ignored_channels.insert(root + "G");
-                ignored_channels.insert(root + "B");                
+                ignored_channels.insert(root + "B");
             }
 
             const double value_nm = to_nm(
@@ -261,13 +261,13 @@ int main(int argc, char *argv[])
     for (const std::string& s: ignored_channels) {
         extra_channels.erase(s);
     }
-    
+
     std::cout << std::endl;
 
-    // 
+    //
     std::cout << "Spectral channels:" << std::endl;
     std::cout << "------------------" << std::endl;
-    
+
     for (const auto& n : spectral_channels) {
         std::cout << n.first << "\t[";
         for (const auto& wl: n.second) {
@@ -314,7 +314,7 @@ int main(int argc, char *argv[])
                 &(fb->image_data[wl_idx]),
                 exr_header.dataWindow(),
                 x_stride, y_stride);
-            
+
             exrFrameBuffer.insert(layer_name, slice);
         }
 
@@ -323,15 +323,15 @@ int main(int argc, char *argv[])
 
     for (const auto& name: extra_channels) {
         GreyFramebuffer* fb = new GreyFramebuffer;
-        
+
         fb->layer_name = name;
 
         Imf::Slice slice = Imf::Slice::Make(
             Imf::FLOAT,
             fb->image_data.data(),
             exr_header.dataWindow());
-            
-        exrFrameBuffer.insert(name, slice);        
+
+        exrFrameBuffer.insert(name, slice);
     }
 
     exr_in.setFrameBuffer(exrFrameBuffer);

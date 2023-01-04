@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Alban Fichet
+ * Copyright 2022 - 2023 Alban Fichet
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -138,4 +138,3 @@ protected:
     std::array<std::vector<float>, 3> _xyzCmfs;
     std::array<float, 9> _xyzToRgb;
 };
-

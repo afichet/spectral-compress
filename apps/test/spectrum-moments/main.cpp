@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Alban Fichet
+ * Copyright 2022 - 2023 Alban Fichet
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -129,7 +129,7 @@ int main(int argc, char* argv[])
 {
     (void)argc;
     (void)argv;
-    
+
     // ------------------------------------------------------------------------
     // Data
     // ------------------------------------------------------------------------
@@ -147,7 +147,7 @@ int main(int argc, char* argv[])
         0.320000000, 0.319000000, 0.319000000, 0.320000000, 0.324000000, 0.330000000, 0.337000000, 0.345000000,
         0.354000000, 0.362000000, 0.368000000, 0.375000000, 0.379000000
     };
-    
+
     std::vector<double> emission_wavelength;
     linspace(312.5, 811.5, 999, emission_wavelength);
 
@@ -275,11 +275,11 @@ int main(int argc, char* argv[])
     // std::vector<float> reflectance_density;
 
     // wavelengths_to_phases(reflectance_wavelength, reflectance_phases);
-    
+
     // compute_moments(
-    //     reflectance_phases, 
-    //     reflectance, 
-    //     n_moments_reflectance, 
+    //     reflectance_phases,
+    //     reflectance,
+    //     n_moments_reflectance,
     //     reflectance_moments
     // );
 
@@ -336,9 +336,9 @@ int main(int argc, char* argv[])
     // wavelengths_to_phases(emission_wavelength, emission_phases);
 
     // compute_moments(
-    //     emission_phases, 
-    //     emission, 
-    //     n_moments_emission, 
+    //     emission_phases,
+    //     emission,
+    //     n_moments_emission,
     //     emission_moments
     // );
 

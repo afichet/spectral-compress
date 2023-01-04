@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Alban Fichet
+ * Copyright 2022 - 2023 Alban Fichet
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -106,7 +106,7 @@ void to_sRGBA(
 int main(int argc, char* argv[])
 {
     (void)argc; (void)argv;
-    
+
     write_foo_image("Hello.jxl", 640, 480);
 
     JXLImage jxl_image("Hello.jxl");

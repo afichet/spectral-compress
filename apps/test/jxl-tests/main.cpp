@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Alban Fichet
+ * Copyright 2022 - 2023 Alban Fichet
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
     size_t height = 480;
 
     std::vector<float> framebuffer(width * height);
-    
+
     // ------------------------------------------------------------------------
     // Generate a gradiant to check if the quantization ratio works as expected
     // ------------------------------------------------------------------------
@@ -82,7 +82,7 @@ int main(int argc, char* argv[])
     }
 
     // ------------------------------------------------------------------------
-    // Generate lines of different heigth to check if the downsampling works 
+    // Generate lines of different heigth to check if the downsampling works
     // as expected
     // ------------------------------------------------------------------------
 
@@ -114,7 +114,7 @@ int main(int argc, char* argv[])
 
     for (size_t downsampling: downsampling_ratios) {
         std::stringstream ss;
-        ss << "downsampled_" << downsampling << ".jxl" << std::endl;
+        ss << "downsampled_" << downsampling << ".jxl";
 
         JXLImage jxl_out(width, height);
         jxl_out.appendFramebuffer(
