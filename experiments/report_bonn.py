@@ -134,6 +134,7 @@ def plot_mode_curves_param(
 
     if (save_tex):
         plt.savefig(output_filename)
+        plt.close()
     else:
         plt.show()
 
@@ -172,6 +173,7 @@ def plot_q_curves(output_filename, stats, techniques, n_bits):
 
     if (save_tex):
         plt.savefig(output_filename)
+        plt.close()
     else:
         plt.show()
 
@@ -205,6 +207,7 @@ def plot_c_curves(output_filename, stats, techniques, n_bits):
 
     if (save_tex):
         plt.savefig(output_filename)
+        plt.close()
     else:
         plt.show()
 
