@@ -22,11 +22,9 @@ c_ac = 1
 
 exposure_bonn = 0
 
-db = [
-    # "Brokat_Neuschwanstein_blau_aniso_medium_gloss_",
-    "Duchesse_Print_WirksatinTracy_aniso_medium_gloss_",
-    # "Duchesse_Print_woodstock_aniso_medium_gloss_",
-]
+# db = [ "Duchesse_Print_WirksatinTracy_aniso_medium_gloss_" ]
+
+db = [ d for d in os.listdir(path_out) ]
 
 variants = ['diffuse', 'specular']
 
@@ -220,7 +218,7 @@ def main():
     n_data = 0
     tex_stream = ''
 
-    for d in db: #os.listdir(path_out):
+    for d in db:
         stats[d] = {}
         tex_stream += '\n\\section{' + d.replace('_', ' ') + '}\n'
 
@@ -280,9 +278,9 @@ def main():
                             diff_png_file         = os.path.join(path_curr_out, d + '_diff.png')
                             diff_error_file       = os.path.join(path_curr_out, d + '_err.bin')
 
-                            # common.run_decompressor(compressed_file, decompressed_exr_file)
-                            # common.run_converter_exr_png(decompressed_exr_file, decompressed_png_file, exposure_bonn)
-                            # common.run_diff(org_exr_file, decompressed_exr_file, curr_max_err, diff_png_file, diff_error_file)
+                            common.run_decompressor(compressed_file, decompressed_exr_file)
+                            common.run_converter_exr_png(decompressed_exr_file, decompressed_png_file, exposure_bonn)
+                            common.run_diff(org_exr_file, decompressed_exr_file, curr_max_err, diff_png_file, diff_error_file)
 
                             size    = common.get_jxl_dir_size(path_curr_in)
                             ratio   = org_file_size / size
@@ -308,11 +306,11 @@ def main():
             meta_spectrum_type_file = os.path.join(path_export, d, type, d + '_spectrum_type.txt')
             meta_max_error_file     = os.path.join(path_export, d, type, d + '_max_err.txt')
 
-            # plot_mode_curve_error(plot_curve_error_file, stats[d][type], techniques, 8)
-            # plot_mode_curve_size (plot_curve_size_file , stats[d][type], techniques, 8)
-            # plot_mode_curve_ratio(plot_curve_ratio_file, stats[d][type], techniques, 8)
-            # plot_q_curves(plot_q_curve_file, stats[d][type], techniques, 8)
-            # plot_c_curves(plot_c_curve_file, stats[d][type], techniques, 8)
+            plot_mode_curve_error(plot_curve_error_file, stats[d][type], techniques, 8)
+            plot_mode_curve_size (plot_curve_size_file , stats[d][type], techniques, 8)
+            plot_mode_curve_ratio(plot_curve_ratio_file, stats[d][type], techniques, 8)
+            plot_q_curves(plot_q_curve_file, stats[d][type], techniques, 8)
+            plot_c_curves(plot_c_curve_file, stats[d][type], techniques, 8)
 
             with open(meta_org_file_size_file, 'w') as f:
                 f.write('{:.2f} MiB'.format(org_file_size / (1000*1000)))
