@@ -38,6 +38,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <cassert>
+#include <stdexcept>
 
 #include <EXRSpectralImage.h>
 #include <Util.h>
@@ -48,17 +49,17 @@
 #include <lodepng.h>
 
 
-bool compare_spectral_images(
+void compare_spectral_images(
     const SpectralFramebuffer* img_a,
     const SpectralFramebuffer* img_b,
-    uint32_t width, uint32_t height,
-    std::vector<float>& diff_image,
-    float& min_val, float& max_val,
-    float& avg_err)
+    size_t width, size_t height,
+    std::vector<double>& diff_image,
+    double& min_val, double& max_val,
+    double& avg_err)
 {
     // Check if dimensions match
     if (img_a->wavelengths_nm.size() != img_b->wavelengths_nm.size()) {
-        return false;
+        throw std::runtime_error("dimensions mismatch");
     }
 
     const size_t n_bands = img_a->wavelengths_nm.size();
@@ -74,10 +75,10 @@ bool compare_spectral_images(
     for (size_t px = 0; px < width * height; px++) {
         diff_image[px] = 0;
 
-        float diff = 0;
+        double diff = 0;
 
         for (size_t b = 0; b < n_bands; b++) {
-            float d = data_a[px * n_bands + b] - data_b[px * n_bands + b];
+            double d = (double)data_a[px * n_bands + b] - (double)data_b[px * n_bands + b];
 
             diff += d*d;
         }
@@ -100,25 +101,25 @@ bool compare_spectral_images(
         avg_err += diff_image[px];
     }
 
-    avg_err /= (float)(width * height);
-
-    return true;
+    avg_err /= (double)(width * height);
 }
 
 
+template<typename T>
 void diff_to_rgba(
-    const std::vector<float>& diff_image,
-    float lower_bound, float higher_bound,
+    const std::vector<T>& diff_image,
+    float lower_bound, float upper_bound,
     const float lut[],
     size_t lut_size,
     std::vector<uint8_t>& rgba_image)
 {
-    assert(lower_bound < higher_bound);
+    std::cout << lower_bound << " | " << upper_bound << std::endl;
+    assert(lower_bound < upper_bound);
 
     rgba_image.resize(4 * diff_image.size());
 
     for (size_t i = 0; i < diff_image.size(); i++) {
-        const float v = std::max(0.f, std::min(1.f, (diff_image[i] - lower_bound) / (higher_bound - lower_bound)));
+        const T v = std::max((T)0, std::min((T)1, (diff_image[i] - lower_bound) / (upper_bound - lower_bound)));
         const size_t idx_lut = (size_t)std::round(v * lut_size);
 
         rgba_image[4 * i + 0] = std::round(255.f * v * lut[3 * idx_lut + 0]);
@@ -134,7 +135,7 @@ int main(int argc, char* argv[])
     std::string filename_a, filename_b;
     std::string filename_output;
 
-    float custom_lower_bound, custom_upper_bound;
+    double custom_lower_bound, custom_upper_bound;
 
     bool custom_lower_bound_is_set = false;
     bool custom_upper_bound_is_set = false;
@@ -142,6 +143,9 @@ int main(int argc, char* argv[])
     std::string error_output;
 
     bool error_output_is_set = false;
+
+    bool generate_scale = false;
+    uint32_t scale_width, scale_height;
 
     // Parse arguments
     try {
@@ -155,8 +159,8 @@ int main(int argc, char* argv[])
         cmd.add(inputBFileArg);
         cmd.add(outputFileArg);
 
-        TCLAP::ValueArg<float> lowerBoundArg("l", "lower", "Sets the lower bound for the colormap.", false, 0.f, "min");
-        TCLAP::ValueArg<float> upperBoundArg("u", "upper", "Sets the upper bouind for the colormap.", false, 0.f, "max");
+        TCLAP::ValueArg<double> lowerBoundArg("l", "lower", "Sets the lower bound for the colormap.", false, 0.f, "min");
+        TCLAP::ValueArg<double> upperBoundArg("u", "upper", "Sets the upper bouind for the colormap.", false, 1.f, "max");
 
         cmd.add(lowerBoundArg);
         cmd.add(upperBoundArg);
@@ -164,6 +168,17 @@ int main(int argc, char* argv[])
         TCLAP::ValueArg<std::string> errorFileArg("e", "error", "Sets a file where to write error log.", false, "error.bin", "path");
 
         cmd.add(errorFileArg);
+
+        TCLAP::SwitchArg generateScaleArg("g", "generate", "Generate a scale instead of comparing the images.", false);
+        TCLAP::ValueArg<uint32_t> generateScaleWArg("x", "width", "Scale width. Works with -g parameter", false, 30, "width");
+        TCLAP::ValueArg<uint32_t> generateScaleHArg("y", "height", "Scale height. Works with -g parameter", false, 300, "height");
+        // FIXME: this is not the nicest way of doing things, constraints shall
+        // be added to have mutually exclusive args, namely:
+        // inputAFileArg, inputBFileArg, lowerBoundArg, upperBoundArg, errorFileArg
+        // vs. generateScaleArg
+        cmd.add(generateScaleArg);
+        cmd.add(generateScaleWArg);
+        cmd.add(generateScaleHArg);
 
         cmd.parse(argc, argv);
 
@@ -174,107 +189,136 @@ int main(int argc, char* argv[])
         custom_lower_bound_is_set = lowerBoundArg.isSet();
         custom_upper_bound_is_set = upperBoundArg.isSet();
 
-        custom_lower_bound  = lowerBoundArg.getValue();
+        custom_lower_bound = lowerBoundArg.getValue();
         custom_upper_bound = upperBoundArg.getValue();
 
         error_output_is_set = errorFileArg.isSet();
         error_output = errorFileArg.getValue();
+
+        generate_scale = generateScaleArg.getValue();
+
+        scale_width = generateScaleWArg.getValue();
+        scale_height = generateScaleHArg.getValue();
     } catch (TCLAP::ArgException &e) {
         std::cerr << "Error: " << e.error() << " for arguemnt " << e.argId() << std::endl;
         return 1;
     }
 
-    FILE* f_err = NULL;
+    if (generate_scale) {
+        // Just generates a scale
+        std::vector<float> scale_values(scale_width * scale_height);
+        std::vector<uint8_t> scale_rgba(4 * scale_width * scale_height);
 
-    if (error_output_is_set) {
-        f_err = fopen(error_output.c_str(), "wb");
-    }
+        for (uint32_t y = 0; y < scale_height; y++) {
+            const float v = float(scale_height - y - 1) / float(scale_height - 1);
 
-    EXRSpectralImage exr_in_a(filename_a);
-    EXRSpectralImage exr_in_b(filename_b);
-
-    const size_t width  = exr_in_a.width();
-    const size_t height = exr_in_a.height();
-
-    if (exr_in_b.width() != width || exr_in_b.height() != height) {
-        std::cerr << "Files dimensions do not match!" << std::endl;
-        return 1;
-    }
-
-    const std::vector<SpectralFramebuffer*>& spectral_framebuffers_a = exr_in_a.getSpectralFramebuffers();
-    const std::vector<SpectralFramebuffer*>& spectral_framebuffers_b = exr_in_b.getSpectralFramebuffers();
-
-    const bool has_multiple_framebuffers = spectral_framebuffers_a.size() > 1;
-
-    for (const SpectralFramebuffer* fb_a: spectral_framebuffers_a) {
-        // Now, look for the same rootname in the other file
-        for (const SpectralFramebuffer* fb_b: spectral_framebuffers_b) {
-            if (fb_a->root_name == fb_b->root_name) {
-                std::string unique_filename_output = filename_output;
-
-                if (has_multiple_framebuffers) {
-                    // Edit the output path such as the output filename is unique
-                    std::string base, ext;
-                    Util::split_extension(filename_output.c_str(), base, ext);
-
-                    std::stringstream ss;
-                    ss << base << "_" << fb_a->root_name << ext;
-
-                    unique_filename_output = ss.str();
-                }
-
-                // Do the comparison
-                std::vector<float> framebuffer_error;
-                float min_err, max_err, avg_err;
-
-                compare_spectral_images(
-                    fb_a, fb_b,
-                    width, height,
-                    framebuffer_error,
-                    min_err, max_err,
-                    avg_err
-                );
-
-                if (error_output_is_set) {
-                    fwrite(&avg_err, sizeof(float), 1, f_err);
-                }
-                // std::cout << "Error: [" << min_err << ", " << max_err << "]" << std::endl;
-
-                float lower, upper;
-
-                if (custom_upper_bound_is_set) {
-                    lower = custom_lower_bound;
-                } else {
-                    lower = 0;
-                }
-
-                if (custom_lower_bound_is_set) {
-                    upper = custom_upper_bound;
-                } else {
-                    upper = max_err;
-                }
-
-                // Creates an RGB visualisation
-                std::vector<uint8_t> framebuffer_rgba;
-
-                diff_to_rgba(
-                    framebuffer_error,
-                    lower, upper,
-                    turbo_colormap_data,
-                    sizeof(turbo_colormap_data) / (3 * sizeof(float)),
-                    framebuffer_rgba
-                );
-
-                // Saves the file
-                lodepng::encode(unique_filename_output, framebuffer_rgba, width, height);
-
-                break;
+            for (uint32_t x = 0; x < scale_width; x++) {
+                scale_values[y * scale_width + x] = v;
             }
         }
-    }
 
-    if (error_output_is_set) {
-        fclose(f_err);
+        diff_to_rgba(
+            scale_values,
+            0.f, 1.f,
+            turbo_colormap_data,
+            sizeof(turbo_colormap_data) / (3 * sizeof(float)),
+            scale_rgba
+        );
+
+        lodepng::encode(filename_output, scale_rgba, scale_width, scale_height);
+    } else {
+        FILE* f_err = NULL;
+
+        if (error_output_is_set) {
+            f_err = fopen(error_output.c_str(), "wb");
+        }
+
+        EXRSpectralImage exr_in_a(filename_a);
+        EXRSpectralImage exr_in_b(filename_b);
+
+        const size_t width  = exr_in_a.width();
+        const size_t height = exr_in_a.height();
+
+        if (exr_in_b.width() != width || exr_in_b.height() != height) {
+            std::cerr << "Files dimensions do not match!" << std::endl;
+            return 1;
+        }
+
+        const std::vector<SpectralFramebuffer*>& spectral_framebuffers_a = exr_in_a.getSpectralFramebuffers();
+        const std::vector<SpectralFramebuffer*>& spectral_framebuffers_b = exr_in_b.getSpectralFramebuffers();
+
+        const bool has_multiple_framebuffers = spectral_framebuffers_a.size() > 1;
+
+        for (const SpectralFramebuffer* fb_a: spectral_framebuffers_a) {
+            // Now, look for the same rootname in the other file
+            for (const SpectralFramebuffer* fb_b: spectral_framebuffers_b) {
+                if (fb_a->root_name == fb_b->root_name) {
+                    std::string unique_filename_output = filename_output;
+
+                    if (has_multiple_framebuffers) {
+                        // Edit the output path such as the output filename is unique
+                        std::string base, ext;
+                        Util::split_extension(filename_output.c_str(), base, ext);
+
+                        std::stringstream ss;
+                        ss << base << "_" << fb_a->root_name << ext;
+
+                        unique_filename_output = ss.str();
+                    }
+
+                    // Do the comparison
+                    std::vector<double> framebuffer_error;
+                    double min_err, max_err, avg_err;
+
+                    compare_spectral_images(
+                        fb_a, fb_b,
+                        width, height,
+                        framebuffer_error,
+                        min_err, max_err,
+                        avg_err
+                    );
+
+                    if (error_output_is_set) {
+                        fwrite(&avg_err, sizeof(double), 1, f_err);
+                    }
+                    // std::cout << "Error: [" << min_err << ", " << max_err << "]" << std::endl;
+
+                    float lower, upper;
+
+                    if (custom_lower_bound_is_set) {
+                        lower = custom_lower_bound;
+                    } else {
+                        lower = 0;
+                    }
+
+                    if (custom_upper_bound_is_set) {
+                        upper = custom_upper_bound;
+                    } else {
+                        upper = max_err;
+                    }
+
+                    // Creates an RGB visualisation
+                    std::vector<uint8_t> framebuffer_rgba;
+
+                    diff_to_rgba(
+                        framebuffer_error,
+                        lower, upper,
+                        turbo_colormap_data,
+                        sizeof(turbo_colormap_data) / (3 * sizeof(float)),
+                        framebuffer_rgba
+                    );
+
+                    // Saves the file
+                    lodepng::encode(unique_filename_output, framebuffer_rgba, width, height);
+
+                    break;
+                }
+            }
+        }
+
+        if (error_output_is_set) {
+            fclose(f_err);
+        }
     }
 
     return 0;

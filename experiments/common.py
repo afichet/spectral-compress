@@ -74,6 +74,8 @@ def run_diff(file_a, file_b, max_err, output_file, diff_error_file):
 
     subprocess.run(args)
 
+    print(' '.join(args))
+
 
 def get_path_cave_in(folder, dataset_name):
     return os.path.join(folder, dataset_name + '.exr')
@@ -120,3 +122,61 @@ def get_path_bonn_out(
         'q_flat' if flat_q else 'q_dynamic',
         'c_flat' if flat_c else 'c_dynamic'
     )
+
+
+###############################################################################
+# Parse output files for report
+###############################################################################
+
+import struct
+
+def get_err_from_bin_log(path):
+    with open(path, 'rb') as f:
+        data = f.read()
+        # n = struct.unpack_from('i', data)
+        err = struct.unpack_from('8d', data, offset=struct.calcsize('I'))
+
+        return err # RMSE
+
+
+def get_err_from_diff_bin(path):
+    with open(path, 'rb') as f:
+        data = f.read()
+        err = struct.unpack_from('d', data)
+
+        return err[0]
+
+# Get quantization curve saved in the text log
+def get_q_curve_from_txt_log(path):
+    q_curve = []
+    c_curve = []
+    rmse = 0
+
+    with open(path, 'r') as f:
+        lines = f.readlines()
+        for n in lines[2].split():
+            q_curve.append(int(n))
+
+    return q_curve
+
+
+# Get compression curve saved in the text log
+def get_c_curve_from_txt_log(path):
+    c_curve = []
+
+    with open(path, 'r') as f:
+        lines = f.readlines()
+        for n in lines[8].split():
+            c_curve.append(float(n))
+
+    return c_curve
+
+
+def get_jxl_dir_size(path):
+    size = 0
+
+    for f in os.listdir(path):
+        if f.endswith('.jxl'):
+            size += os.path.getsize(os.path.join(path, f))
+
+    return size

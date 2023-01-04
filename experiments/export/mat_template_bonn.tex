@@ -1,0 +1,161 @@
+% \newcommand{\matlbl}{Duchesse Print WirksatinTracy aniso medium gloss}
+% \newcommand{\material}{Duchesse_Print_WirksatinTracy_aniso_medium_gloss_}
+% \newcommand{\variant}{diffuse}
+
+% \section{\matlbl}
+% \subsection{\variant}
+
+\begin{tabularx}{\textwidth}{cX}
+    \raisebox{-0.5\height}{\frame{\includegraphics[height=3cm]{bonn/\material/\variant/\material.png}}}
+    &
+    \begin{tabular}{ll}
+        File size:&\input{bonn/\material/\variant/\material_org_size.txt}\\
+        Spectrum type:&\input{bonn/\material/\variant/\material_spectrum_type.txt}\\
+        Spectral bands:&\input{bonn/\material/\variant/\material_n_bands.txt}\\
+    \end{tabular}\\
+\end{tabularx}
+
+\begin{figure}[h]
+    \begin{subfigure}{.5\linewidth}
+        \resizebox*{\linewidth}{!}{\input{bonn/\material/\variant/\material_error.pgf}}
+    \end{subfigure}\hfill%
+    \begin{subfigure}{.5\linewidth}
+        \resizebox*{\linewidth}{!}{\input{bonn/\material/\variant/\material_ratio.pgf}}
+    \end{subfigure}
+    % \begin{subfigure}{.5\linewidth}
+    %     \resizebox*{\linewidth}{!}{\input{cave/balloons_ms_ratio.pgf}}
+    % \end{subfigure}\hfill%
+    % \begin{subfigure}{.5\linewidth}
+    %     \resizebox*{\linewidth}{!}{\input{cave/balloons_ms_err_size.pgf}}
+    % \end{subfigure}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \resizebox*{.5\linewidth}{!}{\input{bonn/\material/\variant/\material_q_curve.pgf}}
+\end{figure}
+
+\begin{figure}[h]
+    \resizebox*{\linewidth}{!}{\input{bonn/\material/\variant/\material_c_curve.pgf}}
+\end{figure}
+
+\begin{tabularx}{\linewidth}{X@{\hskip 0pt}c c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}}
+    \toprule
+        && \multicolumn{5}{c}{\thead{flat quantization \& flat compression}}\\
+    \midrule
+        && linear & unbounded & utb & upperbound & twobounds \\
+    \midrule
+    \rotatebox[origin=c]{90}{RGB} &
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/linear/8/0/1/q_flat/c_flat/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/unbounded/8/0/1/q_flat/c_flat/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/unbounded_to_bounded/8/0/1/q_flat/c_flat/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/upperbound/8/0/1/q_flat/c_flat/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/twobounds/8/0/1/q_flat/c_flat/\material.png}}}
+    \\
+    \rotatebox[origin=c]{90}{diff} &
+    \bgroup\def\arraystretch{0.4}\begin{tabular}{c}
+        % \rotatebox[origin=c]{90}{diff} &
+        \tiny{$\input{bonn/\material/\variant/\material_max_err.txt}$}\\
+        \frame{\includegraphics[angle=0,origin=c,height=.12\linewidth]{scale.png}}\\
+        \tiny{$0$}
+    \end{tabular}\egroup
+
+    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/linear/8/0/1/q_flat/c_flat/\material_diff.png}}}
+    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/unbounded/8/0/1/q_flat/c_flat/\material_diff.png}}}
+    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/unbounded_to_bounded/8/0/1/q_flat/c_flat/\material_diff.png}}}
+    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/upperbound/8/0/1/q_flat/c_flat/\material_diff.png}}}
+    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/twobounds/8/0/1/q_flat/c_flat/\material_diff.png}}}
+    \\
+    \bottomrule
+\end{tabularx}
+
+\begin{tabularx}{\linewidth}{X@{\hskip 0pt}c c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}}
+    \toprule
+        && \multicolumn{5}{c}{\thead{dynamic quantization \& flat compression}}\\
+    \midrule
+        && linear & unbounded & utb & upperbound & twobounds \\
+    \midrule
+    \rotatebox[origin=c]{90}{RGB} &
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/linear/8/0/1/q_dynamic/c_flat/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/unbounded/8/0/1/q_dynamic/c_flat/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/unbounded_to_bounded/8/0/1/q_dynamic/c_flat/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/upperbound/8/0/1/q_dynamic/c_flat/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/twobounds/8/0/1/q_dynamic/c_flat/\material.png}}}
+    \\
+    \rotatebox[origin=c]{90}{diff} &
+    \bgroup\def\arraystretch{0.4}\begin{tabular}{c}
+        % \rotatebox[origin=c]{90}{diff} &
+        \tiny{$\input{bonn/\material/\variant/\material_max_err.txt}$}\\
+        \frame{\includegraphics[angle=0,origin=c,height=.12\linewidth]{scale.png}}\\
+        \tiny{$0$}
+    \end{tabular}\egroup
+
+    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/linear/8/0/1/q_dynamic/c_flat/\material_diff.png}}}
+    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/unbounded/8/0/1/q_dynamic/c_flat/\material_diff.png}}}
+    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/unbounded_to_bounded/8/0/1/q_dynamic/c_flat/\material_diff.png}}}
+    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/upperbound/8/0/1/q_dynamic/c_flat/\material_diff.png}}}
+    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/twobounds/8/0/1/q_dynamic/c_flat/\material_diff.png}}}
+    \\
+    \bottomrule
+\end{tabularx}
+
+
+\begin{tabularx}{\linewidth}{X@{\hskip 0pt}c c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}}
+    \toprule
+        && \multicolumn{5}{c}{\thead{flat quantization \& dynamic compression}}\\
+    \midrule
+        && linear & unbounded & utb & upperbound & twobounds \\
+    \midrule
+    \rotatebox[origin=c]{90}{RGB} &
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/linear/8/0/1/q_flat/c_dynamic/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/unbounded/8/0/1/q_flat/c_dynamic/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/unbounded_to_bounded/8/0/1/q_flat/c_dynamic/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/upperbound/8/0/1/q_flat/c_dynamic/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/twobounds/8/0/1/q_flat/c_dynamic/\material.png}}}
+    \\
+    \rotatebox[origin=c]{90}{diff} &
+    \bgroup\def\arraystretch{0.4}\begin{tabular}{c}
+        % \rotatebox[origin=c]{90}{diff} &
+        \tiny{$\input{bonn/\material/\variant/\material_max_err.txt}$}\\
+        \frame{\includegraphics[angle=0,origin=c,height=.12\linewidth]{scale.png}}\\
+        \tiny{$0$}
+    \end{tabular}\egroup
+
+    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/linear/8/0/1/q_flat/c_dynamic/\material_diff.png}}}
+    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/unbounded/8/0/1/q_flat/c_dynamic/\material_diff.png}}}
+    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/unbounded_to_bounded/8/0/1/q_flat/c_dynamic/\material_diff.png}}}
+    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/upperbound/8/0/1/q_flat/c_dynamic/\material_diff.png}}}
+    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/twobounds/8/0/1/q_flat/c_dynamic/\material_diff.png}}}
+    \\
+    \bottomrule
+\end{tabularx}
+
+\begin{tabularx}{\linewidth}{X@{\hskip 0pt}c c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}}
+    \toprule
+        && \multicolumn{5}{c}{\thead{dynamic quantization \& dynamic compression}}\\
+    \midrule
+        && linear & unbounded & utb & upperbound & twobounds \\
+    \midrule
+    \rotatebox[origin=c]{90}{RGB} &
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/linear/8/0/1/q_dynamic/c_dynamic/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/unbounded/8/0/1/q_dynamic/c_dynamic/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/unbounded_to_bounded/8/0/1/q_dynamic/c_dynamic/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/upperbound/8/0/1/q_dynamic/c_dynamic/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/twobounds/8/0/1/q_dynamic/c_dynamic/\material.png}}}
+    \\
+    \rotatebox[origin=c]{90}{diff} &
+    \bgroup\def\arraystretch{0.4}\begin{tabular}{c}
+        % \rotatebox[origin=c]{90}{diff} &
+        \tiny{$\input{bonn/\material/\variant/\material_max_err.txt}$}\\
+        \frame{\includegraphics[angle=0,origin=c,height=.12\linewidth]{scale.png}}\\
+        \tiny{$0$}
+    \end{tabular}\egroup
+
+    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/linear/8/0/1/q_dynamic/c_dynamic/\material_diff.png}}}
+    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/unbounded/8/0/1/q_dynamic/c_dynamic/\material_diff.png}}}
+    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/unbounded_to_bounded/8/0/1/q_dynamic/c_dynamic/\material_diff.png}}}
+    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/upperbound/8/0/1/q_dynamic/c_dynamic/\material_diff.png}}}
+    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{bonn/\material/\variant/twobounds/8/0/1/q_dynamic/c_dynamic/\material_diff.png}}}
+    \\
+    \bottomrule
+\end{tabularx}
