@@ -814,7 +814,7 @@ int main(int argc, char *argv[])
         cmd.add(compressionEffortArg);
 
         // Quantization tweaking
-        TCLAP::ValueArg<int> quantizationStartArg("q", "quantization", "Sets the starting number of bits for quantizing the first AC component. The program use the same number of bits for the remaining components when `--q_flat` is set. Otherwise, the program generates a custom quantization curve starting with the number of bits for the first AC component using the provided value based on the image data (can be slow).", false, 10, "integer");
+        TCLAP::ValueArg<int> quantizationStartArg("q", "quantization", "Sets the starting number of bits for quantizing the first AC component. The program use the same number of bits for the remaining components when `--q_flat` is set. Otherwise, the program generates a custom quantization curve starting with the number of bits for the first AC component using the provided value based on the image data (can be slow).", false, 8, "integer");
         TCLAP::SwitchArg useFlatQuantizationArg("u", "q_flat", "Sets a flat quantization curve. The DC component uses the same quantization as the one used for all spectral data in the OpenEXR file while the remaining AC components use the number of bits provided in `--quantization parameter`.");
         cmd.add(quantizationStartArg);
         cmd.add(useFlatQuantizationArg);
