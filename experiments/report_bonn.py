@@ -22,8 +22,6 @@ c_ac = 1
 
 exposure_bonn = 0
 
-# db = [ "Duchesse_Print_WirksatinTracy_aniso_medium_gloss_" ]
-
 db = [ d for d in os.listdir(path_out) ]
 
 variants = ['diffuse', 'specular']
@@ -59,6 +57,8 @@ def get_avg_stats(
 
     y = {}
     div = 1 / len(dataset) * len(variants)
+    # TODO: remove, currently one material fails
+    div = 1 / (len(dataset) * len(variants) - 1)
 
     for t in techniques:
         y[t] = {}
@@ -79,17 +79,21 @@ def get_avg_stats(
 
     for d in dataset:
         for v in variants:
-            for t in techniques:
-                for q_curve in [True, False]:
-                    for c_curve in [True, False]:
-                        y[t][n_bits][q_curve][c_curve]['error'] += div * stats[d][v][t][n_bits][q_curve][c_curve]['error']
-                        y[t][n_bits][q_curve][c_curve]['ratio'] += div * stats[d][v][t][n_bits][q_curve][c_curve]['ratio']
+            # TODO: remove, one material fails the compression
+            if v == 'diffuse' and d == 'Brokat_Sorbonne_pink_aniso_high_gloss_':
+                continue
+            else:
+                for t in techniques:
+                    for q_curve in [True, False]:
+                        for c_curve in [True, False]:
+                            y[t][n_bits][q_curve][c_curve]['error'] += div * stats[d][v][t][n_bits][q_curve][c_curve]['error']
+                            y[t][n_bits][q_curve][c_curve]['ratio'] += div * stats[d][v][t][n_bits][q_curve][c_curve]['ratio']
 
-                        for i in range(len(stats[d][v][t][n_bits][q_curve][c_curve]['q_curve'])):
-                            y[t][n_bits][q_curve][c_curve]['q_curve'][i] += div * stats[d][v][t][n_bits][q_curve][c_curve]['q_curve'][i]
+                            for i in range(len(stats[d][v][t][n_bits][q_curve][c_curve]['q_curve'])):
+                                y[t][n_bits][q_curve][c_curve]['q_curve'][i] += div * stats[d][v][t][n_bits][q_curve][c_curve]['q_curve'][i]
 
-                        for i in range(len(stats[d][v][t][n_bits][q_curve][c_curve]['c_curve'])):
-                            y[t][n_bits][q_curve][c_curve]['c_curve'][i] += div * stats[d][v][t][n_bits][q_curve][c_curve]['c_curve'][i]
+                            for i in range(len(stats[d][v][t][n_bits][q_curve][c_curve]['c_curve'])):
+                                y[t][n_bits][q_curve][c_curve]['c_curve'][i] += div * stats[d][v][t][n_bits][q_curve][c_curve]['c_curve'][i]
 
     return y
 
@@ -218,7 +222,6 @@ def main():
     prefix_bonn = 'bonn'
     path_export = os.path.join('export', prefix_bonn)
 
-    n_data = 0
     tex_stream = ''
 
     for d in db:
@@ -226,6 +229,9 @@ def main():
         tex_stream += '\n\\section{' + d.replace('_', ' ') + '}\n'
 
         for type in variants:
+            # TODO: remove, one material fails the conversion
+            if type == 'diffuse' and d == 'Brokat_Sorbonne_pink_aniso_high_gloss_':
+                continue
             stats[d][type] = {}
             tex_stream += '\n\\subsection{' + type + '}\n'
 
@@ -247,7 +253,6 @@ def main():
 
                         for c_flat in flat_compression:
                             stats[d][type][tech][bits][q_flat][c_flat] = {}
-                            n_data += 1
 
                             path_curr_in = common.get_path_bonn_out(
                                 path_out,
@@ -266,7 +271,7 @@ def main():
                                 bits,
                                 c_dc, c_ac,
                                 q_flat, c_flat)
-
+                            # print(path_curr_out)
                             # Inputs
                             # FIXME: wrong name when writing the original files
                             # d[:-4] shall be replaced by d
@@ -362,6 +367,7 @@ def main():
 
     with open(os.path.join('export', 'bonn.tex'), 'w') as f:
         f.write(tex_stream)
+
 
 if __name__ == '__main__':
     main()

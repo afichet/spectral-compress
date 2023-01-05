@@ -1,93 +1,36 @@
 #!/usr/bin/env python3
 
-from common import get_path_cave, run_decompressor, run_converter_exr_png, run_diff
-
-import matplotlib
-import matplotlib.pyplot as plt
+import os
 import numpy as np
 
-import os
-import struct
+import common
+import matplotlib
+import matplotlib.pyplot as plt
+import openexr.spectralexr as sexr
 
-cave_list = [
-    'balloons_ms',
-    # 'clay_ms',
-    # 'fake_and_real_beers_ms',
-    # 'fake_and_real_peppers_ms',
-    # 'feathers_ms',
-    # 'jelly_beans_ms',
-    # 'pompoms_ms',
-    # 'stuffed_toys_ms',
-    # 'beads_ms',
-    # 'cloth_ms',
-    # 'fake_and_real_food_ms',
-    # 'fake_and_real_strawberries_ms',
-    # 'flowers_ms',
-    # 'oil_painting_ms',
-    # 'real_and_fake_apples_ms',
-    # 'superballs_ms',
-    # 'cd_ms',
-    # 'egyptian_statue_ms',
-    # 'fake_and_real_lemon_slices_ms',
-    # 'fake_and_real_sushi_ms',
-    # 'glass_tiles_ms',
-    # 'paints_ms',
-    # 'real_and_fake_peppers_ms',
-    # 'thread_spools_ms',
-    # 'chart_and_stuffed_toy_ms',
-    # 'face_ms',
-    # 'fake_and_real_lemons_ms',
-    # 'fake_and_real_tomatoes_ms',
-    # 'hairs_ms',
-    # 'photo_and_face_ms',
-    # 'sponges_ms'
-]
+path_data = '/home/afichet/spectral_images/EXRs/CAVE/'
+path_bin  = '/home/afichet/Repositories/spectral-compress/build/bin/compress'
+path_out  = 'cave'
 
 techniques = ['linear', 'unbounded', 'unbounded_to_bounded', 'upperbound', 'twobounds']
 start_bits = [8]
+flat_compression = [True, False]
+flat_quantization = [True, False]
 
-def run_for_dataset(path_in, org_exr_file, path_out, name, stat):
-    # Inputs
-    compressed_file = os.path.join(path_in, name + '.jxl')
-    binlog_file     = os.path.join(path_in, name + '.bin')
-    txtlog_file     = os.path.join(path_in, name + '.txt')
+c_dc = 0
+c_ac = 1
 
-    # Outputs
-    decompressed_exr_file = os.path.join(path_out, name + '.exr')
-    decompressed_png_file = os.path.join(path_out, name + '.png')
-    diff_png_file         = os.path.join(path_out, name + '_diff.png')
-    diff_error_file       = os.path.join(path_out, name + '_err.bin')
+exposure_cave = -6.5
 
-    run_decompressor(compressed_file, decompressed_exr_file)
-    run_converter_exr_png(decompressed_exr_file, decompressed_png_file, -6.5)
-    max_err = 7E-3
-    run_diff(org_exr_file, decompressed_exr_file, max_err, diff_png_file, diff_error_file)
+# db = [ "Duchesse_Print_WirksatinTracy_aniso_medium_gloss_" ]
 
-    # print(get_err_from_diff_bin(diff_error_file))
-    org_size = os.path.getsize(org_exr_file) / (1024*1024)
-    size = get_jxl_dir_size(path_in) / (1024*1024)
-    err = get_err_from_bin_log(binlog_file)
-    err_c = get_err_from_diff_bin(diff_error_file)
-    ratio = org_size / size
+db = [ d for d in os.listdir(path_out) ]
 
-    stat['rmse_q'].append(err[0])
-    stat['rmse_c'].append(err_c)
-    stat['size'].append(size)
-    stat['ratio'].append(ratio)
-    stat['err_size'].append(err[3] / size)
+variants = ['diffuse', 'specular']
 
-    return stat
+save_tex = True
 
-def main():
-    # start_compress = [0.1]
-    flat_quantization = [True, False]
-    flat_compression  = [True, False]
-
-    flat_curves = [True, False]
-
-    prefix_cave = 'cave'
-    path_export = os.path.join('export', prefix_cave)
-
+if (save_tex):
     matplotlib.use("pgf")
     matplotlib.rcParams.update({
         "pgf.texsystem": "pdflatex",
@@ -96,193 +39,321 @@ def main():
         'pgf.rcfonts': False,
     })
 
-    stats = {}
-    g_stats = {}
-    tex_stream = ''
+
+def get_tex_stream(dataset):
+    with open(os.path.join('export', 'mat_template_cave.tex'), 'r') as f:
+        stream = ''.join(f.readlines())
+
+        stream = stream.replace('\\material', dataset)
+        stream = stream.replace('\\variant', '')
+
+        return stream
+
+
+def get_avg_stats(
+    stats,
+    dataset,
+    techniques,
+    n_bits):
+
+    y = {}
+    div = 1 / len(dataset)
+
+    for t in techniques:
+        y[t] = {}
+        y[t][n_bits] = {}
+        for q_curve in [True, False]:
+            y[t][n_bits][q_curve] = {}
+            for c_curve in [True, False]:
+                y[t][n_bits][q_curve][c_curve] = {}
+                y[t][n_bits][q_curve][c_curve]['error'] = 0
+                y[t][n_bits][q_curve][c_curve]['ratio'] = 0
+                y[t][n_bits][q_curve][c_curve]['q_curve'] = []
+                y[t][n_bits][q_curve][c_curve]['c_curve'] = []
+
+                for i in range(len(stats[dataset[0]][t][n_bits][q_curve][c_curve]['q_curve'])):
+                    y[t][n_bits][q_curve][c_curve]['q_curve'].append(0)
+                for i in range(len(stats[dataset[0]][t][n_bits][q_curve][c_curve]['c_curve'])):
+                    y[t][n_bits][q_curve][c_curve]['c_curve'].append(0)
+
+    for d in dataset:
+        for t in techniques:
+            for q_curve in [True, False]:
+                for c_curve in [True, False]:
+                    y[t][n_bits][q_curve][c_curve]['error'] += div * stats[d][t][n_bits][q_curve][c_curve]['error']
+                    y[t][n_bits][q_curve][c_curve]['ratio'] += div * stats[d][t][n_bits][q_curve][c_curve]['ratio']
+
+                    for i in range(len(stats[d][t][n_bits][q_curve][c_curve]['q_curve'])):
+                        y[t][n_bits][q_curve][c_curve]['q_curve'][i] += div * stats[d][t][n_bits][q_curve][c_curve]['q_curve'][i]
+
+                    for i in range(len(stats[d][t][n_bits][q_curve][c_curve]['c_curve'])):
+                        y[t][n_bits][q_curve][c_curve]['c_curve'][i] += div * stats[d][t][n_bits][q_curve][c_curve]['c_curve'][i]
+
+    return y
+
+
+def plot_mode_curves_param(
+    output_filename,
+    stats,
+    techniques, n_bits,
+    key, y_label):
+    w = 0.8
+    fig, ax = plt.subplots(1, 1, figsize=(5, 4))
+
+    x = np.arange(4)
+
+    n_techinques = len(techniques)
+    x_offset = n_techinques / 2 - n_techinques
+
+    for tech, i in zip(techniques, range(n_techinques)):
+        y = [
+            stats[tech][n_bits][True][True][key],
+            stats[tech][n_bits][False][True][key],
+            stats[tech][n_bits][True][False][key],
+            stats[tech][n_bits][False][False][key],
+        ]
+
+        x_offset = i - n_techinques / 2 + .5
+
+        ax.bar(x + x_offset * w/n_techinques, y, width=w / n_techinques, label=tech.replace('_', ' '))
+
+    ax.set_xticks(x, [
+        'flat quant\nflat comp',
+        'dyn quant\nflat comp',
+        'flat quant\ndyn comp',
+        'dyn quant\ndyn comp']
+    )
+    ax.set_xlabel('Curves')
+    ax.set_ylabel(y_label)
+
+    ax.legend()
+
+    fig.tight_layout()
+
+    if (save_tex):
+        plt.savefig(output_filename)
+        plt.close()
+    else:
+        plt.show()
+
+
+def plot_mode_curve_error(output_filename, stats, techniques, n_bits):
+    plot_mode_curves_param(output_filename, stats, techniques, n_bits, 'error', 'Error')
+
+
+def plot_mode_curve_size(output_filename, stats, techniques, n_bits):
+   plot_mode_curves_param(output_filename, stats, techniques, n_bits, 'size', 'File size')
+
+
+def plot_mode_curve_ratio(output_filename, stats, techniques, n_bits):
+   plot_mode_curves_param(output_filename, stats, techniques, n_bits, 'ratio', 'Compression ratio')
+
+
+def plot_q_curves(output_filename, stats, techniques, n_bits):
+    fig, ax = plt.subplots(1, 1, figsize=(5, 4))
 
     for tech in techniques:
-        g_stats[tech] = {}
+        if tech == 'upperbound' or tech == 'twobounds':
+            x = np.arange(len(stats[tech][n_bits][False][False]['q_curve'][1:-1])) + 1
+            y =               stats[tech][n_bits][False][False]['q_curve'][1:-1]
+        else:
+            x = np.arange(len(stats[tech][n_bits][False][False]['q_curve'][1:])) + 1
+            y =               stats[tech][n_bits][False][False]['q_curve'][1:]
 
-        g_stats[tech]['rmse_q'] = []
-        g_stats[tech]['rmse_s'] = []
-        g_stats[tech]['ratio']  = []
+        ax.plot(x, y, label=tech.replace('_', ' '))
+
+    ax.legend()
+
+    ax.set_xlabel('Moment order')
+    ax.set_ylabel('Number of bits')
+
+    fig.tight_layout()
+
+    if (save_tex):
+        plt.savefig(output_filename)
+        plt.close()
+    else:
+        plt.show()
 
 
-    for dirname in cave_list:
-        stats [dirname] = {}
+def plot_c_curves(output_filename, stats, techniques, n_bits):
+    fig, ax = plt.subplots(1, 2, figsize=(10, 4))
 
-        org_exr_file = get_original_dirname_cave(dirname)
-        org_png_file = os.path.join(path_export, dirname + '.png')
+    for tech in techniques:
+        if tech == 'upperbound' or tech == 'twobounds':
+            x  = np.arange(len(stats[tech][n_bits][False][False]['c_curve'][1:-1])) + 1
+            y0 =               stats[tech][n_bits][True][False]['c_curve'][1:-1]
+            y1 =               stats[tech][n_bits][False][False]['c_curve'][1:-1]
+        else:
+            x  = np.arange(len(stats[tech][n_bits][False][False]['c_curve'][1:])) + 1
+            y0 =               stats[tech][n_bits][True][False]['c_curve'][1:]
+            y1 =               stats[tech][n_bits][False][False]['c_curve'][1:]
 
-        run_converter_exr_png(org_exr_file, org_png_file, -6.5)
+        ax[0].plot(x, y0, label=tech.replace('_', ' '))
+        ax[1].plot(x, y1, label=tech.replace('_', ' '))
+
+    ax[1].legend()
+
+    ax[0].set_title('Without quantization')
+    ax[1].set_title('With quantization')
+
+    for i in range(2):
+        ax[i].set_xlabel('Moment order')
+        ax[i].set_ylabel('Framedistance (compression parameter)')
+
+    fig.tight_layout()
+
+    if (save_tex):
+        plt.savefig(output_filename)
+        plt.close()
+    else:
+        plt.show()
+
+
+def main():
+    stats = {}
+
+    prefix_cave = 'cave'
+    path_export = os.path.join('export', prefix_cave)
+
+    n_data = 0
+    tex_stream = ''
+
+    for d in db:
+        stats[d] = {}
+        tex_stream += '\n\\section{' + d.replace('_', ' ') + '}\n'
+
+        org_exr_file = common.get_path_cave_in(path_data, d)
+        org_png_file = os.path.join(path_export, d, d + '.png')
+        org_file_size = os.path.getsize(org_exr_file)
+        curr_max_err = 5E-3
+
+        common.run_converter_exr_png(org_exr_file, org_png_file, exposure_cave)
 
         for tech in techniques:
-            stats [dirname][tech] = {}
+            stats[d][tech] = {}
 
-            for flat in flat_curves:
-                flat_name = 'flat' if flat else 'dyn'
+            for bits in start_bits:
+                stats[d][tech][bits] = {}
 
-                stats[dirname][tech][flat_name] = {}
-                stats[dirname][tech][flat_name]['rmse_q'] = []
-                stats[dirname][tech][flat_name]['rmse_c'] = []
-                stats[dirname][tech][flat_name]['size'] = []
-                stats[dirname][tech][flat_name]['ratio'] = []
-                stats[dirname][tech][flat_name]['err_size'] = []
+                for q_flat in flat_quantization:
+                    stats[d][tech][bits][q_flat] = {}
 
-                for bits in start_bits:
-                    path_curr_in  = get_path_cave(prefix_cave, dirname, tech, bits, flat)
-                    path_curr_out = get_path_cave(path_export, dirname, tech, bits, flat)
+                    for c_flat in flat_compression:
+                        stats[d][tech][bits][q_flat][c_flat] = {}
+                        n_data += 1
 
-                    run_for_dataset(
-                        path_curr_in, org_exr_file, path_curr_out,
-                        dirname,
-                        stats[dirname][tech][flat_name])
+                        path_curr_in = common.get_path_cave_out(
+                            path_out,
+                            d,
+                            tech,
+                            bits,
+                            c_dc, c_ac,
+                            q_flat, c_flat)
+
+                        path_curr_out = common.get_path_cave_out(
+                            path_export,
+                            d,
+                            tech,
+                            bits,
+                            c_dc, c_ac,
+                            q_flat, c_flat)
+
+                        # Inputs
+                        compressed_file = os.path.join(path_curr_in, d + '.jxl')
+                        log_file        = os.path.join(path_curr_in, d + '.txt')
+                        binlog_file     = os.path.join(path_curr_in, d + '.bin')
+                        dump_file       = os.path.join(path_curr_in, d + '.dat')
+
+                        # Outputs
+                        decompressed_exr_file = os.path.join(path_curr_out, d + '.exr')
+                        decompressed_png_file = os.path.join(path_curr_out, d + '.png')
+                        diff_png_file         = os.path.join(path_curr_out, d + '_diff.png')
+                        diff_error_file       = os.path.join(path_curr_out, d + '_err.bin')
+
+                        print(compressed_file)
+                        common.run_decompressor(compressed_file, decompressed_exr_file)
+                        common.run_converter_exr_png(decompressed_exr_file, decompressed_png_file, exposure_cave)
+                        common.run_diff(org_exr_file, decompressed_exr_file, curr_max_err, diff_png_file, diff_error_file)
+
+                        size    = common.get_jxl_dir_size(path_curr_in)
+                        ratio   = org_file_size / size
+                        error   = common.get_err_from_diff_bin(diff_error_file)
+                        q_curve = common.get_q_curve_from_txt_log(log_file)
+                        c_curve = common.get_c_curve_from_txt_log(log_file)
+
+                        stats[d][tech][bits][q_flat][c_flat]['size']    = size
+                        stats[d][tech][bits][q_flat][c_flat]['ratio']   = ratio
+                        stats[d][tech][bits][q_flat][c_flat]['error']   = error
+                        stats[d][tech][bits][q_flat][c_flat]['q_curve'] = q_curve
+                        stats[d][tech][bits][q_flat][c_flat]['c_curve'] = c_curve
 
 
-        plot_err_q_file      = os.path.join(path_export, dirname + '_err_q.pgf')
-        plot_err_c_file      = os.path.join(path_export, dirname + '_err_c.pgf')
-        plot_ratio_file      = os.path.join(path_export, dirname + '_ratio.pgf')
-        plot_err_size_file   = os.path.join(path_export, dirname + '_err_size.pgf')
+        plot_curve_error_file  = os.path.join(path_export, d, d + '_error.pgf')
+        plot_curve_size_file   = os.path.join(path_export, d, d + '_size.pgf')
+        plot_curve_ratio_file  = os.path.join(path_export, d, d + '_ratio.pgf')
+        plot_q_curve_file      = os.path.join(path_export, d, d + '_q_curve.pgf')
+        plot_c_curve_file      = os.path.join(path_export, d, d + '_c_curve.pgf')
 
-        gen_plot_err_q(stats[dirname], plot_err_q_file)
-        gen_plot_err_c(stats[dirname], plot_err_c_file)
-        gen_plot_ratio(stats[dirname], plot_ratio_file)
-        gen_plot_err_size(stats[dirname], plot_err_size_file)
+        meta_org_file_size_file = os.path.join(path_export, d, d + '_org_size.txt')
+        meta_n_bands_file       = os.path.join(path_export, d, d + '_n_bands.txt')
+        meta_spectrum_type_file = os.path.join(path_export, d, d + '_spectrum_type.txt')
+        meta_max_error_file     = os.path.join(path_export, d, d + '_max_err.txt')
 
-        tex_stream += get_tex_stream(dirname)
+        plot_mode_curve_error(plot_curve_error_file, stats[d], techniques, 8)
+        plot_mode_curve_size (plot_curve_size_file , stats[d], techniques, 8)
+        plot_mode_curve_ratio(plot_curve_ratio_file, stats[d], techniques, 8)
+        plot_q_curves(plot_q_curve_file, stats[d], techniques, 8)
+        plot_c_curves(plot_c_curve_file, stats[d], techniques, 8)
+
+        with open(meta_org_file_size_file, 'w') as f:
+            f.write('{:.2f} MiB'.format(org_file_size / (1000*1000)))
+
+        # Retrive misc. info about the original OpenEXR file
+        org_exr_image = sexr.SpectralEXRFile(org_exr_file)
+
+        spectrum_type = ''
+        n_bands = 0
+
+        # Two ifs not else to account for cases where the file contains
+        # both emissive and reflective channels
+        if org_exr_image.is_emissive:
+            spectrum_type = 'Emissive '
+            n_bands = len(org_exr_image.emissive_wavelengths_nm)
+        if org_exr_image.is_reflective:
+            spectrum_type += 'Reflective'
+            n_bands += len(org_exr_image.reflective_wavelengths_nm)
+
+        with open(meta_spectrum_type_file, 'w') as f:
+            f.write(spectrum_type)
+
+        with open(meta_n_bands_file, 'w') as f:
+            f.write('{}'.format(n_bands))
+
+        with open(meta_max_error_file, 'w') as f:
+            string_err = '{:.1E}'.format(curr_max_err)
+            string_err = string_err.replace('E', '\cdot 10^{') + '}'
+            string_err = string_err.replace('1.0\cdot', '')
+            f.write(string_err)
+
+        # Populate LaTeX stream
+        tex_stream += get_tex_stream(d)
+        tex_stream += '\n\\clearpage\n'
+
+    plot_avg_curve_error_file = os.path.join(path_export, 'avg_error.pgf')
+    plot_avg_curve_ratio_file = os.path.join(path_export, 'avg_ratio.pgf')
+    plot_avg_q_curve_file     = os.path.join(path_export, 'avg_q_curve.pgf')
+    plot_avg_c_curve_file     = os.path.join(path_export, 'avg_c_curve.pgf')
+
+    avg_stats = get_avg_stats(stats, db, techniques, 8)
+    plot_mode_curve_error(plot_avg_curve_error_file, avg_stats, techniques, 8)
+    plot_mode_curve_ratio(plot_avg_curve_ratio_file, avg_stats, techniques, 8)
+    plot_q_curves(plot_avg_q_curve_file, avg_stats, techniques, 8)
+    plot_c_curves(plot_avg_c_curve_file, avg_stats, techniques, 8)
 
     with open(os.path.join('export', 'cave.tex'), 'w') as f:
         f.write(tex_stream)
 
 
-def get_tex_stream(dataset):
-    with open(os.path.join('export', 'mat_template.tex'), 'r') as f:
-        stream = ''.join(f.readlines())
-
-        stream.replace('balloons_ms', dataset)
-
-        return stream
-
-
-
-
-def get_original_dirname_cave(dataset):
-    return '/home/afichet/spectral_images/EXRs/CAVE/' + dataset + '.exr'
-
-
-
-
-def gen_plot_err_q(data, output_file):
-    width = 0.8
-    curves = 'dyn'
-
-    fig, ax = plt.subplots(1, 1, figsize=(4, 3))
-
-    ax.bar(np.arange(len(start_bits)) - 2 * width / 5, data['linear']              [curves]['rmse_q'], width=width / 5, label='linear')
-    ax.bar(np.arange(len(start_bits)) - 1 * width / 5, data['unbounded']           [curves]['rmse_q'], width=width / 5, label='unbounded')
-    ax.bar(np.arange(len(start_bits)) + 0 * width / 5, data['unbounded_to_bounded'][curves]['rmse_q'], width=width / 5, label='unbounded to bounded')
-    ax.bar(np.arange(len(start_bits)) + 1 * width / 5, data['upperbound']          [curves]['rmse_q'], width=width / 5, label='upperbound')
-    ax.bar(np.arange(len(start_bits)) + 2 * width / 5, data['twobounds']           [curves]['rmse_q'], width=width / 5, label='twobounds')
-
-    ax.legend()
-
-    ax.set_xticks(np.arange(len(start_bits)), start_bits)
-    ax.set_xlabel('Start number of bits')
-    ax.set_ylabel('RMSE')
-
-    fig.tight_layout()
-    plt.savefig(output_file)
-
-
-def gen_plot_err_c(data, output_file):
-    width = 0.8
-    curves = 'dyn'
-
-    fig, ax = plt.subplots(1, 1, figsize=(4, 3))
-
-    ax.bar(np.arange(len(start_bits)) - 2 * width / 5, data['linear']              [curves]['rmse_c'], width=width / 5, label='linear')
-    ax.bar(np.arange(len(start_bits)) - 1 * width / 5, data['unbounded']           [curves]['rmse_c'], width=width / 5, label='unbounded')
-    ax.bar(np.arange(len(start_bits)) + 0 * width / 5, data['unbounded_to_bounded'][curves]['rmse_c'], width=width / 5, label='unbounded to bounded')
-    ax.bar(np.arange(len(start_bits)) + 1 * width / 5, data['upperbound']          [curves]['rmse_c'], width=width / 5, label='upperbound')
-    ax.bar(np.arange(len(start_bits)) + 2 * width / 5, data['twobounds']           [curves]['rmse_c'], width=width / 5, label='twobounds')
-
-    ax.legend()
-
-    ax.set_xticks(np.arange(len(start_bits)), start_bits)
-    ax.set_xlabel('Start number of bits')
-    ax.set_ylabel('RMSE')
-
-    fig.tight_layout()
-    plt.savefig(output_file)
-
-
-def gen_plot_ratio(data, output_file):
-    width = 0.8
-    curves = 'dyn'
-
-    fig, ax = plt.subplots(1, 1, figsize=(4, 3))
-
-    ax.bar(np.arange(len(start_bits)) - 2 * width / 5, data['linear']              [curves]['ratio'], width=width / 5, label='linear')
-    ax.bar(np.arange(len(start_bits)) - 1 * width / 5, data['unbounded']           [curves]['ratio'], width=width / 5, label='unbounded')
-    ax.bar(np.arange(len(start_bits)) + 0 * width / 5, data['unbounded_to_bounded'][curves]['ratio'], width=width / 5, label='unbounded to bounded')
-    ax.bar(np.arange(len(start_bits)) + 1 * width / 5, data['upperbound']          [curves]['ratio'], width=width / 5, label='upperbound')
-    ax.bar(np.arange(len(start_bits)) + 2 * width / 5, data['twobounds']           [curves]['ratio'], width=width / 5, label='twobounds')
-
-    ax.legend()
-
-    ax.set_xticks(np.arange(len(start_bits)), start_bits)
-    ax.set_xlabel('Start number of bits')
-    ax.set_ylabel('Compression ratio')
-
-    fig.tight_layout()
-    plt.savefig(output_file)
-
-
-def gen_plot_err_size(data, output_file):
-    width = 0.8
-    curves = 'dyn'
-
-    fig, ax = plt.subplots(1, 1, figsize=(4, 3))
-
-    ax.bar(np.arange(len(start_bits)) - 2 * width / 5, data['linear']              [curves]['err_size'], width=width / 5, label='linear')
-    ax.bar(np.arange(len(start_bits)) - 1 * width / 5, data['unbounded']           [curves]['err_size'], width=width / 5, label='unbounded')
-    ax.bar(np.arange(len(start_bits)) + 0 * width / 5, data['unbounded_to_bounded'][curves]['err_size'], width=width / 5, label='unbounded to bounded')
-    ax.bar(np.arange(len(start_bits)) + 1 * width / 5, data['upperbound']          [curves]['err_size'], width=width / 5, label='upperbound')
-    ax.bar(np.arange(len(start_bits)) + 2 * width / 5, data['twobounds']           [curves]['err_size'], width=width / 5, label='twobounds')
-
-    ax.legend()
-
-    ax.set_xticks(np.arange(len(start_bits)), start_bits)
-    ax.set_xlabel('Start number of bits')
-    ax.set_ylabel('RMSE / size')
-
-    fig.tight_layout()
-    plt.savefig(output_file)
-
-
-
-###############################################################################
-
 if __name__ == '__main__':
     main()
-
-###############################################################################
-
-# curves = 'dyn'
-
-# width = 0.5
-
-# fig, ax = plt.subplots(1, 1)
-
-# ax.scatter(stats[cave_list[0]]['linear']              [curves]['size'], stats[cave_list[0]]['linear']              [curves]['error'], label='linear')
-# ax.scatter(stats[cave_list[0]]['unbounded']           [curves]['size'], stats[cave_list[0]]['unbounded']           [curves]['error'], label='unbounded')
-# ax.scatter(stats[cave_list[0]]['unbounded_to_bounded'][curves]['size'], stats[cave_list[0]]['unbounded_to_bounded'][curves]['error'], label='unbounded_to_bounded')
-# ax.scatter(stats[cave_list[0]]['upperbound']          [curves]['size'], stats[cave_list[0]]['upperbound']          [curves]['error'], label='upperbound')
-# ax.scatter(stats[cave_list[0]]['twobounds']           [curves]['size'], stats[cave_list[0]]['twobounds']           [curves]['error'], label='twobounds')
-
-# ax.legend()
-
-# ax.set_xlabel('Size (MB)')
-# ax.set_ylabel('RMSE')
-
-# plt.show()

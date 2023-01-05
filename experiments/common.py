@@ -39,6 +39,9 @@ def run_compressor(
 
 
 def run_decompressor(input_file, output_file):
+    if os.path.exists(output_file):
+        return
+
     fp, fn = os.path.split(output_file)
     os.makedirs(fp, exist_ok=True)
 
@@ -48,8 +51,13 @@ def run_decompressor(input_file, output_file):
 
     subprocess.run(args)
 
+    ' '.join(args)
+
 
 def run_converter_exr_png(input_file, output_file, exposure):
+    if os.path.exists(output_file):
+        return
+
     fp, fn = os.path.split(output_file)
     os.makedirs(fp, exist_ok=True)
 
@@ -62,6 +70,9 @@ def run_converter_exr_png(input_file, output_file, exposure):
 
 
 def run_diff(file_a, file_b, max_err, output_file, diff_error_file):
+    if os.path.exists(output_file):
+        return
+
     fp, fn = os.path.split(output_file)
     os.makedirs(fp, exist_ok=True)
 
@@ -93,7 +104,7 @@ def get_path_cave_out(
         technique,
         str(n_bits_start),
         str(c_dc), str(c_ac),
-        'q_flat' if flat_q else 'q_dynamic'
+        'q_flat' if flat_q else 'q_dynamic',
         'c_flat' if flat_c else 'c_dynamic'
     )
 
