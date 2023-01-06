@@ -85,8 +85,8 @@ void compress_decompress_framebuffer(
     uint32_t width, uint32_t height,
     uint32_t bits_per_sample,
     uint32_t exponent_bits_per_sample,
+    uint32_t downsampling_factor,
     float frame_distance,
-    uint32_t downsampling_ratio,
     int effort)
 {
     assert(framebuffer_in.size() == width * height);
@@ -143,7 +143,7 @@ void compress_decompress_framebuffer(
     }
     CHECK_JXL_ENC_STATUS(enc_status);
 
-    enc_status = JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_RESAMPLING, downsampling_ratio);
+    enc_status = JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_RESAMPLING, downsampling_factor);
     CHECK_JXL_ENC_STATUS(enc_status);
 
     color_encoding.color_space       = JXL_COLOR_SPACE_GRAY;
@@ -326,6 +326,7 @@ void compress_decompress_single_image(
     uint32_t width, uint32_t height,
     size_t n_moments,
     uint32_t bits_per_sample,
+    uint32_t downsampling_factor,
     size_t i, float frame_distance,
     int effort)
 {
@@ -343,8 +344,10 @@ void compress_decompress_single_image(
     compress_decompress_framebuffer(
         input_framebuffer,
         compressed_framebuffer,
-        width, height, bits_per_sample,
-        0, frame_distance, 1,
+        width, height,
+        bits_per_sample, 0,
+        downsampling_factor,
+        frame_distance,
         effort
     );
 
@@ -371,12 +374,14 @@ void compress_decompress_image(
     uint32_t width, uint32_t height,
     size_t n_moments,
     const std::vector<int>& quantization_curve,
+    const std::vector<uint32_t>& downsampling_factor_curve,
     const std::vector<float>& compression_curve,
     int effort)
 {
     assert(input_image.size() == width * height * n_moments);
     assert(quantization_curve.size() == n_moments);
     assert(compression_curve.size() == n_moments);
+    assert(downsampling_factor_curve.size() == n_moments);
 
     output_image.resize(width * height * n_moments);
 
@@ -411,8 +416,8 @@ void compress_decompress_image(
             framebuffer_out,
             width, height,
             bps, exponent_bits,
+            downsampling_factor_curve[m],
             compression_curve[m],
-            1,
             effort);
 
         // Copy cast to float
@@ -435,6 +440,7 @@ void compute_compression_curve(
     uint32_t width, uint32_t height,
     size_t n_moments,
     const std::vector<int>& quantization_curve,
+    const std::vector<uint32_t>& downsampling_factor_curve,
     float compression_dc,
     float compression_ac1,
     bool uses_constant_compression,
@@ -460,6 +466,7 @@ void compute_compression_curve(
                     wavelengths, spectral_image,
                     width, height, n_moments,
                     quantization_curve,
+                    downsampling_factor_curve,
                     compression_dc, compression_ac1,
                     compression_curve,
                     effort
@@ -470,6 +477,7 @@ void compute_compression_curve(
                     wavelengths, spectral_image,
                     width, height, n_moments,
                     quantization_curve,
+                    downsampling_factor_curve,
                     compression_dc, compression_ac1,
                     compression_curve,
                     effort
@@ -480,6 +488,7 @@ void compute_compression_curve(
                     wavelengths, spectral_image,
                     width, height, n_moments,
                     quantization_curve,
+                    downsampling_factor_curve,
                     compression_dc, compression_ac1,
                     compression_curve,
                     effort
@@ -490,6 +499,7 @@ void compute_compression_curve(
                     wavelengths, spectral_image,
                     width, height, n_moments,
                     quantization_curve,
+                    downsampling_factor_curve,
                     compression_dc, compression_ac1,
                     compression_curve,
                     effort
@@ -500,6 +510,7 @@ void compute_compression_curve(
                     wavelengths, spectral_image,
                     width, height, n_moments,
                     quantization_curve,
+                    downsampling_factor_curve,
                     compression_dc, compression_ac1,
                     compression_curve,
                     effort
@@ -510,6 +521,7 @@ void compute_compression_curve(
                     wavelengths, spectral_image,
                     width, height, n_moments,
                     quantization_curve,
+                    downsampling_factor_curve,
                     compression_dc, compression_ac1,
                     compression_curve,
                     effort
@@ -531,13 +543,16 @@ double linear_compute_compression_curve(
     uint32_t width, uint32_t height,
     size_t n_moments,
     const std::vector<int>& quantization_curve,
+    const std::vector<uint32_t>& downsampling_factor_curve,
     float compression_dc,
     float compression_ac1,
     std::vector<float>& compression_curve,
-    int effort)
+    int effort
+    )
 {
     assert(spectral_image.size() == width * height * wavelengths.size());
     assert(quantization_curve.size() == n_moments);
+    assert(downsampling_factor_curve.size() == n_moments);
 
     compression_curve.resize(n_moments);
 
@@ -583,6 +598,7 @@ double linear_compute_compression_curve(
         compressed_decompressed_moments,
         width, height, n_moments,
         quantization_curve[1],
+        downsampling_factor_curve[1],
         1, compression_curve[1],
         effort
     );
@@ -622,6 +638,7 @@ double linear_compute_compression_curve(
                 compressed_decompressed_moments,
                 width, height, n_moments,
                 quantization_curve[m],
+                downsampling_factor_curve[m],
                 m, frame_distance,
                 effort
             );
@@ -679,6 +696,7 @@ double linear_compute_compression_curve(
         normalized_moments,
         mins, maxs,
         quantization_curve,
+        downsampling_factor_curve,
         compression_curve,
         effort
     );
@@ -691,6 +709,7 @@ double unbounded_compute_compression_curve(
     uint32_t width, uint32_t height,
     size_t n_moments,
     const std::vector<int>& quantization_curve,
+    const std::vector<uint32_t>& downsampling_factor_curve,
     float compression_dc,
     float compression_ac1,
     std::vector<float>& compression_curve,
@@ -698,6 +717,7 @@ double unbounded_compute_compression_curve(
 {
     assert(spectral_image.size() == width * height * wavelengths.size());
     assert(quantization_curve.size() == n_moments);
+    assert(downsampling_factor_curve.size() == n_moments);
 
     compression_curve.resize(n_moments);
 
@@ -743,6 +763,7 @@ double unbounded_compute_compression_curve(
         compressed_decompressed_moments,
         width, height, n_moments,
         quantization_curve[1],
+        downsampling_factor_curve[1],
         1, compression_curve[1],
         effort
     );
@@ -782,6 +803,7 @@ double unbounded_compute_compression_curve(
                 compressed_decompressed_moments,
                 width, height, n_moments,
                 quantization_curve[m],
+                downsampling_factor_curve[m],
                 m, frame_distance,
                 effort
             );
@@ -839,6 +861,7 @@ double unbounded_compute_compression_curve(
         normalized_moments,
         mins, maxs,
         quantization_curve,
+        downsampling_factor_curve,
         compression_curve,
         effort
     );
@@ -851,6 +874,7 @@ double bounded_compute_compression_curve(
     uint32_t width, uint32_t height,
     size_t n_moments,
     const std::vector<int>& quantization_curve,
+    const std::vector<uint32_t>& downsampling_factor_curve,
     float compression_dc,
     float compression_ac1,
     std::vector<float>& compression_curve,
@@ -858,6 +882,7 @@ double bounded_compute_compression_curve(
 {
     assert(spectral_image.size() == width * height * wavelengths.size());
     assert(quantization_curve.size() == n_moments);
+    assert(downsampling_factor_curve.size() == n_moments);
 
     compression_curve.resize(n_moments);
 
@@ -903,6 +928,7 @@ double bounded_compute_compression_curve(
         compressed_decompressed_moments,
         width, height, n_moments,
         quantization_curve[1],
+        downsampling_factor_curve[1],
         1, compression_curve[1],
         effort
     );
@@ -942,6 +968,7 @@ double bounded_compute_compression_curve(
                 compressed_decompressed_moments,
                 width, height, n_moments,
                 quantization_curve[m],
+                downsampling_factor_curve[m],
                 m, frame_distance,
                 effort
             );
@@ -999,6 +1026,7 @@ double bounded_compute_compression_curve(
         normalized_moments,
         mins, maxs,
         quantization_curve,
+        downsampling_factor_curve,
         compression_curve,
         effort
     );
@@ -1011,6 +1039,7 @@ double unbounded_to_bounded_compute_compression_curve(
     uint32_t width, uint32_t height,
     size_t n_moments,
     const std::vector<int>& quantization_curve,
+    const std::vector<uint32_t>& downsampling_factor_curve,
     float compression_dc,
     float compression_ac1,
     std::vector<float>& compression_curve,
@@ -1018,6 +1047,7 @@ double unbounded_to_bounded_compute_compression_curve(
 {
     assert(spectral_image.size() == width * height * wavelengths.size());
     assert(quantization_curve.size() == n_moments);
+    assert(downsampling_factor_curve.size() == n_moments);
 
     compression_curve.resize(n_moments);
 
@@ -1063,6 +1093,7 @@ double unbounded_to_bounded_compute_compression_curve(
         compressed_decompressed_moments,
         width, height, n_moments,
         quantization_curve[1],
+        downsampling_factor_curve[1],
         1, compression_curve[1],
         effort
     );
@@ -1102,6 +1133,7 @@ double unbounded_to_bounded_compute_compression_curve(
                 compressed_decompressed_moments,
                 width, height, n_moments,
                 quantization_curve[m],
+                downsampling_factor_curve[m],
                 m, frame_distance,
                 effort
             );
@@ -1159,6 +1191,7 @@ double unbounded_to_bounded_compute_compression_curve(
         normalized_moments,
         mins, maxs,
         quantization_curve,
+        downsampling_factor_curve,
         compression_curve,
         effort
     );
@@ -1171,6 +1204,7 @@ double upperbound_compute_compression_curve(
     uint32_t width, uint32_t height,
     size_t n_moments,
     const std::vector<int>& quantization_curve,
+    const std::vector<uint32_t>& downsampling_factor_curve,
     float compression_dc,
     float compression_ac1,
     std::vector<float>& compression_curve,
@@ -1178,6 +1212,7 @@ double upperbound_compute_compression_curve(
 {
     assert(spectral_image.size() == width * height * wavelengths.size());
     assert(quantization_curve.size() == n_moments);
+    assert(downsampling_factor_curve.size() == n_moments);
 
     compression_curve.resize(n_moments);
 
@@ -1228,6 +1263,7 @@ double upperbound_compute_compression_curve(
         compressed_decompressed_moments,
         width, height, n_moments,
         quantization_curve[1],
+        downsampling_factor_curve[1],
         1, compression_curve[1],
         effort
     );
@@ -1269,6 +1305,7 @@ double upperbound_compute_compression_curve(
                 compressed_decompressed_moments,
                 width, height, n_moments,
                 quantization_curve[m],
+                downsampling_factor_curve[m],
                 m, frame_distance,
                 effort
             );
@@ -1330,6 +1367,7 @@ double upperbound_compute_compression_curve(
         relative_scales,
         global_max,
         quantization_curve,
+        downsampling_factor_curve,
         compression_curve,
         effort
     );
@@ -1342,6 +1380,7 @@ double twobounds_compute_compression_curve(
     uint32_t width, uint32_t height,
     size_t n_moments,
     const std::vector<int>& quantization_curve,
+    const std::vector<uint32_t>& downsampling_factor_curve,
     float compression_dc,
     float compression_ac1,
     std::vector<float>& compression_curve,
@@ -1349,6 +1388,7 @@ double twobounds_compute_compression_curve(
 {
     assert(spectral_image.size() == width * height * wavelengths.size());
     assert(quantization_curve.size() == n_moments);
+    assert(downsampling_factor_curve.size() == n_moments);
 
     compression_curve.resize(n_moments);
 
@@ -1400,6 +1440,7 @@ double twobounds_compute_compression_curve(
         compressed_decompressed_moments,
         width, height, n_moments,
         quantization_curve[1],
+        downsampling_factor_curve[1],
         1, compression_curve[1],
         effort
     );
@@ -1442,6 +1483,7 @@ double twobounds_compute_compression_curve(
                 compressed_decompressed_moments,
                 width, height, n_moments,
                 quantization_curve[m],
+                downsampling_factor_curve[m],
                 m, frame_distance,
                 effort
             );
@@ -1505,6 +1547,7 @@ double twobounds_compute_compression_curve(
         global_min,
         global_max,
         quantization_curve,
+        downsampling_factor_curve,
         compression_curve,
         effort
     );
@@ -1524,6 +1567,7 @@ double linear_error_for_compression_curve(
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
     const std::vector<int>& quantization_curve,
+    const std::vector<uint32_t>& downsampling_factor_curve,
     const std::vector<float>& compression_curve,
     int effort)
 {
@@ -1533,6 +1577,7 @@ double linear_error_for_compression_curve(
     assert(maxs.size() == n_moments - 1);
     assert(quantization_curve.size() == n_moments);
     assert(compression_curve.size() == n_moments);
+    assert(downsampling_factor_curve.size() == n_moments);
 
     std::vector<double> compressed_decompressed_normalized_moments;
 
@@ -1542,6 +1587,7 @@ double linear_error_for_compression_curve(
         width, height,
         n_moments,
         quantization_curve,
+        downsampling_factor_curve,
         compression_curve,
         effort
     );
@@ -1576,6 +1622,7 @@ double unbounded_error_for_compression_curve(
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
     const std::vector<int>& quantization_curve,
+    const std::vector<uint32_t>& downsampling_factor_curve,
     const std::vector<float>& compression_curve,
     int effort)
 {
@@ -1585,6 +1632,7 @@ double unbounded_error_for_compression_curve(
     assert(maxs.size() == n_moments - 1);
     assert(quantization_curve.size() == n_moments);
     assert(compression_curve.size() == n_moments);
+    assert(downsampling_factor_curve.size() == n_moments);
 
     std::vector<double> compressed_decompressed_normalized_moments;
 
@@ -1594,6 +1642,7 @@ double unbounded_error_for_compression_curve(
         width, height,
         n_moments,
         quantization_curve,
+        downsampling_factor_curve,
         compression_curve,
         effort
     );
@@ -1628,6 +1677,7 @@ double bounded_error_for_compression_curve(
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
     const std::vector<int>& quantization_curve,
+    const std::vector<uint32_t>& downsampling_factor_curve,
     const std::vector<float>& compression_curve,
     int effort)
 {
@@ -1637,6 +1687,7 @@ double bounded_error_for_compression_curve(
     assert(maxs.size() == n_moments - 1);
     assert(quantization_curve.size() == n_moments);
     assert(compression_curve.size() == n_moments);
+    assert(downsampling_factor_curve.size() == n_moments);
 
     std::vector<double> compressed_decompressed_normalized_moments;
 
@@ -1646,6 +1697,7 @@ double bounded_error_for_compression_curve(
         width, height,
         n_moments,
         quantization_curve,
+        downsampling_factor_curve,
         compression_curve,
         effort
     );
@@ -1680,6 +1732,7 @@ double unbounded_to_bounded_error_for_compression_curve(
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
     const std::vector<int>& quantization_curve,
+    const std::vector<uint32_t>& downsampling_factor_curve,
     const std::vector<float>& compression_curve,
     int effort)
 {
@@ -1689,6 +1742,7 @@ double unbounded_to_bounded_error_for_compression_curve(
     assert(maxs.size() == n_moments - 1);
     assert(quantization_curve.size() == n_moments);
     assert(compression_curve.size() == n_moments);
+    assert(downsampling_factor_curve.size() == n_moments);
 
     std::vector<double> compressed_decompressed_normalized_moments;
 
@@ -1698,6 +1752,7 @@ double unbounded_to_bounded_error_for_compression_curve(
         width, height,
         n_moments,
         quantization_curve,
+        downsampling_factor_curve,
         compression_curve,
         effort
     );
@@ -1734,6 +1789,7 @@ double upperbound_error_for_compression_curve(
     const std::vector<uint8_t>& relative_scales,
     double global_max,
     const std::vector<int>& quantization_curve,
+    const std::vector<uint32_t>& downsampling_factor_curve,
     const std::vector<float>& compression_curve,
     int effort)
 {
@@ -1744,6 +1800,7 @@ double upperbound_error_for_compression_curve(
     assert(relative_scales.size() == width * height);
     assert(quantization_curve.size() == n_moments);
     assert(compression_curve.size() == n_moments);
+    assert(downsampling_factor_curve.size() == n_moments);
 
     std::vector<double> compressed_decompressed_normalized_moments;
 
@@ -1753,6 +1810,7 @@ double upperbound_error_for_compression_curve(
         width, height,
         n_moments,
         quantization_curve,
+        downsampling_factor_curve,
         compression_curve,
         effort
     );
@@ -1792,6 +1850,7 @@ double twobounds_error_for_compression_curve(
     double global_min,
     double global_max,
     const std::vector<int>& quantization_curve,
+    const std::vector<uint32_t>& downsampling_factor_curve,
     const std::vector<float>& compression_curve,
     int effort)
 {
@@ -1802,6 +1861,7 @@ double twobounds_error_for_compression_curve(
     assert(relative_scales.size() == width * height);
     assert(quantization_curve.size() == n_moments);
     assert(compression_curve.size() == n_moments);
+    assert(downsampling_factor_curve.size() == n_moments);
 
     std::vector<double> compressed_decompressed_normalized_moments;
 
@@ -1811,6 +1871,7 @@ double twobounds_error_for_compression_curve(
         width, height,
         n_moments,
         quantization_curve,
+        downsampling_factor_curve,
         compression_curve,
         effort
     );
