@@ -78,6 +78,9 @@ void compress_spectral_framebuffer(
     bool uses_constant_compression,
     std::vector<float>& compression_curve,
     int effort,
+    // Downsampling
+    uint32_t downsampling_factor_ac1,
+    std::vector<uint32_t>& downsampling_factor_curve,
     // Result of compression
     std::vector<std::vector<float>>& compressed_moments,
     SGEGSpectralGroup& sg,
@@ -142,11 +145,20 @@ void compress_spectral_framebuffer(
         quantization_curve_timing
     );
 
+    // TODO: We don't automatically compute the downsampling curves yet
+    downsampling_factor_curve.resize(n_moments);
+    downsampling_factor_curve[0] = 1;
+
+    for (size_t i = 1; i < n_moments; i++) {
+        downsampling_factor_curve[i] = downsampling_factor_ac1;
+    }
+
     compute_compression_curve(
         method,
         wavelengths, spectral_image,
         width, height, n_moments,
         quantization_curve,
+        downsampling_factor_curve,
         compression_dc, compression_ac1,
         uses_constant_compression,
         compression_curve,
@@ -182,6 +194,7 @@ void compress_spectral_framebuffer(
         wavelengths, spectral_image,
         width, height, n_moments,
         quantization_curve,
+        downsampling_factor_curve,
         compression_curve,
         compressed_moments_d, mins_d, maxs_d,
         relative_scales, global_min_d, global_max_d,
@@ -214,8 +227,10 @@ void compress_spectral_framebuffer(
     if (method == UPPERBOUND || method == TWOBOUNDS) {
         assert(relative_scales.size() == n_pixels);
 
+        // Extend by 1 for the extra scaling framebuffer
         quantization_curve.push_back(8);
         compression_curve.push_back(compression_dc);
+        downsampling_factor_curve.push_back(1);
 
         compressed_moments.resize(n_moments + 1);
         compressed_moments[n_moments].resize(n_pixels);
@@ -321,6 +336,8 @@ int main(int argc, char *argv[])
     int n_bits_ac1 = 10;
     bool use_flat_quantization = false;
 
+    int downsampling_factor_ac1 = 1;
+
     SpectralCompressionType method = TWOBOUNDS;
 
     std::chrono::time_point<std::chrono::steady_clock>  clock_start, clock_end;
@@ -359,6 +376,12 @@ int main(int argc, char *argv[])
         TCLAP::SwitchArg useFlatQuantizationArg("u", "q_flat", "Sets a flat quantization curve. The DC component uses the same quantization as the one used for all spectral data in the OpenEXR file while the remaining AC components use the number of bits provided in `--quantization parameter`.");
         cmd.add(quantizationStartArg);
         cmd.add(useFlatQuantizationArg);
+
+        // Downsampling tweaking
+        DownsamplingFactorConstraint downsamplingFactorConstraint;
+
+        TCLAP::ValueArg<int> downsamplingFactorArg("s", "downsampling", "Sets the downsampling ratio to apply to AC components.", false, 1, &downsamplingFactorConstraint);
+        cmd.add(downsamplingFactorArg);
 
         // Moment storage method tweaking
         std::vector<std::string> allowedCompressionMethods;
@@ -400,6 +423,8 @@ int main(int argc, char *argv[])
 
         n_bits_ac1            = quantizationStartArg.getValue();
         use_flat_quantization = useFlatQuantizationArg.getValue();
+
+        downsampling_factor_ac1 = downsamplingFactorArg.getValue();
 
         if (momentCompressionMethodArg.getValue() == "linear") {
             method = LINEAR;
@@ -454,6 +479,7 @@ int main(int argc, char *argv[])
         std::vector<std::vector<float>> compressed_moments;
         std::vector<uint8_t> relative_scales;
         std::vector<int> quantization_curve;
+        std::vector<uint32_t> downsampling_factor_curve;
         std::vector<float> compression_curve;
 
         stats_data quantization_error, compression_error;
@@ -464,6 +490,7 @@ int main(int argc, char *argv[])
             exr_in.width(), exr_in.height(),
             n_bits_dc,      n_bits_ac1,      use_flat_quantization, quantization_curve,
             compression_dc, compression_ac1, use_flat_compression,  compression_curve, compression_effort,
+            downsampling_factor_ac1, downsampling_factor_curve,
             compressed_moments,
             sg,
             log_is_active,
@@ -496,7 +523,7 @@ int main(int argc, char *argv[])
                 1,
                 n_bits,
                 n_exponent_bits,
-                1,
+                downsampling_factor_curve[m],
                 compression_curve[m],
                 fb->root_name.c_str());
 
