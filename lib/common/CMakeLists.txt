@@ -11,6 +11,7 @@ set(PUBLIC_HEADERS
     SGEGBox.h
     SpectrumConverter.h
     Util.h
+    spectral_compression_type.h
 )
 
 add_library(common STATIC

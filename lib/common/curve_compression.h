@@ -31,11 +31,14 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#pragma once
+
+#include <spectral_compression_type.h>
+
 #include <vector>
 #include <cassert>
 #include <cstdint>
 #include <cstddef>
-
 
 /*****************************************************************************/
 /* Utility functions                                                         */
@@ -75,6 +78,21 @@ void compress_decompress_image(
 /*****************************************************************************/
 /* Create compression curves                                                 */
 /*****************************************************************************/
+
+void compute_compression_curve(
+    SpectralCompressionType method,
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    uint32_t width, uint32_t height,
+    size_t n_moments,
+    const std::vector<int>& quantization_curve,
+    float compression_dc,
+    float compression_ac1,
+    bool uses_constant_compression,
+    std::vector<float>& compression_curve,
+    float effort,
+    double& timing);
+
 
 double linear_compute_compression_curve(
     const std::vector<double>& wavelengths,

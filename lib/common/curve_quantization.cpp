@@ -39,6 +39,7 @@
 #include <cmath>
 #include <cstring>
 #include <cassert>
+#include <chrono>
 
 
 void quantize_dequantize_single_image(
@@ -90,6 +91,88 @@ void quantize_dequantize_image(
 /*****************************************************************************/
 /* Create quantization curves                                                */
 /*****************************************************************************/
+
+void compute_quantization_curve(
+    SpectralCompressionType method,
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    uint32_t width, uint32_t height,
+    size_t n_moments,
+    int n_bits_dc,
+    int n_bits_ac1,
+    bool uses_constant_quantization,
+    std::vector<int>& quantization_curve,
+    double& timing)
+{
+    if (uses_constant_quantization) {
+        quantization_curve.resize(n_moments);
+        quantization_curve[0] = n_bits_dc;
+
+        for (size_t i = 1; i < n_moments; i++) {
+            quantization_curve[i] = n_bits_ac1;
+        }
+        timing = 0;
+    } else {
+        auto clock_start = std::chrono::steady_clock::now();
+
+        switch (method) {
+            case LINEAR:
+                linear_compute_quantization_curve(
+                    wavelengths, spectral_image,
+                    width * height, n_moments,
+                    n_bits_dc, n_bits_ac1,
+                    quantization_curve
+                );
+                break;
+            case BOUNDED:
+                bounded_compute_quantization_curve(
+                    wavelengths, spectral_image,
+                    width * height, n_moments,
+                    n_bits_dc, n_bits_ac1,
+                    quantization_curve
+                );
+                break;
+            case UNBOUNDED:
+                unbounded_compute_quantization_curve(
+                    wavelengths, spectral_image,
+                    width * height, n_moments,
+                    n_bits_dc, n_bits_ac1,
+                    quantization_curve
+                );
+                break;
+            case UNBOUNDED_TO_BOUNDED:
+                unbounded_to_bounded_compute_quantization_curve(
+                    wavelengths, spectral_image,
+                    width * height, n_moments,
+                    n_bits_dc, n_bits_ac1,
+                    quantization_curve
+                );
+                break;
+            case UPPERBOUND:
+                upperbound_compute_quantization_curve(
+                    wavelengths, spectral_image,
+                    width * height, n_moments,
+                    n_bits_dc, n_bits_ac1,
+                    quantization_curve
+                );
+                break;
+            case TWOBOUNDS:
+                twobounds_compute_quantization_curve(
+                    wavelengths, spectral_image,
+                    width * height, n_moments,
+                    n_bits_dc, n_bits_ac1,
+                    quantization_curve
+                );
+                break;
+        }
+
+        auto clock_end = std::chrono::steady_clock::now();
+        timing = std::chrono::duration<double, std::milli>(clock_end - clock_start).count();
+    }
+
+    assert(quantization_curve.size() == n_moments);
+}
+
 
 double linear_compute_quantization_curve(
     const std::vector<double>& wavelengths,

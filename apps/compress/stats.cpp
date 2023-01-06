@@ -34,18 +34,85 @@
 
 #include "stats.h"
 
-#include <cassert>
-
 #include <curve_quantization.h>
 #include <curve_compression.h>
 #include <moments_image.h>
 
-#include <Util.h>
-
+#include <cassert>
 
 /*****************************************************************************/
 /* Stats for quantization curves                                             */
 /*****************************************************************************/
+
+stats_data stats_for_quantization_curve(
+    SpectralCompressionType method,
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    uint32_t width, uint32_t height,
+    size_t n_moments,
+    const std::vector<int>& quantization_curve,
+    const std::vector<double>& compressed_moments,
+    const std::vector<double>& mins, const std::vector<double>& maxs,
+    const std::vector<uint8_t>& relative_scales,
+    double& global_min, double& global_max)
+{
+    switch(method) {
+        case LINEAR:
+            return linear_stats_for_quantization_curve(
+                wavelengths, spectral_image,
+                width, height,
+                n_moments,
+                compressed_moments, mins, maxs,
+                quantization_curve
+            );
+        case BOUNDED:
+            return bounded_stats_for_quantization_curve(
+                wavelengths, spectral_image,
+                width, height,
+                n_moments,
+                compressed_moments, mins, maxs,
+                quantization_curve
+            );
+        case UNBOUNDED:
+            return unbounded_stats_for_quantization_curve(
+                wavelengths, spectral_image,
+                width, height,
+                n_moments,
+                compressed_moments, mins, maxs,
+                quantization_curve
+            );
+        case UNBOUNDED_TO_BOUNDED:
+            return unbounded_to_bounded_stats_for_quantization_curve(
+                wavelengths, spectral_image,
+                width, height,
+                n_moments,
+                compressed_moments, mins, maxs,
+                quantization_curve
+            );
+        case UPPERBOUND:
+            return upperbound_stats_for_quantization_curve(
+                wavelengths, spectral_image,
+                width, height,
+                n_moments,
+                compressed_moments, mins, maxs,
+                relative_scales, global_max,
+                quantization_curve
+            );
+        case TWOBOUNDS:
+            return twobounds_stats_for_quantization_curve(
+                wavelengths, spectral_image,
+                width, height,
+                n_moments,
+                compressed_moments, mins, maxs,
+                relative_scales, global_min, global_max,
+                quantization_curve
+            );
+    }
+
+    assert(0);
+    return stats_data();
+}
+
 
 stats_data linear_stats_for_quantization_curve(
     const std::vector<double>& wavelengths,
@@ -310,6 +377,84 @@ stats_data twobounds_stats_for_quantization_curve(
 /*****************************************************************************/
 /* Stats for compression curves                                              */
 /*****************************************************************************/
+
+stats_data stats_for_compression_curve(
+    SpectralCompressionType method,
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    uint32_t width, uint32_t height,
+    size_t n_moments,
+    const std::vector<int>& quantization_curve,
+    const std::vector<float>& compression_curve,
+    const std::vector<double>& compressed_moments,
+    const std::vector<double>& mins, const std::vector<double>& maxs,
+    const std::vector<uint8_t>& relative_scales,
+    double& global_min, double& global_max,
+    int effort)
+{
+    switch(method) {
+        case LINEAR:
+            return linear_stats_for_compression_curve(
+                wavelengths, spectral_image,
+                width, height, n_moments,
+                compressed_moments, mins, maxs,
+                quantization_curve,
+                compression_curve,
+                effort
+            );
+        case BOUNDED:
+            return bounded_stats_for_compression_curve(
+                wavelengths, spectral_image,
+                width, height, n_moments,
+                compressed_moments, mins, maxs,
+                quantization_curve,
+                compression_curve,
+                effort
+            );
+        case UNBOUNDED:
+            return unbounded_stats_for_compression_curve(
+                wavelengths, spectral_image,
+                width, height, n_moments,
+                compressed_moments, mins, maxs,
+                quantization_curve,
+                compression_curve,
+                effort
+            );
+        case UNBOUNDED_TO_BOUNDED:
+            return unbounded_to_bounded_stats_for_compression_curve(
+                wavelengths, spectral_image,
+                width, height, n_moments,
+                compressed_moments, mins, maxs,
+                quantization_curve,
+                compression_curve,
+                effort
+            );
+        case UPPERBOUND:
+            return upperbound_stats_for_compression_curve(
+                wavelengths, spectral_image,
+                width, height, n_moments,
+                compressed_moments, mins, maxs,
+                relative_scales, global_max,
+                quantization_curve,
+                compression_curve,
+                effort
+            );
+        case TWOBOUNDS:
+            return twobounds_stats_for_compression_curve(
+                wavelengths, spectral_image,
+                width, height, n_moments,
+                compressed_moments, mins, maxs,
+                relative_scales, global_min, global_max,
+                quantization_curve,
+                compression_curve,
+                effort
+            );
+    }
+
+    assert(0);
+    return stats_data();
+}
+
 
 stats_data linear_stats_for_compression_curve(
     const std::vector<double>& wavelengths,

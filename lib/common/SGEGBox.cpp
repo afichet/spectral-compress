@@ -161,7 +161,7 @@ size_t SGEGSpectralGroup::size() const
         + maxs.size() * sizeof(float)
         + sizeof(float)
         + sizeof(float)
-        + sizeof(SpectralStorageMethod);
+        + sizeof(SpectralCompressionType);
 }
 
 // ----------------------------------------------------------------------------

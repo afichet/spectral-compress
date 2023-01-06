@@ -33,11 +33,12 @@
 
 #pragma once
 
+#include <spectral_compression_type.h>
+#include <Util.h>
+
 #include <vector>
 #include <cstdint>
 #include <cstddef>
-
-#include <Util.h>
 
 struct stats_data {
     double rmse_error;
@@ -92,6 +93,19 @@ stats_data compute_stats(
 
 // More or less the same thing as in `common/curve_quantization.h` but
 // with more statistics
+
+stats_data stats_for_quantization_curve(
+    SpectralCompressionType method,
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    uint32_t width, uint32_t height,
+    size_t n_moments,
+    const std::vector<int>& quantization_curve,
+    const std::vector<double>& compressed_moments,
+    const std::vector<double>& mins, const std::vector<double>& maxs,
+    const std::vector<uint8_t>& relative_scales,
+    double& global_min, double& global_max);
+
 
 stats_data linear_stats_for_quantization_curve(
     const std::vector<double>& wavelengths,
@@ -172,6 +186,21 @@ stats_data twobounds_stats_for_quantization_curve(
 
 // More or less the same thing as in `common/curve_compression.h` but
 // with more statistics
+
+stats_data stats_for_compression_curve(
+    SpectralCompressionType method,
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    uint32_t width, uint32_t height,
+    size_t n_moments,
+    const std::vector<int>& quantization_curve,
+    const std::vector<float>& compression_curve,
+    const std::vector<double>& compressed_moments,
+    const std::vector<double>& mins, const std::vector<double>& maxs,
+    const std::vector<uint8_t>& relative_scales,
+    double& global_min, double& global_max,
+    int effort);
+
 
 stats_data linear_stats_for_compression_curve(
     const std::vector<double>& wavelengths,

@@ -33,10 +33,11 @@
 
 #pragma once
 
+#include <spectral_compression_type.h>
+
 #include <vector>
 #include <cstdint>
 #include <cstddef>
-
 
 /*****************************************************************************/
 /* Utility functions                                                         */
@@ -59,6 +60,19 @@ void quantize_dequantize_image(
 /*****************************************************************************/
 /* Create quantization curves                                                */
 /*****************************************************************************/
+
+void compute_quantization_curve(
+    SpectralCompressionType method,
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    uint32_t width, uint32_t height,
+    size_t n_moments,
+    int n_bits_dc,
+    int n_bits_ac1,
+    bool uses_constant_quantization,
+    std::vector<int>& quantization_curve,
+    double& timing);
+
 
 double linear_compute_quantization_curve(
     const std::vector<double>& wavelengths,

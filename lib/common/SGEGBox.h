@@ -38,16 +38,7 @@
 #include <cstdint>
 #include <string>
 
-
-enum SpectralStorageMethod
-{
-    LINEAR,
-    BOUNDED,
-    UNBOUNDED,
-    UNBOUNDED_TO_BOUNDED,
-    UPPERBOUND,
-    TWOBOUNDS
-};
+#include <spectral_compression_type.h>
 
 
 struct SGEGSpectralGroup
@@ -78,7 +69,7 @@ struct SGEGSpectralGroup
     float global_min;
     float global_max;
 
-    SpectralStorageMethod method;
+    SpectralCompressionType method;
 
     /**
      * Get the content of this structure for serialization.

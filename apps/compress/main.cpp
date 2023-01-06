@@ -31,6 +31,19 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "stats.h"
+#include "cmd_constraints.h"
+
+#include <JXLImage.h>
+#include <EXRSpectralImage.h>
+
+#include <moments.h>
+#include <moments_image.h>
+#include <curve_quantization.h>
+#include <curve_compression.h>
+
+#include <tclap/CmdLine.h>
+
 #include <iostream>
 #include <sstream>
 #include <limits>
@@ -41,18 +54,6 @@
 #include <cassert>
 #include <cstring>
 
-#include <tclap/CmdLine.h>
-
-#include <JXLImage.h>
-#include <EXRSpectralImage.h>
-
-#include <moments.h>
-#include <moments_image.h>
-#include <curve_quantization.h>
-#include <curve_compression.h>
-
-#include "stats.h"
-
 /**
  * TODO:
  * - Add an argument
@@ -61,428 +62,8 @@
  */
 
 
-void generate_quantization_curve(
-    SpectralStorageMethod method,
-    const std::vector<double>& wavelengths,
-    const std::vector<double>& spectral_image,
-    uint32_t width, uint32_t height,
-    size_t n_moments,
-    int n_bits_dc,
-    int n_bits_ac1,
-    bool uses_constant_quantization,
-    std::vector<int>& quantization_curve,
-    double& timing)
-{
-    if (uses_constant_quantization) {
-        quantization_curve.resize(n_moments);
-        quantization_curve[0] = n_bits_dc;
-
-        for (size_t i = 1; i < n_moments; i++) {
-            quantization_curve[i] = n_bits_ac1;
-        }
-        timing = 0;
-    } else {
-        auto clock_start = std::chrono::steady_clock::now();
-
-        switch (method) {
-            case LINEAR:
-                linear_compute_quantization_curve(
-                    wavelengths, spectral_image,
-                    width * height, n_moments,
-                    n_bits_dc, n_bits_ac1,
-                    quantization_curve
-                );
-                break;
-            case BOUNDED:
-                bounded_compute_quantization_curve(
-                    wavelengths, spectral_image,
-                    width * height, n_moments,
-                    n_bits_dc, n_bits_ac1,
-                    quantization_curve
-                );
-                break;
-            case UNBOUNDED:
-                unbounded_compute_quantization_curve(
-                    wavelengths, spectral_image,
-                    width * height, n_moments,
-                    n_bits_dc, n_bits_ac1,
-                    quantization_curve
-                );
-                break;
-            case UNBOUNDED_TO_BOUNDED:
-                unbounded_to_bounded_compute_quantization_curve(
-                    wavelengths, spectral_image,
-                    width * height, n_moments,
-                    n_bits_dc, n_bits_ac1,
-                    quantization_curve
-                );
-                break;
-            case UPPERBOUND:
-                upperbound_compute_quantization_curve(
-                    wavelengths, spectral_image,
-                    width * height, n_moments,
-                    n_bits_dc, n_bits_ac1,
-                    quantization_curve
-                );
-                break;
-            case TWOBOUNDS:
-                twobounds_compute_quantization_curve(
-                    wavelengths, spectral_image,
-                    width * height, n_moments,
-                    n_bits_dc, n_bits_ac1,
-                    quantization_curve
-                );
-                break;
-        }
-
-        auto clock_end = std::chrono::steady_clock::now();
-        timing = std::chrono::duration<double, std::milli>(clock_end - clock_start).count();
-    }
-
-    assert(quantization_curve.size() == n_moments);
-}
-
-
-void generate_compression_curve(
-    SpectralStorageMethod method,
-    const std::vector<double>& wavelengths,
-    const std::vector<double>& spectral_image,
-    uint32_t width, uint32_t height,
-    size_t n_moments,
-    const std::vector<int>& quantization_curve,
-    float compression_dc,
-    float compression_ac1,
-    bool uses_constant_compression,
-    std::vector<float>& compression_curve,
-    float effort,
-    double& timing)
-{
-    if (uses_constant_compression) {
-        compression_curve.resize(n_moments);
-        compression_curve[0] = compression_dc;
-
-        for (size_t i = 1; i < n_moments; i++) {
-            compression_curve[i] = compression_ac1;
-        }
-
-        timing = 0;
-    } else {
-        auto clock_start = std::chrono::steady_clock::now();
-
-        switch (method) {
-            case LINEAR:
-                linear_compute_compression_curve(
-                    wavelengths, spectral_image,
-                    width, height, n_moments,
-                    quantization_curve,
-                    compression_dc, compression_ac1,
-                    compression_curve,
-                    effort
-                );
-                break;
-            case BOUNDED:
-                bounded_compute_compression_curve(
-                    wavelengths, spectral_image,
-                    width, height, n_moments,
-                    quantization_curve,
-                    compression_dc, compression_ac1,
-                    compression_curve,
-                    effort
-                );
-                break;
-            case UNBOUNDED:
-                unbounded_compute_compression_curve(
-                    wavelengths, spectral_image,
-                    width, height, n_moments,
-                    quantization_curve,
-                    compression_dc, compression_ac1,
-                    compression_curve,
-                    effort
-                );
-                break;
-            case UNBOUNDED_TO_BOUNDED:
-                unbounded_to_bounded_compute_compression_curve(
-                    wavelengths, spectral_image,
-                    width, height, n_moments,
-                    quantization_curve,
-                    compression_dc, compression_ac1,
-                    compression_curve,
-                    effort
-                );
-                break;
-            case UPPERBOUND:
-                upperbound_compute_compression_curve(
-                    wavelengths, spectral_image,
-                    width, height, n_moments,
-                    quantization_curve,
-                    compression_dc, compression_ac1,
-                    compression_curve,
-                    effort
-                );
-                break;
-            case TWOBOUNDS:
-                twobounds_compute_compression_curve(
-                    wavelengths, spectral_image,
-                    width, height, n_moments,
-                    quantization_curve,
-                    compression_dc, compression_ac1,
-                    compression_curve,
-                    effort
-                );
-                break;
-        }
-
-        auto clock_end = std::chrono::steady_clock::now();
-        timing = std::chrono::duration<double, std::milli>(clock_end - clock_start).count();
-    }
-
-    assert(compression_curve.size() == n_moments);
-}
-
-
-template<typename T>
-void compress_image(
-    SpectralStorageMethod method,
-    const std::vector<double>& wavelengths,
-    const std::vector<double> spectral_image,
-    uint32_t width, uint32_t height,
-    size_t n_moments,
-    std::vector<double>& compressed_moments,
-    std::vector<double>& mins, std::vector<double>& maxs,
-    std::vector<T>& relative_scales,
-    double& global_min, double& global_max,
-    double& timing)
-{
-    const size_t n_pixels = width * height;
-
-    auto clock_start = std::chrono::steady_clock::now();
-
-    switch (method) {
-        case LINEAR:
-            linear_compress_spectral_image(
-                wavelengths, spectral_image,
-                n_pixels, n_moments,
-                compressed_moments,
-                mins, maxs
-            );
-            break;
-
-        case BOUNDED:
-            bounded_compress_spectral_image(
-                wavelengths, spectral_image,
-                n_pixels, n_moments,
-                compressed_moments,
-                mins, maxs
-            );
-            break;
-
-        case UNBOUNDED:
-            unbounded_compress_spectral_image(
-                wavelengths, spectral_image,
-                n_pixels, n_moments,
-                compressed_moments,
-                mins, maxs
-            );
-            break;
-
-        case UNBOUNDED_TO_BOUNDED:
-            unbounded_to_bounded_compress_spectral_image(
-                wavelengths, spectral_image,
-                n_pixels, n_moments,
-                compressed_moments,
-                mins, maxs
-            );
-            break;
-
-        case UPPERBOUND:
-            upperbound_compress_spectral_image(
-                wavelengths, spectral_image,
-                n_pixels, n_moments,
-                compressed_moments,
-                mins, maxs,
-                relative_scales,
-                global_max
-            );
-            break;
-
-        case TWOBOUNDS:
-            twobounds_compress_spectral_image(
-                wavelengths, spectral_image,
-                n_pixels, n_moments,
-                compressed_moments,
-                mins, maxs,
-                relative_scales,
-                global_min,
-                global_max
-            );
-            break;
-    }
-
-    auto clock_end = std::chrono::steady_clock::now();
-    timing = std::chrono::duration<double, std::milli>(clock_end - clock_start).count();
-
-    assert(compressed_moments.size() == n_pixels * n_moments);
-    assert(mins.size() == n_moments - 1);
-    assert(maxs.size() == n_moments - 1);
-
-#ifndef NDEBUG
-    if (method == UPPERBOUND || method == TWOBOUNDS) {
-        assert(relative_scales.size() == n_pixels);
-    }
-#endif // NDEBUG
-}
-
-
-stats_data stats_for_quantization_curve(
-    SpectralStorageMethod method,
-    const std::vector<double>& wavelengths,
-    const std::vector<double>& spectral_image,
-    uint32_t width, uint32_t height,
-    size_t n_moments,
-    const std::vector<int>& quantization_curve,
-    const std::vector<double>& compressed_moments,
-    const std::vector<double>& mins, const std::vector<double>& maxs,
-    const std::vector<uint8_t>& relative_scales,
-    double& global_min, double& global_max)
-{
-    switch(method) {
-        case LINEAR:
-            return linear_stats_for_quantization_curve(
-                wavelengths, spectral_image,
-                width, height,
-                n_moments,
-                compressed_moments, mins, maxs,
-                quantization_curve
-            );
-        case BOUNDED:
-            return bounded_stats_for_quantization_curve(
-                wavelengths, spectral_image,
-                width, height,
-                n_moments,
-                compressed_moments, mins, maxs,
-                quantization_curve
-            );
-        case UNBOUNDED:
-            return unbounded_stats_for_quantization_curve(
-                wavelengths, spectral_image,
-                width, height,
-                n_moments,
-                compressed_moments, mins, maxs,
-                quantization_curve
-            );
-        case UNBOUNDED_TO_BOUNDED:
-            return unbounded_to_bounded_stats_for_quantization_curve(
-                wavelengths, spectral_image,
-                width, height,
-                n_moments,
-                compressed_moments, mins, maxs,
-                quantization_curve
-            );
-        case UPPERBOUND:
-            return upperbound_stats_for_quantization_curve(
-                wavelengths, spectral_image,
-                width, height,
-                n_moments,
-                compressed_moments, mins, maxs,
-                relative_scales, global_max,
-                quantization_curve
-            );
-        case TWOBOUNDS:
-            return twobounds_stats_for_quantization_curve(
-                wavelengths, spectral_image,
-                width, height,
-                n_moments,
-                compressed_moments, mins, maxs,
-                relative_scales, global_min, global_max,
-                quantization_curve
-            );
-    }
-
-    assert(0);
-    return stats_data();
-}
-
-
-stats_data stats_for_quantization_and_compression_curves(
-    SpectralStorageMethod method,
-    const std::vector<double>& wavelengths,
-    const std::vector<double>& spectral_image,
-    uint32_t width, uint32_t height,
-    size_t n_moments,
-    const std::vector<int>& quantization_curve,
-    const std::vector<float>& compression_curve,
-    const std::vector<double>& compressed_moments,
-    const std::vector<double>& mins, const std::vector<double>& maxs,
-    const std::vector<uint8_t>& relative_scales,
-    double& global_min, double& global_max,
-    int effort)
-{
-    switch(method) {
-        case LINEAR:
-            return linear_stats_for_compression_curve(
-                wavelengths, spectral_image,
-                width, height, n_moments,
-                compressed_moments, mins, maxs,
-                quantization_curve,
-                compression_curve,
-                effort
-            );
-        case BOUNDED:
-            return bounded_stats_for_compression_curve(
-                wavelengths, spectral_image,
-                width, height, n_moments,
-                compressed_moments, mins, maxs,
-                quantization_curve,
-                compression_curve,
-                effort
-            );
-        case UNBOUNDED:
-            return unbounded_stats_for_compression_curve(
-                wavelengths, spectral_image,
-                width, height, n_moments,
-                compressed_moments, mins, maxs,
-                quantization_curve,
-                compression_curve,
-                effort
-            );
-        case UNBOUNDED_TO_BOUNDED:
-            return unbounded_to_bounded_stats_for_compression_curve(
-                wavelengths, spectral_image,
-                width, height, n_moments,
-                compressed_moments, mins, maxs,
-                quantization_curve,
-                compression_curve,
-                effort
-            );
-        case UPPERBOUND:
-            return upperbound_stats_for_compression_curve(
-                wavelengths, spectral_image,
-                width, height, n_moments,
-                compressed_moments, mins, maxs,
-                relative_scales, global_max,
-                quantization_curve,
-                compression_curve,
-                effort
-            );
-        case TWOBOUNDS:
-            return twobounds_stats_for_compression_curve(
-                wavelengths, spectral_image,
-                width, height, n_moments,
-                compressed_moments, mins, maxs,
-                relative_scales, global_min, global_max,
-                quantization_curve,
-                compression_curve,
-                effort
-            );
-    }
-
-    assert(0);
-    return stats_data();
-}
-
-
 void compress_spectral_framebuffer(
-    SpectralStorageMethod method,
+    SpectralCompressionType method,
     // Input data
     const SpectralFramebuffer* framebuffer,
     uint32_t width, uint32_t height,
@@ -551,7 +132,7 @@ void compress_spectral_framebuffer(
            compression_curve_timing(0),
            compression_timing(0);
 
-    generate_quantization_curve(
+    compute_quantization_curve(
         method,
         wavelengths, spectral_image,
         width, height, n_moments,
@@ -561,7 +142,7 @@ void compress_spectral_framebuffer(
         quantization_curve_timing
     );
 
-    generate_compression_curve(
+    compute_compression_curve(
         method,
         wavelengths, spectral_image,
         width, height, n_moments,
@@ -596,7 +177,7 @@ void compress_spectral_framebuffer(
         relative_scales, global_min_d, global_max_d
     );
 
-    compression_error = stats_for_quantization_and_compression_curves(
+    compression_error = stats_for_compression_curve(
         method,
         wavelengths, spectral_image,
         width, height, n_moments,
@@ -720,46 +301,6 @@ void quantization_from_exr(PixelType type, size_t& n_bits, size_t& n_exponent_bi
 }
 
 
-class FrameDistanceConstraint: public TCLAP::Constraint<float>
-{
-public:
-    virtual std::string description() const
-    {
-        return "Sets the distance level for lossy compression";
-    }
-
-    virtual std::string shortID() const
-    {
-        return "0..15";
-    }
-
-    virtual bool check(const float &value) const
-    {
-        return (value >= 0.f) && (value <= 15.f);
-    }
-};
-
-
-class CompressionEffortConstraint: public TCLAP::Constraint<int>
-{
-public:
-    virtual std::string description() const
-    {
-        return "Sets the compression effort for JXL.";
-    }
-
-    virtual std::string shortID() const
-    {
-        return "1..9";
-    }
-
-    virtual bool check(const int &value) const
-    {
-        return (value >= 1) && (value <= 9);
-    }
-};
-
-
 int main(int argc, char *argv[])
 {
     std::string filename_in, filename_out, filename_dump;
@@ -780,7 +321,7 @@ int main(int argc, char *argv[])
     int n_bits_ac1 = 10;
     bool use_flat_quantization = false;
 
-    SpectralStorageMethod method = TWOBOUNDS;
+    SpectralCompressionType method = TWOBOUNDS;
 
     std::chrono::time_point<std::chrono::steady_clock>  clock_start, clock_end;
 

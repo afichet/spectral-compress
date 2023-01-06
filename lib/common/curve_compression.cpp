@@ -33,18 +33,18 @@
 
 #include "curve_compression.h"
 
-#include <jxl/encode.h>
-#include <jxl/encode_cxx.h>
-
-#include <jxl/decode.h>
-#include <jxl/decode_cxx.h>
-
-#include <jxl/thread_parallel_runner.h>
-#include <jxl/thread_parallel_runner_cxx.h>
-
 #include "moments_image.h"
 #include "moments_error.h"
 #include "Util.h"
+
+#include <jxl/encode.h>
+#include <jxl/encode_cxx.h>
+#include <jxl/decode.h>
+#include <jxl/decode_cxx.h>
+#include <jxl/thread_parallel_runner.h>
+#include <jxl/thread_parallel_runner_cxx.h>
+
+#include <half.h>
 
 #include <vector>
 #include <cassert>
@@ -52,11 +52,9 @@
 #include <sstream>
 #include <stdexcept>
 #include <iostream>
+#include <chrono>
 
-
-#include <half.h>
-
-#define DEBLOG
+// #define DEBLOG
 
 // ----------------------------------------------------------------------------
 
@@ -429,6 +427,103 @@ void compress_decompress_image(
 /*****************************************************************************/
 /* Create compression curves                                                 */
 /*****************************************************************************/
+
+void compute_compression_curve(
+    SpectralCompressionType method,
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    uint32_t width, uint32_t height,
+    size_t n_moments,
+    const std::vector<int>& quantization_curve,
+    float compression_dc,
+    float compression_ac1,
+    bool uses_constant_compression,
+    std::vector<float>& compression_curve,
+    float effort,
+    double& timing)
+{
+    if (uses_constant_compression) {
+        compression_curve.resize(n_moments);
+        compression_curve[0] = compression_dc;
+
+        for (size_t i = 1; i < n_moments; i++) {
+            compression_curve[i] = compression_ac1;
+        }
+
+        timing = 0;
+    } else {
+        auto clock_start = std::chrono::steady_clock::now();
+
+        switch (method) {
+            case LINEAR:
+                linear_compute_compression_curve(
+                    wavelengths, spectral_image,
+                    width, height, n_moments,
+                    quantization_curve,
+                    compression_dc, compression_ac1,
+                    compression_curve,
+                    effort
+                );
+                break;
+            case BOUNDED:
+                bounded_compute_compression_curve(
+                    wavelengths, spectral_image,
+                    width, height, n_moments,
+                    quantization_curve,
+                    compression_dc, compression_ac1,
+                    compression_curve,
+                    effort
+                );
+                break;
+            case UNBOUNDED:
+                unbounded_compute_compression_curve(
+                    wavelengths, spectral_image,
+                    width, height, n_moments,
+                    quantization_curve,
+                    compression_dc, compression_ac1,
+                    compression_curve,
+                    effort
+                );
+                break;
+            case UNBOUNDED_TO_BOUNDED:
+                unbounded_to_bounded_compute_compression_curve(
+                    wavelengths, spectral_image,
+                    width, height, n_moments,
+                    quantization_curve,
+                    compression_dc, compression_ac1,
+                    compression_curve,
+                    effort
+                );
+                break;
+            case UPPERBOUND:
+                upperbound_compute_compression_curve(
+                    wavelengths, spectral_image,
+                    width, height, n_moments,
+                    quantization_curve,
+                    compression_dc, compression_ac1,
+                    compression_curve,
+                    effort
+                );
+                break;
+            case TWOBOUNDS:
+                twobounds_compute_compression_curve(
+                    wavelengths, spectral_image,
+                    width, height, n_moments,
+                    quantization_curve,
+                    compression_dc, compression_ac1,
+                    compression_curve,
+                    effort
+                );
+                break;
+        }
+
+        auto clock_end = std::chrono::steady_clock::now();
+        timing = std::chrono::duration<double, std::milli>(clock_end - clock_start).count();
+    }
+
+    assert(compression_curve.size() == n_moments);
+}
+
 
 double linear_compute_compression_curve(
     const std::vector<double>& wavelengths,
