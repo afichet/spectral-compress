@@ -826,4 +826,116 @@ void twobounds_decompress_spectral_image(
 }
 
 
+// All in one function
+template<typename T>
+void decompress_spectral_image(
+    SpectralCompressionType method,
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& normalized_moments_image,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
+    const std::vector<T>& relative_scales,
+    double global_min,
+    double global_max,
+    size_t n_pixels,
+    size_t n_moments,
+    std::vector<double>& spectral_image,
+    double& timing)
+{
+    assert(compressed_moments.size() == n_pixels * n_moments);
+    assert(mins.size() == n_moments - 1);
+    assert(maxs.size() == n_moments - 1);
+
+    auto clock_start = std::chrono::steady_clock::now();
+
+    switch (method) {
+        case LINEAR:
+            linear_decompress_spectral_image(
+                wavelengths,
+                normalized_moments_image,
+                mins, maxs,
+                n_pixels, n_moments,
+                spectral_image
+            );
+            break;
+
+        case LINAVG:
+            linavg_decompress_spectral_image(
+                wavelengths,
+                normalized_moments_image,
+                mins, maxs,
+                n_pixels, n_moments,
+                spectral_image
+            );
+            break;
+
+        case BOUNDED:
+            bounded_decompress_spectral_image(
+                wavelengths,
+                normalized_moments_image,
+                mins, maxs,
+                n_pixels, n_moments,
+                spectral_image
+            );
+            break;
+
+        case UNBOUNDED:
+            unbounded_decompress_spectral_image(
+                wavelengths,
+                normalized_moments_image,
+                mins, maxs,
+                n_pixels, n_moments,
+                spectral_image
+            );
+            break;
+
+        case UNBOUNDED_TO_BOUNDED:
+            unbounded_to_bounded_decompress_spectral_image(
+                wavelengths,
+                normalized_moments_image,
+                mins, maxs,
+                n_pixels, n_moments,
+                spectral_image
+            );
+            break;
+
+        case UPPERBOUND:
+            upperbound_decompress_spectral_image(
+                wavelengths,
+                normalized_moments_image,
+                mins, maxs,
+                relative_scales,
+                global_max,
+                n_pixels, n_moments,
+                spectral_image
+            );
+
+            break;
+
+        case TWOBOUNDS:
+            twobounds_decompress_spectral_image(
+                wavelengths,
+                normalized_moments_image,
+                mins, maxs,
+                relative_scales,
+                global_min,
+                global_max,
+                n_pixels, n_moments,
+                spectral_image
+            );
+
+            break;
+    }
+
+    auto clock_end = std::chrono::steady_clock::now();
+    timing = std::chrono::duration<double, std::milli>(clock_end - clock_start).count();
+
+#ifndef NDEBUG
+    if (method == UPPERBOUND || method == TWOBOUNDS) {
+        assert(relative_scales.size() == n_pixels);
+    }
+#endif // NDEBUG
+}
+
+
 #endif // __cplusplus

@@ -91,100 +91,28 @@ void decompress_spectral_framebuffer(
         }
     }
 
-    switch (sg.method) {
-        case LINEAR:
-            linear_decompress_spectral_image(
-                wavelengths_d,
-                compressed_moments_d,
-                mins_d, maxs_d,
-                n_pixels, n_moments,
-                spectral_framebuffer_d
-            );
-            break;
+    if (sg.method == UPPERBOUND || sg.method == TWOBOUNDS) {
+        relative_scales.resize(n_pixels);
 
-        case LINAVG:
-            linavg_decompress_spectral_image(
-                wavelengths_d,
-                compressed_moments_d,
-                mins_d, maxs_d,
-                n_pixels, n_moments,
-                spectral_framebuffer_d
-            );
-            break;
-
-        case BOUNDED:
-            bounded_decompress_spectral_image(
-                wavelengths_d,
-                compressed_moments_d,
-                mins_d, maxs_d,
-                n_pixels, n_moments,
-                spectral_framebuffer_d
-            );
-            break;
-
-        case UNBOUNDED:
-            unbounded_decompress_spectral_image(
-                wavelengths_d,
-                compressed_moments_d,
-                mins_d, maxs_d,
-                n_pixels, n_moments,
-                spectral_framebuffer_d
-            );
-            break;
-
-        case UNBOUNDED_TO_BOUNDED:
-            unbounded_to_bounded_decompress_spectral_image(
-                wavelengths_d,
-                compressed_moments_d,
-                mins_d, maxs_d,
-                n_pixels, n_moments,
-                spectral_framebuffer_d
-            );
-            break;
-
-        case UPPERBOUND:
-            relative_scales.resize(n_pixels);
-
-            for (size_t px = 0; px < n_pixels; px++) {
-                relative_scales[px] = std::numeric_limits<uint8_t>::max() * compressed_moments[n_moments][px];
-            }
-
-            upperbound_decompress_spectral_image(
-                wavelengths_d,
-                compressed_moments_d,
-                mins_d, maxs_d,
-                relative_scales,
-                sg.global_max,
-                n_pixels, n_moments,
-                spectral_framebuffer_d
-            );
-
-            break;
-
-        case TWOBOUNDS:
-            relative_scales.resize(n_pixels);
-
-            for (size_t px = 0; px < n_pixels; px++) {
-                relative_scales[px] = std::numeric_limits<uint8_t>::max() * compressed_moments[n_moments][px];
-            }
-
-            twobounds_decompress_spectral_image(
-                wavelengths_d,
-                compressed_moments_d,
-                mins_d, maxs_d,
-                relative_scales,
-                sg.global_min,
-                sg.global_max,
-                n_pixels, n_moments,
-                spectral_framebuffer_d
-            );
-
-            break;
-
-        default:
-            std::cerr << "Unimplemented" << std::endl;
-            break;
+        for (size_t px = 0; px < n_pixels; px++) {
+            relative_scales[px] = std::numeric_limits<uint8_t>::max() * compressed_moments[n_moments][px];
+        }
     }
+
+    double timing;
+
+    decompress_spectral_image(
+        sg.method,
+        wavelengths_d,
+        compressed_moments_d,
+        mins_d, maxs_d,
+        relative_scales,
+        sg.global_min, sg.global_max,
+        n_pixels,
+        n_moments,
+        spectral_framebuffer_d,
+        timing
+    );
 
     Util::cast_vector(spectral_framebuffer_d, spectral_framebuffer);
 }
