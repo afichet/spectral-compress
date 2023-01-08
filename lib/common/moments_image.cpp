@@ -85,6 +85,8 @@ void compute_moments_image(
     size_t n_moments,
     std::vector<double>& moments_image)
 {
+    assert(spectral_image.size() == phases.size() * n_pixels);
+
     moments_image.resize(n_pixels * n_moments);
 
     compute_moments_image(
@@ -94,6 +96,8 @@ void compute_moments_image(
         n_pixels,
         n_moments,
         moments_image.data());
+
+    assert(moments_image.size() == n_pixels * n_moments);
 }
 
 
@@ -124,6 +128,8 @@ void unbounded_compress_moments_image(
     size_t n_moments,
     std::vector<double>& compressed_moments_image)
 {
+    assert(moments_image.size() == n_pixels * n_moments);
+
     compressed_moments_image.resize(moments_image.size());
 
     unbounded_compress_moments_image(
@@ -132,6 +138,8 @@ void unbounded_compress_moments_image(
         n_moments,
         compressed_moments_image.data()
     );
+
+    assert(compressed_moments_image.size() == n_pixels * n_moments);
 }
 
 
@@ -158,6 +166,8 @@ void bounded_compress_moments_image(
     size_t n_moments,
     std::vector<double>& compressed_moments_image)
 {
+    assert(moments_image.size() == n_pixels * n_moments);
+
     compressed_moments_image.resize(moments_image.size());
 
     bounded_compress_moments_image(
@@ -166,6 +176,8 @@ void bounded_compress_moments_image(
         n_moments,
         compressed_moments_image.data()
     );
+
+    assert(compressed_moments_image.size() == n_pixels * n_moments);
 }
 
 
@@ -192,6 +204,8 @@ void unbounded_to_bounded_compress_moments_image(
     size_t n_moments,
     std::vector<double>& compressed_moments_image)
 {
+    assert(moments_image.size() == n_pixels * n_moments);
+
     compressed_moments_image.resize(moments_image.size());
 
     unbounded_to_bounded_compress_moments_image(
@@ -200,6 +214,8 @@ void unbounded_to_bounded_compress_moments_image(
         n_moments,
         compressed_moments_image.data()
     );
+
+    assert(compressed_moments_image.size() == n_pixels * n_moments);
 }
 
 
@@ -230,6 +246,8 @@ void unbounded_decompress_moments_image(
     size_t n_moments,
     std::vector<double>& moments_image)
 {
+    assert(compressed_moments_image.size() == n_pixels * n_moments);
+
     moments_image.resize(compressed_moments_image.size());
 
     unbounded_decompress_moments_image(
@@ -238,6 +256,8 @@ void unbounded_decompress_moments_image(
         n_moments,
         moments_image.data()
     );
+
+    assert(moments_image.size() == n_pixels * n_moments);
 }
 
 
@@ -264,6 +284,8 @@ void bounded_decompress_moments_image(
     size_t n_moments,
     std::vector<double>& moments_image)
 {
+    assert(compressed_moments_image.size() == n_pixels * n_moments);
+
     moments_image.resize(compressed_moments_image.size());
 
     bounded_decompress_moments_image(
@@ -272,6 +294,8 @@ void bounded_decompress_moments_image(
         n_moments,
         moments_image.data()
     );
+
+    assert(moments_image.size() == n_pixels * n_moments);
 }
 
 
@@ -298,6 +322,8 @@ void unbounded_to_bounded_decompress_moments_image(
     size_t n_moments,
     std::vector<double>& moments_image)
 {
+    assert(compressed_moments_image.size() == n_pixels * n_moments);
+
     moments_image.resize(compressed_moments_image.size());
 
     unbounded_to_bounded_decompress_moments_image(
@@ -306,6 +332,8 @@ void unbounded_to_bounded_decompress_moments_image(
         n_moments,
         moments_image.data()
     );
+
+    assert(moments_image.size() == n_pixels * n_moments);
 }
 
 
@@ -359,6 +387,8 @@ void compute_density_image(
     size_t n_moments,
     std::vector<double>& density_image)
 {
+    assert(moments_image.size() == n_pixels * n_moments);
+
     density_image.resize(phases.size() * n_pixels);
 
     compute_density_image(
@@ -369,6 +399,8 @@ void compute_density_image(
         n_moments,
         density_image.data()
     );
+
+    assert(density_image.size() == phases.size() * n_pixels);
 }
 
 
@@ -400,6 +432,8 @@ void bounded_compute_density_lagrange_image(
     size_t n_moments,
     std::vector<double>& density_image)
 {
+    assert(moments_image.size() == n_pixels * n_moments);
+
     density_image.resize(phases.size() * n_pixels);
 
     bounded_compute_density_lagrange_image(
@@ -410,6 +444,8 @@ void bounded_compute_density_lagrange_image(
         n_moments,
         density_image.data()
     );
+
+    assert(density_image.size() == phases.size() * n_pixels);
 }
 
 
@@ -454,22 +490,28 @@ void normalize_moment_image(
 
 void normalize_moment_image(
     const std::vector<double>& src,
-    size_t n_px, size_t n_moments,
+    size_t n_pixels, size_t n_moments,
     std::vector<double>& dest,
     std::vector<double>& mins,
     std::vector<double>& maxs)
 {
+    assert(src.size() == n_pixels * n_moments);
+
     dest.resize(src.size());
     mins.resize(n_moments - 1);
     maxs.resize(n_moments - 1);
 
     normalize_moment_image(
         src.data(),
-        n_px, n_moments,
+        n_pixels, n_moments,
         dest.data(),
         mins.data(),
         maxs.data()
     );
+
+    assert(dest.size() == n_pixels * n_moments);
+    assert(mins.size() == n_moments - 1);
+    assert(maxs.size() == n_moments - 1);
 }
 
 
@@ -504,6 +546,10 @@ void denormalize_moment_image(
     const std::vector<double>& maxs,
     std::vector<double>& dest)
 {
+    assert(src.size() == n_pixels * n_moments);
+    assert(mins.size() >= n_moments - 1);
+    assert(maxs.size() >= n_moments - 1);
+
     dest.resize(src.size());
 
     denormalize_moment_image(
@@ -513,6 +559,8 @@ void denormalize_moment_image(
         maxs.data(),
         dest.data()
     );
+
+    assert(dest.size() == n_pixels * n_moments);
 }
 
 
