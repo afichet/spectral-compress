@@ -153,7 +153,7 @@ int main(int argc, char* argv[])
             for (size_t px = 0; px < width * height; px++) {
                 for (size_t c = 0; c < 3; c++) {
                     framebuffer_rgba[4 * px + c] =
-                        std::round(255.f * std::max(0.f, std::min(1.f, rgb_image[3 * px + c])));
+                        std::round(255.f * Util::clamp(rgb_image[3 * px + c], 0.f, 1.f));
                 }
 
                 framebuffer_rgba[4 * px + 3] = 255;

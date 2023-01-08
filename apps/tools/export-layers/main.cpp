@@ -40,6 +40,7 @@
 #include <lodepng.h>
 
 #include <JXLImage.h>
+#include <Util.h>
 
 void export_float_gray_to_png(
     const std::vector<float>& framebuffer,
@@ -49,7 +50,7 @@ void export_float_gray_to_png(
     std::vector<uint8_t> export_fb(framebuffer.size() * 4);
 
     for (size_t i = 0; i < framebuffer.size(); i++) {
-        const uint8_t value = 255.f * std::max(0.f, std::min(1.f, framebuffer[i]));
+        const uint8_t value = 255.f * Util::clamp(framebuffer[i], 0.f, 1.f);
 
         for (size_t c = 0; c < 3; c++) {
             export_fb[4 * i + c] = value;

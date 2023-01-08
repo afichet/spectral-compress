@@ -38,6 +38,7 @@
 
 #include <lodepng.h>
 #include <JXLImage.h>
+#include <Util.h>
 
 int main(int argc, char* argv[])
 {
@@ -72,7 +73,7 @@ int main(int argc, char* argv[])
 
         for (size_t p = 0; p < img->width() * img->height(); p++) {
             const float pixel = in_fb[p];
-            const float value = std::max(0.f, std::min(1.f, std::pow(std::exp2(exposure) * pixel, gamma)));
+            const float value = Util::clamp(std::pow(std::exp2(exposure) * pixel, gamma), 0.f, 1.f);
 
             out_fb[4 * p + 0] = 255 * value;
             out_fb[4 * p + 1] = 255 * value;

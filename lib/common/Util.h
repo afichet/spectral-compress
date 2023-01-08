@@ -83,6 +83,13 @@ public:
     }
 
 
+    template<typename T>
+    static T clamp(T value, T low, T high)
+    {
+        return std::max(low, std::min(high, value));
+    }
+
+
     static size_t idxFromWavelengthIdx(size_t wlFrom_idx, size_t wlTo_idx)
     {
         if (wlFrom_idx < wlTo_idx) {

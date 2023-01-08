@@ -121,7 +121,7 @@ void diff_to_rgba(
     rgba_image.resize(4 * diff_image.size());
 
     for (size_t i = 0; i < diff_image.size(); i++) {
-        const T v = std::max((T)0, std::min((T)1, (diff_image[i] - lower_bound) / (upper_bound - lower_bound)));
+        const T v = Util::clamp((diff_image[i] - lower_bound) / (upper_bound - lower_bound), (T)0, (T)1);
         const size_t idx_lut = (size_t)std::round(v * (lut_size - 1));
 
         assert(idx_lut < lut_size);
