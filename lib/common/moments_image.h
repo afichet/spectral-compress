@@ -750,6 +750,11 @@ void upperbound_decompress_spectral_image(
     size_t n_moments,
     std::vector<double>& spectral_image)
 {
+    assert(normalized_moments_image.size() == n_pixels * n_moments);
+    assert(mins.size() == n_moments - 1);
+    assert(maxs.size() == n_moments - 1);
+    assert(relative_scales.size() == n_pixels);
+
     const size_t n_bands = wavelengths.size();
     std::vector<double> normalized_moments_image_dc(normalized_moments_image);
     std::vector<double> rescaled_spectral_image;
@@ -776,6 +781,8 @@ void upperbound_decompress_spectral_image(
             spectral_image[px * n_bands + b] = rescaled_spectral_image[px * n_bands + b] * scaling;
         }
     }
+
+    assert(spectral_image.size() == wavelengths.size() * n_pixels);
 }
 
 
@@ -793,6 +800,12 @@ void twobounds_decompress_spectral_image(
     size_t n_moments,
     std::vector<double>& spectral_image)
 {
+    assert(normalized_moments_image.size() == n_pixels * n_moments);
+    assert(mins.size() == n_moments - 1);
+    assert(maxs.size() == n_moments - 1);
+    assert(relative_scales.size() == n_pixels);
+    assert(r_min < r_max);
+
     const double max_q = (double)std::numeric_limits<T>::max();
     const size_t n_bands = wavelengths.size();
     std::vector<double> normalized_moments_image_dc(normalized_moments_image);
@@ -823,6 +836,8 @@ void twobounds_decompress_spectral_image(
             spectral_image[px * n_bands + b] = rescaled_spectral_image[px * n_bands + b] * scaling;
         }
     }
+
+    assert(spectral_image.size() == wavelengths.size() * n_pixels);
 }
 
 
@@ -842,9 +857,18 @@ void decompress_spectral_image(
     std::vector<double>& spectral_image,
     double& timing)
 {
-    assert(compressed_moments.size() == n_pixels * n_moments);
+    assert(normalized_moments_image.size() == n_pixels * n_moments);
     assert(mins.size() == n_moments - 1);
     assert(maxs.size() == n_moments - 1);
+
+#ifndef NDEBUG
+    if (method == UPPERBOUND || method == TWOBOUNDS) {
+        assert(relative_scales.size() == n_pixels);
+    }
+    if (method == TWOBOUNDS) {
+        assert(global_min < global_max);
+    }
+#endif // NDEBUG
 
     auto clock_start = std::chrono::steady_clock::now();
 
@@ -930,11 +954,7 @@ void decompress_spectral_image(
     auto clock_end = std::chrono::steady_clock::now();
     timing = std::chrono::duration<double, std::milli>(clock_end - clock_start).count();
 
-#ifndef NDEBUG
-    if (method == UPPERBOUND || method == TWOBOUNDS) {
-        assert(relative_scales.size() == n_pixels);
-    }
-#endif // NDEBUG
+    assert(spectral_image.size() == wavelengths.size() * n_pixels);
 }
 
 

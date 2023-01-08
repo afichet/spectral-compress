@@ -531,6 +531,8 @@ void linear_compress_spectral_image(
     std::vector<double>& mins,
     std::vector<double>& maxs)
 {
+    assert(spectral_image.size() == wavelengths.size() * n_pixels);
+
     std::vector<double> phases;
     std::vector<double> moments_image;
     std::vector<double> compressed_moments_image;
@@ -550,6 +552,10 @@ void linear_compress_spectral_image(
         normalized_moments_image,
         mins, maxs
     );
+
+    assert(normalized_moments_image.size() == n_pixels * n_moments);
+    assert(mins.size() == n_moments - 1);
+    assert(maxs.size() == n_moments - 1);
 }
 
 
@@ -562,6 +568,8 @@ void linavg_compress_spectral_image(
     std::vector<double>& mins,
     std::vector<double>& maxs)
 {
+    assert(spectral_image.size() == wavelengths.size() * n_pixels);
+
     std::vector<double> phases;
     std::vector<double> moments_image;
     std::vector<double> compressed_moments_image;
@@ -589,6 +597,10 @@ void linavg_compress_spectral_image(
         normalized_moments_image,
         mins, maxs
     );
+
+    assert(normalized_moments_image.size() == n_pixels * n_moments);
+    assert(mins.size() == n_moments - 1);
+    assert(maxs.size() == n_moments - 1);
 }
 
 
@@ -601,6 +613,8 @@ void bounded_compress_spectral_image(
     std::vector<double>& mins,
     std::vector<double>& maxs)
 {
+    assert(spectral_image.size() == wavelengths.size() * n_pixels);
+
     std::vector<double> phases;
     std::vector<double> moments_image;
     std::vector<double> compressed_moments_image;
@@ -626,6 +640,10 @@ void bounded_compress_spectral_image(
         normalized_moments_image,
         mins, maxs
     );
+
+    assert(normalized_moments_image.size() == n_pixels * n_moments);
+    assert(mins.size() == n_moments - 1);
+    assert(maxs.size() == n_moments - 1);
 }
 
 
@@ -638,6 +656,8 @@ void unbounded_compress_spectral_image(
     std::vector<double>& mins,
     std::vector<double>& maxs)
 {
+    assert(spectral_image.size() == wavelengths.size() * n_pixels);
+
     std::vector<double> phases;
     std::vector<double> moments_image;
     std::vector<double> compressed_moments_image;
@@ -663,6 +683,10 @@ void unbounded_compress_spectral_image(
         normalized_moments_image,
         mins, maxs
     );
+
+    assert(normalized_moments_image.size() == n_pixels * n_moments);
+    assert(mins.size() == n_moments - 1);
+    assert(maxs.size() == n_moments - 1);
 }
 
 
@@ -675,6 +699,8 @@ void unbounded_to_bounded_compress_spectral_image(
     std::vector<double>& mins,
     std::vector<double>& maxs)
 {
+    assert(spectral_image.size() == wavelengths.size() * n_pixels);
+
     std::vector<double> phases;
     std::vector<double> moments_image;
     std::vector<double> compressed_moments_image;
@@ -700,6 +726,10 @@ void unbounded_to_bounded_compress_spectral_image(
         normalized_moments_image,
         mins, maxs
     );
+
+    assert(normalized_moments_image.size() == n_pixels * n_moments);
+    assert(mins.size() == n_moments - 1);
+    assert(maxs.size() == n_moments - 1);
 }
 
 
@@ -714,6 +744,10 @@ void linear_decompress_spectral_image(
     size_t n_moments,
     std::vector<double>& spectral_image)
 {
+    assert(normalized_moments_image.size() == n_pixels * n_moments);
+    assert(mins.size() == n_moments - 1);
+    assert(maxs.size() == n_moments - 1);
+
     std::vector<double> phases;
     std::vector<double> compressed_moments_image;
     std::vector<double> moments_image;
@@ -735,6 +769,8 @@ void linear_decompress_spectral_image(
         n_moments,
         spectral_image
     );
+
+    assert(spectral_image.size() == wavelengths.size() * n_pixels);
 }
 
 
@@ -747,6 +783,10 @@ void linavg_decompress_spectral_image(
     size_t n_moments,
     std::vector<double>& spectral_image)
 {
+    assert(normalized_moments_image.size() == n_pixels * n_moments);
+    assert(mins.size() == n_moments - 1);
+    assert(maxs.size() == n_moments - 1);
+
     std::vector<double> phases;
     std::vector<double> compressed_moments_image;
     std::vector<double> moments_image;
@@ -776,6 +816,8 @@ void linavg_decompress_spectral_image(
         n_moments,
         spectral_image
     );
+
+    assert(spectral_image.size() == wavelengths.size() * n_pixels);
 }
 
 
@@ -788,6 +830,10 @@ void bounded_decompress_spectral_image(
     size_t n_moments,
     std::vector<double>& spectral_image)
 {
+    assert(normalized_moments_image.size() == n_pixels * n_moments);
+    assert(mins.size() == n_moments - 1);
+    assert(maxs.size() == n_moments - 1);
+
     std::vector<double> phases;
     std::vector<double> compressed_moments_image;
     std::vector<double> moments_image;
@@ -815,6 +861,8 @@ void bounded_decompress_spectral_image(
         n_moments,
         spectral_image
     );
+
+    assert(spectral_image.size() == wavelengths.size() * n_pixels);
 }
 
 
@@ -827,6 +875,10 @@ void unbounded_decompress_spectral_image(
     size_t n_moments,
     std::vector<double>& spectral_image)
 {
+    assert(normalized_moments_image.size() == n_pixels * n_moments);
+    assert(mins.size() == n_moments - 1);
+    assert(maxs.size() == n_moments - 1);
+
     std::vector<double> phases;
     std::vector<double> compressed_moments_image;
     std::vector<double> moments_image;
@@ -854,6 +906,8 @@ void unbounded_decompress_spectral_image(
         n_moments,
         spectral_image
     );
+
+    assert(spectral_image.size() == wavelengths.size() * n_pixels);
 }
 
 
@@ -866,6 +920,10 @@ void unbounded_to_bounded_decompress_spectral_image(
     size_t n_moments,
     std::vector<double>& spectral_image)
 {
+    assert(normalized_moments_image.size() == n_pixels * n_moments);
+    assert(mins.size() == n_moments - 1);
+    assert(maxs.size() == n_moments - 1);
+
     std::vector<double> phases;
     std::vector<double> compressed_moments_image;
     std::vector<double> moments_image;
@@ -893,4 +951,6 @@ void unbounded_to_bounded_decompress_spectral_image(
         n_moments,
         spectral_image
     );
+
+    assert(spectral_image.size() == wavelengths.size() * n_pixels);
 }
