@@ -64,6 +64,34 @@ double linear_average_err(
 }
 
 
+double linavg_average_err(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    size_t n_px, size_t n_moments,
+    const std::vector<double>& norm_moments,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs)
+{
+    // double err = 0;
+    const size_t n_wl = wavelengths.size();
+
+    std::vector<double> reconst_spectral_image;
+
+    linavg_decompress_spectral_image(
+        wavelengths, norm_moments,
+        mins, maxs,
+        n_px, n_moments,
+        reconst_spectral_image
+    );
+
+    return Util::rmse_images(
+        spectral_image,
+        reconst_spectral_image,
+        n_px, n_wl
+    );
+}
+
+
 double unbounded_average_err(
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,

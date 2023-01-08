@@ -65,6 +65,14 @@ stats_data stats_for_quantization_curve(
                 compressed_moments, mins, maxs,
                 quantization_curve
             );
+        case LINAVG:
+            return linavg_stats_for_quantization_curve(
+                wavelengths, spectral_image,
+                width, height,
+                n_moments,
+                compressed_moments, mins, maxs,
+                quantization_curve
+            );
         case BOUNDED:
             return bounded_stats_for_quantization_curve(
                 wavelengths, spectral_image,
@@ -140,6 +148,48 @@ stats_data linear_stats_for_quantization_curve(
     std::vector<double> reconst_spectral_image;
 
     linear_decompress_spectral_image(
+        wavelengths, quantized_moments,
+        mins, maxs,
+        width * height,
+        n_moments,
+        reconst_spectral_image
+    );
+
+    return compute_stats(
+        spectral_image,
+        reconst_spectral_image,
+        width, height,
+        wavelengths.size()
+    );
+}
+
+
+stats_data linavg_stats_for_quantization_curve(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    uint32_t width, uint32_t height,
+    size_t n_moments,
+    const std::vector<double>& normalized_moments,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
+    const std::vector<int>& quantization_curve)
+{
+    assert(normalized_moments.size() == width * height * n_moments);
+
+    // Quantize & dequantize each moment of the image
+    std::vector<double> quantized_moments;
+
+    quantize_dequantize_image(
+        normalized_moments,
+        quantized_moments,
+        width * height,
+        n_moments,
+        quantization_curve
+    );
+
+    std::vector<double> reconst_spectral_image;
+
+    linavg_decompress_spectral_image(
         wavelengths, quantized_moments,
         mins, maxs,
         width * height,
@@ -404,6 +454,16 @@ stats_data stats_for_compression_curve(
                 compression_curve,
                 effort
             );
+        case LINAVG:
+            return linavg_stats_for_compression_curve(
+                wavelengths, spectral_image,
+                width, height, n_moments,
+                compressed_moments, mins, maxs,
+                quantization_curve,
+                downsampling_factor_curve,
+                compression_curve,
+                effort
+            );
         case BOUNDED:
             return bounded_stats_for_compression_curve(
                 wavelengths, spectral_image,
@@ -500,6 +560,60 @@ stats_data linear_stats_for_compression_curve(
     std::vector<double> decompressed_spectral_image;
 
     linear_decompress_spectral_image(
+        wavelengths,
+        compressed_decompressed_normalized_moments,
+        mins, maxs,
+        width * height,
+        n_moments,
+        decompressed_spectral_image
+    );
+
+    return compute_stats(
+        ref_spectral_image,
+        decompressed_spectral_image,
+        width, height,
+        wavelengths.size()
+    );
+}
+
+
+stats_data linavg_stats_for_compression_curve(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& ref_spectral_image,
+    uint32_t width, uint32_t height,
+    size_t n_moments,
+    const std::vector<double>& normalized_moments,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
+    const std::vector<int>& quantization_curve,
+    const std::vector<uint32_t>& downsampling_factor_curve,
+    const std::vector<float>& compression_curve,
+    int effort)
+{
+    assert(ref_spectral_image.size() == width * height * wavelengths.size());
+    assert(normalized_moments.size() == width * height * n_moments);
+    assert(mins.size() == n_moments - 1);
+    assert(maxs.size() == n_moments - 1);
+    assert(quantization_curve.size() == n_moments);
+    assert(compression_curve.size() == n_moments);
+
+    std::vector<double> compressed_decompressed_normalized_moments;
+
+    compress_decompress_image(
+        normalized_moments,
+        compressed_decompressed_normalized_moments,
+        width, height,
+        n_moments,
+        quantization_curve,
+        downsampling_factor_curve,
+        compression_curve,
+        effort
+    );
+
+    // Unpack the moments
+    std::vector<double> decompressed_spectral_image;
+
+    linavg_decompress_spectral_image(
         wavelengths,
         compressed_decompressed_normalized_moments,
         mins, maxs,

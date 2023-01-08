@@ -110,6 +110,19 @@ double linear_compute_compression_curve(
     int effort = 7);
 
 
+double linavg_compute_compression_curve(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    uint32_t width, uint32_t height,
+    size_t n_moments,
+    const std::vector<int>& quantization_curve,
+    const std::vector<uint32_t>& downsampling_factor_curve,
+    float compression_dc,
+    float compression_ac1,
+    std::vector<float>& compression_curve,
+    int effort = 7);
+
+
 double unbounded_compute_compression_curve(
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,
@@ -180,6 +193,20 @@ double twobounds_compute_compression_curve(
 /*****************************************************************************/
 
 double linear_error_for_compression_curve(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& ref_spectral_image,
+    uint32_t width, uint32_t height,
+    size_t n_moments,
+    const std::vector<double>& normalized_moments,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
+    const std::vector<int>& quantization_curve,
+    const std::vector<uint32_t>& downsampling_factor_curve,
+    const std::vector<float>& compression_curve,
+    int effort);
+
+
+double linavg_error_for_compression_curve(
     const std::vector<double>& wavelengths,
     const std::vector<double>& ref_spectral_image,
     uint32_t width, uint32_t height,

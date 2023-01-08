@@ -124,6 +124,14 @@ void compute_quantization_curve(
                     quantization_curve
                 );
                 break;
+            case LINAVG:
+                linavg_compute_quantization_curve(
+                    wavelengths, spectral_image,
+                    width * height, n_moments,
+                    n_bits_dc, n_bits_ac1,
+                    quantization_curve
+                );
+                break;
             case BOUNDED:
                 bounded_compute_quantization_curve(
                     wavelengths, spectral_image,
@@ -242,6 +250,84 @@ double linear_compute_quantization_curve(
     }
 
     return linear_error_for_quantization_curve(
+        wavelengths,
+        spectral_image,
+        n_px, n_moments,
+        norm_moments,
+        mins, maxs,
+        quantization_curve
+    );
+}
+
+
+double linavg_compute_quantization_curve(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    size_t n_px, size_t n_moments,
+    int n_bits_dc,
+    int n_bits_ac1,
+    std::vector<int>& quantization_curve)
+{
+    std::vector<double> norm_moments;
+    std::vector<double> mins, maxs;
+
+    linavg_compress_spectral_image(
+        wavelengths, spectral_image,
+        n_px, n_moments,
+        norm_moments,
+        mins, maxs
+    );
+
+    quantization_curve.resize(n_moments);
+
+    quantization_curve[0] = n_bits_dc;
+    quantization_curve[1] = n_bits_ac1;
+
+    std::vector<double> quantized_moments;
+
+    quantize_dequantize_single_image(
+        norm_moments,
+        quantized_moments,
+        n_px, n_moments,
+        1, quantization_curve[1]
+    );
+
+    const double base_err = linavg_average_err(
+        wavelengths,
+        spectral_image,
+        n_px, n_moments,
+        quantized_moments,
+        mins, maxs
+    );
+
+    for (size_t m = 2; m < n_moments; m++) {
+        quantization_curve[m] = quantization_curve[m - 1];
+
+        for (size_t n_bits = quantization_curve[m] - 1; n_bits > 0; n_bits--) {
+            quantize_dequantize_single_image(
+                norm_moments,
+                quantized_moments,
+                n_px, n_moments,
+                m, n_bits
+            );
+
+            const double curr_err = linavg_average_err(
+                wavelengths,
+                spectral_image,
+                n_px, n_moments,
+                quantized_moments,
+                mins, maxs
+            );
+
+            if (curr_err >= base_err) {
+                break;
+            }
+
+            quantization_curve[m] = n_bits;
+        }
+    }
+
+    return linavg_error_for_quantization_curve(
         wavelengths,
         spectral_image,
         n_px, n_moments,
@@ -698,6 +784,37 @@ double linear_error_for_quantization_curve(
     );
 
     return linear_average_err(
+        wavelengths,
+        spectral_image,
+        n_px, n_moments,
+        quantized_moments,
+        mins, maxs
+    );
+}
+
+
+double linavg_error_for_quantization_curve(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    size_t n_px, size_t n_moments,
+    const std::vector<double>& normalized_moments,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
+    const std::vector<int>& quantization_curve)
+{
+    assert(normalized_moments.size() == n_px * n_moments);
+
+    // Quantize & dequantize each moment of the image
+    std::vector<double> quantized_moments;
+
+    quantize_dequantize_image(
+        normalized_moments,
+        quantized_moments,
+        n_px, n_moments,
+        quantization_curve
+    );
+
+    return linavg_average_err(
         wavelengths,
         spectral_image,
         n_px, n_moments,

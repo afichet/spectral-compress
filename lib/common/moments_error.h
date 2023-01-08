@@ -48,6 +48,15 @@ double linear_average_err(
     const std::vector<double>& maxs);
 
 
+double linavg_average_err(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    size_t n_px, size_t n_moments,
+    const std::vector<double>& norm_moments,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs);
+
+
 double unbounded_average_err(
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,

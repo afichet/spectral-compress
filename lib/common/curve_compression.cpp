@@ -472,6 +472,17 @@ void compute_compression_curve(
                     effort
                 );
                 break;
+            case LINAVG:
+                linavg_compute_compression_curve(
+                    wavelengths, spectral_image,
+                    width, height, n_moments,
+                    quantization_curve,
+                    downsampling_factor_curve,
+                    compression_dc, compression_ac1,
+                    compression_curve,
+                    effort
+                );
+                break;
             case BOUNDED:
                 bounded_compute_compression_curve(
                     wavelengths, spectral_image,
@@ -690,6 +701,172 @@ double linear_compute_compression_curve(
     }
 
     return linear_error_for_compression_curve(
+        wavelengths, spectral_image,
+        width, height,
+        n_moments,
+        normalized_moments,
+        mins, maxs,
+        quantization_curve,
+        downsampling_factor_curve,
+        compression_curve,
+        effort
+    );
+}
+
+
+double linavg_compute_compression_curve(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    uint32_t width, uint32_t height,
+    size_t n_moments,
+    const std::vector<int>& quantization_curve,
+    const std::vector<uint32_t>& downsampling_factor_curve,
+    float compression_dc,
+    float compression_ac1,
+    std::vector<float>& compression_curve,
+    int effort
+    )
+{
+    assert(spectral_image.size() == width * height * wavelengths.size());
+    assert(quantization_curve.size() == n_moments);
+    assert(downsampling_factor_curve.size() == n_moments);
+
+    compression_curve.resize(n_moments);
+
+    std::vector<double> normalized_moments;
+    std::vector<double> mins, maxs;
+
+    linavg_compress_spectral_image(
+        wavelengths, spectral_image,
+        width * height, n_moments,
+        normalized_moments,
+        mins, maxs
+    );
+
+    assert(normalized_moments.size() == width * height * n_moments);
+    assert(mins.size() == n_moments - 1);
+    assert(maxs.size() == n_moments - 1);
+
+    // Quantize / dequantize each moment based on the provided quantization
+    // curve
+    std::vector<double> q_normalized_moments(normalized_moments.size());
+
+    #pragma omp parallel for
+    for (size_t px = 0; px < width * height; px++) {
+        // We ignore moment 0
+        q_normalized_moments[px * n_moments + 0] = normalized_moments[px * n_moments + 0];
+
+        for (size_t m = 1; m < n_moments; m++) {
+            q_normalized_moments[px * n_moments + m] =
+                Util::quantize_dequantize(
+                    normalized_moments[px * n_moments + m],
+                    quantization_curve[m]
+                );
+        }
+    }
+
+    compression_curve[0] = compression_dc;
+    compression_curve[1] = compression_ac1;
+
+    std::vector<double> compressed_decompressed_moments;
+
+    compress_decompress_single_image(
+        q_normalized_moments,
+        compressed_decompressed_moments,
+        width, height, n_moments,
+        quantization_curve[1],
+        downsampling_factor_curve[1],
+        1, compression_curve[1],
+        effort
+    );
+
+    assert(compressed_decompressed_moments.size() == q_normalized_moments.size());
+
+    const double base_err = linavg_average_err(
+        wavelengths,
+        spectral_image,
+        width * height, n_moments,
+        compressed_decompressed_moments,
+        mins, maxs
+    );
+
+    const float frame_distance_stop_inc = 0.1f;
+    const float max_frame_distance = 15.0f;
+
+#ifdef DEBLOG
+    std::cout << "Starting compression curve computation..." << std::endl;
+    std::cout << "start err: " << base_err << std::endl;
+#endif // DEBLOG
+
+    for (size_t m = 2; m < n_moments; m++) {
+        compression_curve[m] = compression_curve[m - 1];
+
+#ifdef DEBLOG
+        std::cout << "    INIT ~ moment[" << m << "] d: " << compression_curve[m] << std::endl;
+#endif // DEBLOG
+
+        float low = compression_curve[m];
+        float high = max_frame_distance;
+        float frame_distance = (low + high) / 2.f;
+
+        while(low <= high) {
+            compress_decompress_single_image(
+                q_normalized_moments,
+                compressed_decompressed_moments,
+                width, height, n_moments,
+                quantization_curve[m],
+                downsampling_factor_curve[m],
+                m, frame_distance,
+                effort
+            );
+
+            assert(compressed_decompressed_moments.size() == q_normalized_moments.size());
+
+            const double curr_err = linavg_average_err(
+                wavelengths,
+                spectral_image,
+                width * height, n_moments,
+                compressed_decompressed_moments,
+                mins, maxs
+            );
+
+            float next_frame_distance;
+
+            // Move left of right depending on the error
+            if (base_err < curr_err) {
+                // mv left
+                high = frame_distance;
+                next_frame_distance = (low + high) / 2.f;
+
+                if (next_frame_distance - low < frame_distance_stop_inc) {
+                    frame_distance = low;
+                    break;
+                }
+            } else {
+                // mv right
+                low = frame_distance;
+                next_frame_distance = (low + high) / 2.f;
+
+                if (high - next_frame_distance < frame_distance_stop_inc) {
+                    break;
+                }
+            }
+
+            frame_distance = next_frame_distance;
+
+#ifdef DEBLOG
+            std::cout << "           moment[" << m << "] d: " << frame_distance << " e: " << curr_err << std::endl;
+#endif // DEBLOG
+        }
+
+        compression_curve[m] = frame_distance;
+
+#ifdef DEBLOG
+        std::cout << "    END  ~ moment[" << m << "] d: " << compression_curve[m] << std::endl;
+#endif // DEBLOG
+    }
+
+    return linavg_error_for_compression_curve(
         wavelengths, spectral_image,
         width, height,
         n_moments,
@@ -1596,6 +1773,61 @@ double linear_error_for_compression_curve(
     std::vector<double> decompressed_spectral_image;
 
     linear_decompress_spectral_image(
+        wavelengths,
+        compressed_decompressed_normalized_moments,
+        mins, maxs,
+        width * height,
+        n_moments,
+        decompressed_spectral_image
+    );
+
+    return Util::rmse_images(
+        ref_spectral_image,
+        decompressed_spectral_image,
+        width * height,
+        wavelengths.size()
+    );
+}
+
+
+double linavg_error_for_compression_curve(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& ref_spectral_image,
+    uint32_t width, uint32_t height,
+    size_t n_moments,
+    const std::vector<double>& normalized_moments,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
+    const std::vector<int>& quantization_curve,
+    const std::vector<uint32_t>& downsampling_factor_curve,
+    const std::vector<float>& compression_curve,
+    int effort)
+{
+    assert(ref_spectral_image.size() == width * height * wavelengths.size());
+    assert(normalized_moments.size() == width * height * n_moments);
+    assert(mins.size() == n_moments - 1);
+    assert(maxs.size() == n_moments - 1);
+    assert(quantization_curve.size() == n_moments);
+    assert(compression_curve.size() == n_moments);
+    assert(downsampling_factor_curve.size() == n_moments);
+
+    std::vector<double> compressed_decompressed_normalized_moments;
+
+    compress_decompress_image(
+        normalized_moments,
+        compressed_decompressed_normalized_moments,
+        width, height,
+        n_moments,
+        quantization_curve,
+        downsampling_factor_curve,
+        compression_curve,
+        effort
+    );
+
+    // Unpack the moments
+    std::vector<double> decompressed_spectral_image;
+
+    linavg_decompress_spectral_image(
         wavelengths,
         compressed_decompressed_normalized_moments,
         mins, maxs,

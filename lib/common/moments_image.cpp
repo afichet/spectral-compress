@@ -553,6 +553,45 @@ void linear_compress_spectral_image(
 }
 
 
+void linavg_compress_spectral_image(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    size_t n_pixels,
+    size_t n_moments,
+    std::vector<double>& normalized_moments_image,
+    std::vector<double>& mins,
+    std::vector<double>& maxs)
+{
+    std::vector<double> phases;
+    std::vector<double> moments_image;
+    std::vector<double> compressed_moments_image;
+
+    wavelengths_to_phases(wavelengths, phases);
+
+    compute_moments_image(
+        phases,
+        spectral_image,
+        n_pixels, n_moments,
+        moments_image
+    );
+
+    // Now divide every AC component by the average
+    #pragma omp parallel for
+    for (size_t i = 0; i < n_pixels; i++) {
+        for (size_t m = 1; m < n_moments; m++) {
+            moments_image[i * n_moments + m] /= moments_image[i * n_moments];
+        }
+    }
+
+    normalize_moment_image(
+        moments_image,
+        n_pixels, n_moments,
+        normalized_moments_image,
+        mins, maxs
+    );
+}
+
+
 void bounded_compress_spectral_image(
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,
@@ -688,6 +727,47 @@ void linear_decompress_spectral_image(
         mins, maxs,
         moments_image
     );
+
+    compute_density_image(
+        phases,
+        moments_image,
+        n_pixels,
+        n_moments,
+        spectral_image
+    );
+}
+
+
+void linavg_decompress_spectral_image(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& normalized_moments_image,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
+    size_t n_pixels,
+    size_t n_moments,
+    std::vector<double>& spectral_image)
+{
+    std::vector<double> phases;
+    std::vector<double> compressed_moments_image;
+    std::vector<double> moments_image;
+
+    wavelengths_to_phases(wavelengths, phases);
+
+    denormalize_moment_image(
+        normalized_moments_image,
+        n_pixels,
+        n_moments,
+        mins, maxs,
+        moments_image
+    );
+
+    // Multiply AC component by the average
+    #pragma omp parallel for
+    for (size_t i = 0; i < n_pixels; i++) {
+        for (size_t m = 1; m < n_moments; m++) {
+            moments_image[i * n_moments + m] *= moments_image[i * n_moments];
+        }
+    }
 
     compute_density_image(
         phases,

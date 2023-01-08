@@ -59,6 +59,7 @@ void decompress_spectral_framebuffer(
 
     switch (sg.method) {
         case LINEAR:
+        case LINAVG:
         case BOUNDED:
         case UNBOUNDED:
         case UNBOUNDED_TO_BOUNDED:
@@ -93,6 +94,16 @@ void decompress_spectral_framebuffer(
     switch (sg.method) {
         case LINEAR:
             linear_decompress_spectral_image(
+                wavelengths_d,
+                compressed_moments_d,
+                mins_d, maxs_d,
+                n_pixels, n_moments,
+                spectral_framebuffer_d
+            );
+            break;
+
+        case LINAVG:
+            linavg_decompress_spectral_image(
                 wavelengths_d,
                 compressed_moments_d,
                 mins_d, maxs_d,

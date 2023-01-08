@@ -248,6 +248,9 @@ void compress_spectral_framebuffer(
             case LINEAR:
                 log_stream << "Method: linear" << std::endl;
                 break;
+            case LINAVG:
+                log_stream << "Method: linavg" << std::endl;
+                break;
             case BOUNDED:
                 log_stream << "Method: bounded" << std::endl;
                 break;
@@ -386,6 +389,7 @@ int main(int argc, char *argv[])
         // Moment storage method tweaking
         std::vector<std::string> allowedCompressionMethods;
         allowedCompressionMethods.push_back("linear");
+        allowedCompressionMethods.push_back("linavg");
         allowedCompressionMethods.push_back("bounded");
         allowedCompressionMethods.push_back("unbounded");
         allowedCompressionMethods.push_back("unbounded_to_bounded");
@@ -428,6 +432,8 @@ int main(int argc, char *argv[])
 
         if (momentCompressionMethodArg.getValue() == "linear") {
             method = LINEAR;
+        } else if (momentCompressionMethodArg.getValue() == "linavg") {
+            method = LINAVG;
         } else if (momentCompressionMethodArg.getValue() == "bounded") {
             method = BOUNDED;
         } else if (momentCompressionMethodArg.getValue() == "unbounded") {

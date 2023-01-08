@@ -118,6 +118,17 @@ stats_data linear_stats_for_quantization_curve(
     const std::vector<int>& quantization_curve);
 
 
+stats_data linavg_stats_for_quantization_curve(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    uint32_t width, uint32_t height,
+    size_t n_moments,
+    const std::vector<double>& normalized_moments,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
+    const std::vector<int>& quantization_curve);
+
+
 stats_data unbounded_stats_for_quantization_curve(
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,
@@ -204,6 +215,20 @@ stats_data stats_for_compression_curve(
 
 
 stats_data linear_stats_for_compression_curve(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& ref_spectral_image,
+    uint32_t width, uint32_t height,
+    size_t n_moments,
+    const std::vector<double>& normalized_moments,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
+    const std::vector<int>& quantization_curve,
+    const std::vector<uint32_t>& downsampling_factor_curve,
+    const std::vector<float>& compression_curve,
+    int effort);
+
+
+stats_data linavg_stats_for_compression_curve(
     const std::vector<double>& wavelengths,
     const std::vector<double>& ref_spectral_image,
     uint32_t width, uint32_t height,

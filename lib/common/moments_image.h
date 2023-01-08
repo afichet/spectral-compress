@@ -403,6 +403,16 @@ void linear_compress_spectral_image(
     std::vector<double>& maxs);
 
 
+void linavg_compress_spectral_image(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    size_t n_pixels,
+    size_t n_moments,
+    std::vector<double>& normalized_moments_image,
+    std::vector<double>& mins,
+    std::vector<double>& maxs);
+
+
 void bounded_compress_spectral_image(
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,
@@ -601,6 +611,15 @@ void compress_image(
             );
             break;
 
+        case LINAVG:
+            linavg_compress_spectral_image(
+                wavelengths, spectral_image,
+                n_pixels, n_moments,
+                compressed_moments,
+                mins, maxs
+            );
+            break;
+
         case BOUNDED:
             bounded_compress_spectral_image(
                 wavelengths, spectral_image,
@@ -670,6 +689,16 @@ void compress_image(
 // Decompress (compressed_moments -> spectral_image)
 
 void linear_decompress_spectral_image(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& normalized_moments_image,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
+    size_t n_pixels,
+    size_t n_moments,
+    std::vector<double>& spectral_image);
+
+
+void linavg_decompress_spectral_image(
     const std::vector<double>& wavelengths,
     const std::vector<double>& normalized_moments_image,
     const std::vector<double>& mins,

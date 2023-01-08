@@ -83,6 +83,15 @@ double linear_compute_quantization_curve(
     std::vector<int>& quantization_curve);
 
 
+double linavg_compute_quantization_curve(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    size_t n_px, size_t n_moments,
+    int n_bits_dc,
+    int n_bits_ac1,
+    std::vector<int>& quantization_curve);
+
+
 double unbounded_compute_quantization_curve(
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,
@@ -133,6 +142,16 @@ double twobounds_compute_quantization_curve(
 /*****************************************************************************/
 
 double linear_error_for_quantization_curve(
+    const std::vector<double>& wavelengths,
+    const std::vector<double>& spectral_image,
+    size_t n_px, size_t n_moments,
+    const std::vector<double>& normalized_moments,
+    const std::vector<double>& mins,
+    const std::vector<double>& maxs,
+    const std::vector<int>& quantization_curve);
+
+
+double linavg_error_for_quantization_curve(
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,
     size_t n_px, size_t n_moments,
