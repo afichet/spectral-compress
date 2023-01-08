@@ -585,7 +585,7 @@ void twobounds_compress_spectral_image(
 
 // All in one function
 template<typename T>
-void compress_image(
+void compress_spectral_image(
     SpectralCompressionType method,
     const std::vector<double>& wavelengths,
     const std::vector<double> spectral_image,

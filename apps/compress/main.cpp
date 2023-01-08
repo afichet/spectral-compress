@@ -166,7 +166,7 @@ void compress_spectral_framebuffer(
         compression_curve_timing
     );
 
-    compress_image(
+    compress_spectral_image(
         method,
         wavelengths, spectral_image,
         width, height, n_moments,
