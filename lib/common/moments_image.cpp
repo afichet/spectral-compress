@@ -445,6 +445,7 @@ void normalize_moment_image(
         for (size_t m = 1; m < n_moments; m++) {
             const double& min = mins[m - 1];
             const double& max = maxs[m - 1];
+            assert(min < max);
 
             dest[px * n_moments + m] = (src[px * n_moments + m] - min) / (max - min);
         }
@@ -489,6 +490,7 @@ void denormalize_moment_image(
         for (size_t m = 1; m < n_moments; m++) {
             const double& min = mins[m - 1];
             const double& max = maxs[m - 1];
+            assert(min < max);
 
             dest[px * n_moments + m] = (max - min) * src[px * n_moments + m] + min;
         }
