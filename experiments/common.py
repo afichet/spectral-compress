@@ -1,15 +1,22 @@
 #!/usr/bin/env python3
 
-import os, subprocess
+import os, subprocess, struct
 
 path_bin  = '/home/afichet/Repositories/spectral-compress/build/bin/'
+
+
+###############################################################################
+# Executable calls
+###############################################################################
 
 def run_compressor(
     input_file: str, output_file: str,
     log_file: str, binlog_file: str, dump_file: str,
     technique: str,
     n_bits_start: int, flat_quantization: bool,
-    compression_ac: float, compression_start_dc: float, flat_compression: bool):
+    compression_ac: float, compression_start_dc: float, flat_compression: bool,
+    downsampling_ratio_ac: int = 1,
+    effort: int = 7):
 
     fp, fn = os.path.split(output_file)
     os.makedirs(fp, exist_ok=True)
@@ -26,7 +33,8 @@ def run_compressor(
         '-q', str(n_bits_start),
         '-a', str(compression_ac),
         '-b', str(compression_start_dc),
-        '-e', str(7)
+        '-e', str(effort),
+        '-s', str(downsampling_ratio_ac)
         ]
 
     if flat_quantization:
@@ -38,7 +46,7 @@ def run_compressor(
     subprocess.run(args)
 
 
-def run_decompressor(input_file, output_file):
+def run_decompressor(input_file: str, output_file: str):
     if os.path.exists(output_file):
         return
 
@@ -54,7 +62,7 @@ def run_decompressor(input_file, output_file):
     ' '.join(args)
 
 
-def run_converter_exr_png(input_file, output_file, exposure):
+def run_converter_exr_png(input_file: str, output_file: str, exposure: float):
     if os.path.exists(output_file):
         return
 
@@ -69,7 +77,7 @@ def run_converter_exr_png(input_file, output_file, exposure):
     subprocess.run(args)
 
 
-def run_diff(file_a, file_b, max_err, output_file, diff_error_file):
+def run_diff(file_a: str, file_b: str, max_err: float, output_file: str, diff_error_file: str):
     if os.path.exists(output_file):
         return
 
@@ -85,19 +93,22 @@ def run_diff(file_a, file_b, max_err, output_file, diff_error_file):
 
     subprocess.run(args)
 
-    print(' '.join(args))
 
+###############################################################################
+# Get various paths for I/O
+###############################################################################
 
-def get_path_cave_in(folder, dataset_name):
+def get_path_cave_in(folder: str, dataset_name: str):
     return os.path.join(folder, dataset_name + '.exr')
 
 
 def get_path_cave_out(
-    start, dataset_name,
-    technique,
-    n_bits_start,
-    c_dc, c_ac,
-    flat_q, flat_c):
+    start: str, dataset_name: str,
+    technique: str,
+    n_bits_start: int,
+    c_dc: float, c_ac: float,
+    flat_q: bool, flat_c: bool):
+
     return os.path.join(
         start,
         dataset_name,
@@ -109,7 +120,7 @@ def get_path_cave_out(
     )
 
 
-def get_path_bonn_in(folder, dataset_name, type):
+def get_path_bonn_in(folder: str, dataset_name: str, type: str):
     return os.path.join(
         folder,
         dataset_name,
@@ -118,11 +129,12 @@ def get_path_bonn_in(folder, dataset_name, type):
 
 
 def get_path_bonn_out(
-    start, dataset_name, type,
-    technique,
-    n_bits_start,
-    c_dc, c_ac,
-    flat_q, flat_c):
+    start: str, dataset_name: str, type: str,
+    technique: str,
+    n_bits_start: int,
+    c_dc: float, c_ac: float,
+    flat_q: bool, flat_c: bool):
+
     return os.path.join(
         start,
         dataset_name,
@@ -139,9 +151,7 @@ def get_path_bonn_out(
 # Parse output files for report
 ###############################################################################
 
-import struct
-
-def get_err_from_bin_log(path):
+def get_err_from_bin_log(path: str):
     with open(path, 'rb') as f:
         data = f.read()
         # n = struct.unpack_from('i', data)
@@ -150,7 +160,7 @@ def get_err_from_bin_log(path):
         return err # RMSE
 
 
-def get_err_from_diff_bin(path):
+def get_err_from_diff_bin(path: str):
     with open(path, 'rb') as f:
         data = f.read()
         err = struct.unpack_from('d', data)
@@ -158,7 +168,7 @@ def get_err_from_diff_bin(path):
         return err[0]
 
 # Get quantization curve saved in the text log
-def get_q_curve_from_txt_log(path):
+def get_q_curve_from_txt_log(path: str):
     q_curve = []
     c_curve = []
     rmse = 0
@@ -172,7 +182,7 @@ def get_q_curve_from_txt_log(path):
 
 
 # Get compression curve saved in the text log
-def get_c_curve_from_txt_log(path):
+def get_c_curve_from_txt_log(path: str):
     c_curve = []
 
     with open(path, 'r') as f:
@@ -183,7 +193,7 @@ def get_c_curve_from_txt_log(path):
     return c_curve
 
 
-def get_jxl_dir_size(path):
+def get_jxl_dir_size(path: str):
     size = 0
 
     for f in os.listdir(path):

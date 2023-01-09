@@ -1,161 +1,157 @@
-% \newcommand{\matlbl}{Duchesse Print WirksatinTracy aniso medium gloss}
-% \newcommand{\material}{Duchesse_Print_WirksatinTracy_aniso_medium_gloss_}
-% \newcommand{\variant}{diffuse}
-
-% \section{\matlbl}
-% \subsection{\variant}
-
 \begin{tabularx}{\textwidth}{cX}
-    \raisebox{-0.5\height}{\frame{\includegraphics[height=3cm]{cave/\material/\material.png}}}
+    \raisebox{-0.5\height}{\frame{\includegraphics[height=3cm]{\exportdir/\material/\material.png}}}
     &
     \begin{tabular}{ll}
-        File size:&\input{cave/\material/\material_org_size.txt}\\
-        Spectrum type:&\input{cave/\material/\material_spectrum_type.txt}\\
-        Spectral bands:&\input{cave/\material/\material_n_bands.txt}\\
+        File size:&\input{\exportdir/\material/\material_org_size.txt}\\
+        Spectrum type:&\input{\exportdir/\material/\material_spectrum_type.txt}\\
+        Spectral bands:&\input{\exportdir/\material/\material_n_bands.txt}\\
     \end{tabular}\\
 \end{tabularx}
 
 \begin{figure}[h]
     \begin{subfigure}{.5\linewidth}
-        \resizebox*{\linewidth}{!}{\input{cave/\material/\material_error.pgf}}
+        \resizebox*{\linewidth}{!}{\input{\exportdir/\material/\material_error.pgf}}
     \end{subfigure}\hfill%
     \begin{subfigure}{.5\linewidth}
-        \resizebox*{\linewidth}{!}{\input{cave/\material/\material_ratio.pgf}}
+        \resizebox*{\linewidth}{!}{\input{\exportdir/\material/\material_ratio.pgf}}
     \end{subfigure}
     % \begin{subfigure}{.5\linewidth}
-    %     \resizebox*{\linewidth}{!}{\input{cave/balloons_ms_ratio.pgf}}
+    %     \resizebox*{\linewidth}{!}{\input{\exportdir/balloons_ms_ratio.pgf}}
     % \end{subfigure}\hfill%
     % \begin{subfigure}{.5\linewidth}
-    %     \resizebox*{\linewidth}{!}{\input{cave/balloons_ms_err_size.pgf}}
+    %     \resizebox*{\linewidth}{!}{\input{\exportdir/balloons_ms_err_size.pgf}}
     % \end{subfigure}
 \end{figure}
 
 \begin{figure}[h]
     \centering
-    \resizebox*{.5\linewidth}{!}{\input{cave/\material/\material_q_curve.pgf}}
+    \resizebox*{.5\linewidth}{!}{\input{\exportdir/\material/\material_q_curve.pgf}}
 \end{figure}
 
 \begin{figure}[h]
-    \resizebox*{\linewidth}{!}{\input{cave/\material/\material_c_curve.pgf}}
+    \resizebox*{\linewidth}{!}{\input{\exportdir/\material/\material_c_curve.pgf}}
 \end{figure}
 
-\begin{tabularx}{\linewidth}{X@{\hskip 0pt}c c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}}
+\begin{tabularx}{\linewidth}{X@{\hskip 0pt}c c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}}
     \toprule
-        && \multicolumn{5}{c}{\thead{flat quantization \& flat compression}}\\
+        && \multicolumn{6}{c}{\thead{flat quantization \& flat compression}}\\
     \midrule
-        && linear & unbounded & utb & upperbound & twobounds \\
+        && linear & linavg & unbounded & utb & upperbound & twobounds \\
     \midrule
-    \rotatebox[origin=c]{90}{RGB} &
-        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/linear/8/0/1/q_flat/c_flat/\material.png}}}
-        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/unbounded/8/0/1/q_flat/c_flat/\material.png}}}
-        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/unbounded_to_bounded/8/0/1/q_flat/c_flat/\material.png}}}
-        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/upperbound/8/0/1/q_flat/c_flat/\material.png}}}
-        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/twobounds/8/0/1/q_flat/c_flat/\material.png}}}
+        \rotatebox[origin=c]{90}{RGB} &
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/linear/8/0/1/q_flat/c_flat/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/linavg/8/0/1/q_flat/c_flat/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/unbounded/8/0/1/q_flat/c_flat/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/unbounded_to_bounded/8/0/1/q_flat/c_flat/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/upperbound/8/0/1/q_flat/c_flat/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/twobounds/8/0/1/q_flat/c_flat/\material.png}}}
     \\
-    \rotatebox[origin=c]{90}{diff} &
-    \bgroup\def\arraystretch{0.4}\begin{tabular}{c}
-        % \rotatebox[origin=c]{90}{diff} &
-        \tiny{$\input{cave/\material/\material_max_err.txt}$}\\
-        \frame{\includegraphics[angle=0,origin=c,height=.12\linewidth]{scale.png}}\\
-        \tiny{$0$}
-    \end{tabular}\egroup
-
-    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/linear/8/0/1/q_flat/c_flat/\material_diff.png}}}
-    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/unbounded/8/0/1/q_flat/c_flat/\material_diff.png}}}
-    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/unbounded_to_bounded/8/0/1/q_flat/c_flat/\material_diff.png}}}
-    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/upperbound/8/0/1/q_flat/c_flat/\material_diff.png}}}
-    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/twobounds/8/0/1/q_flat/c_flat/\material_diff.png}}}
+        \rotatebox[origin=c]{90}{diff} &
+        \bgroup\def\arraystretch{0.4}\begin{tabular}{c}
+            % \rotatebox[origin=c]{90}{diff} &
+            \tiny{$\input{\exportdir/\material/\material_max_err.txt}$}\\
+            \frame{\includegraphics[angle=0,origin=c,height=.12\linewidth]{scale.png}}\\
+            \tiny{$0$}
+        \end{tabular}\egroup
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/linear/8/0/1/q_flat/c_flat/\material_diff.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/linavg/8/0/1/q_flat/c_flat/\material_diff.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/unbounded/8/0/1/q_flat/c_flat/\material_diff.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/unbounded_to_bounded/8/0/1/q_flat/c_flat/\material_diff.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/upperbound/8/0/1/q_flat/c_flat/\material_diff.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/twobounds/8/0/1/q_flat/c_flat/\material_diff.png}}}
     \\
     \bottomrule
 \end{tabularx}
 
-\begin{tabularx}{\linewidth}{X@{\hskip 0pt}c c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}}
+\begin{tabularx}{\linewidth}{X@{\hskip 0pt}c c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}}
     \toprule
-        && \multicolumn{5}{c}{\thead{dynamic quantization \& flat compression}}\\
+        && \multicolumn{6}{c}{\thead{dynamic quantization \& flat compression}}\\
     \midrule
-        && linear & unbounded & utb & upperbound & twobounds \\
+        && linear & linavg & unbounded & utb & upperbound & twobounds \\
     \midrule
-    \rotatebox[origin=c]{90}{RGB} &
-        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/linear/8/0/1/q_dynamic/c_flat/\material.png}}}
-        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/unbounded/8/0/1/q_dynamic/c_flat/\material.png}}}
-        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/unbounded_to_bounded/8/0/1/q_dynamic/c_flat/\material.png}}}
-        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/upperbound/8/0/1/q_dynamic/c_flat/\material.png}}}
-        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/twobounds/8/0/1/q_dynamic/c_flat/\material.png}}}
+        \rotatebox[origin=c]{90}{RGB} &
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/linear/8/0/1/q_dynamic/c_flat/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/linavg/8/0/1/q_dynamic/c_flat/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/unbounded/8/0/1/q_dynamic/c_flat/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/unbounded_to_bounded/8/0/1/q_dynamic/c_flat/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/upperbound/8/0/1/q_dynamic/c_flat/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/twobounds/8/0/1/q_dynamic/c_flat/\material.png}}}
     \\
-    \rotatebox[origin=c]{90}{diff} &
-    \bgroup\def\arraystretch{0.4}\begin{tabular}{c}
-        % \rotatebox[origin=c]{90}{diff} &
-        \tiny{$\input{cave/\material/\material_max_err.txt}$}\\
-        \frame{\includegraphics[angle=0,origin=c,height=.12\linewidth]{scale.png}}\\
-        \tiny{$0$}
-    \end{tabular}\egroup
-
-    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/linear/8/0/1/q_dynamic/c_flat/\material_diff.png}}}
-    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/unbounded/8/0/1/q_dynamic/c_flat/\material_diff.png}}}
-    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/unbounded_to_bounded/8/0/1/q_dynamic/c_flat/\material_diff.png}}}
-    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/upperbound/8/0/1/q_dynamic/c_flat/\material_diff.png}}}
-    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/twobounds/8/0/1/q_dynamic/c_flat/\material_diff.png}}}
+        \rotatebox[origin=c]{90}{diff} &
+        \bgroup\def\arraystretch{0.4}\begin{tabular}{c}
+            % \rotatebox[origin=c]{90}{diff} &
+            \tiny{$\input{\exportdir/\material/\material_max_err.txt}$}\\
+            \frame{\includegraphics[angle=0,origin=c,height=.12\linewidth]{scale.png}}\\
+            \tiny{$0$}
+        \end{tabular}\egroup
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/linear/8/0/1/q_dynamic/c_flat/\material_diff.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/linavg/8/0/1/q_dynamic/c_flat/\material_diff.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/unbounded/8/0/1/q_dynamic/c_flat/\material_diff.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/unbounded_to_bounded/8/0/1/q_dynamic/c_flat/\material_diff.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/upperbound/8/0/1/q_dynamic/c_flat/\material_diff.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/twobounds/8/0/1/q_dynamic/c_flat/\material_diff.png}}}
     \\
     \bottomrule
 \end{tabularx}
 
-
-\begin{tabularx}{\linewidth}{X@{\hskip 0pt}c c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}}
+\begin{tabularx}{\linewidth}{X@{\hskip 0pt}c c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}}
     \toprule
-        && \multicolumn{5}{c}{\thead{flat quantization \& dynamic compression}}\\
+        && \multicolumn{6}{c}{\thead{flat quantization \& dynamic compression}}\\
     \midrule
-        && linear & unbounded & utb & upperbound & twobounds \\
+        && linear & linavg & unbounded & utb & upperbound & twobounds \\
     \midrule
     \rotatebox[origin=c]{90}{RGB} &
-        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/linear/8/0/1/q_flat/c_dynamic/\material.png}}}
-        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/unbounded/8/0/1/q_flat/c_dynamic/\material.png}}}
-        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/unbounded_to_bounded/8/0/1/q_flat/c_dynamic/\material.png}}}
-        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/upperbound/8/0/1/q_flat/c_dynamic/\material.png}}}
-        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/twobounds/8/0/1/q_flat/c_dynamic/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/linear/8/0/1/q_flat/c_dynamic/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/linavg/8/0/1/q_flat/c_dynamic/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/unbounded/8/0/1/q_flat/c_dynamic/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/unbounded_to_bounded/8/0/1/q_flat/c_dynamic/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/upperbound/8/0/1/q_flat/c_dynamic/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/twobounds/8/0/1/q_flat/c_dynamic/\material.png}}}
     \\
-    \rotatebox[origin=c]{90}{diff} &
-    \bgroup\def\arraystretch{0.4}\begin{tabular}{c}
-        % \rotatebox[origin=c]{90}{diff} &
-        \tiny{$\input{cave/\material/\material_max_err.txt}$}\\
-        \frame{\includegraphics[angle=0,origin=c,height=.12\linewidth]{scale.png}}\\
-        \tiny{$0$}
-    \end{tabular}\egroup
-
-    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/linear/8/0/1/q_flat/c_dynamic/\material_diff.png}}}
-    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/unbounded/8/0/1/q_flat/c_dynamic/\material_diff.png}}}
-    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/unbounded_to_bounded/8/0/1/q_flat/c_dynamic/\material_diff.png}}}
-    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/upperbound/8/0/1/q_flat/c_dynamic/\material_diff.png}}}
-    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/twobounds/8/0/1/q_flat/c_dynamic/\material_diff.png}}}
+        \rotatebox[origin=c]{90}{diff} &
+        \bgroup\def\arraystretch{0.4}\begin{tabular}{c}
+            % \rotatebox[origin=c]{90}{diff} &
+            \tiny{$\input{\exportdir/\material/\material_max_err.txt}$}\\
+            \frame{\includegraphics[angle=0,origin=c,height=.12\linewidth]{scale.png}}\\
+            \tiny{$0$}
+        \end{tabular}\egroup
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/linear/8/0/1/q_flat/c_dynamic/\material_diff.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/linavg/8/0/1/q_flat/c_dynamic/\material_diff.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/unbounded/8/0/1/q_flat/c_dynamic/\material_diff.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/unbounded_to_bounded/8/0/1/q_flat/c_dynamic/\material_diff.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/upperbound/8/0/1/q_flat/c_dynamic/\material_diff.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/twobounds/8/0/1/q_flat/c_dynamic/\material_diff.png}}}
     \\
     \bottomrule
 \end{tabularx}
 
-\begin{tabularx}{\linewidth}{X@{\hskip 0pt}c c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}}
+\begin{tabularx}{\linewidth}{X@{\hskip 0pt}c c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}}
     \toprule
-        && \multicolumn{5}{c}{\thead{dynamic quantization \& dynamic compression}}\\
+        && \multicolumn{6}{c}{\thead{dynamic quantization \& dynamic compression}}\\
     \midrule
-        && linear & unbounded & utb & upperbound & twobounds \\
+        && linear & linavg & unbounded & utb & upperbound & twobounds \\
     \midrule
     \rotatebox[origin=c]{90}{RGB} &
-        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/linear/8/0/1/q_dynamic/c_dynamic/\material.png}}}
-        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/unbounded/8/0/1/q_dynamic/c_dynamic/\material.png}}}
-        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/unbounded_to_bounded/8/0/1/q_dynamic/c_dynamic/\material.png}}}
-        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/upperbound/8/0/1/q_dynamic/c_dynamic/\material.png}}}
-        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/twobounds/8/0/1/q_dynamic/c_dynamic/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/linear/8/0/1/q_dynamic/c_dynamic/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/linavg/8/0/1/q_dynamic/c_dynamic/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/unbounded/8/0/1/q_dynamic/c_dynamic/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/unbounded_to_bounded/8/0/1/q_dynamic/c_dynamic/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/upperbound/8/0/1/q_dynamic/c_dynamic/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/twobounds/8/0/1/q_dynamic/c_dynamic/\material.png}}}
     \\
-    \rotatebox[origin=c]{90}{diff} &
-    \bgroup\def\arraystretch{0.4}\begin{tabular}{c}
-        % \rotatebox[origin=c]{90}{diff} &
-        \tiny{$\input{cave/\material/\material_max_err.txt}$}\\
-        \frame{\includegraphics[angle=0,origin=c,height=.12\linewidth]{scale.png}}\\
-        \tiny{$0$}
-    \end{tabular}\egroup
-
-    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/linear/8/0/1/q_dynamic/c_dynamic/\material_diff.png}}}
-    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/unbounded/8/0/1/q_dynamic/c_dynamic/\material_diff.png}}}
-    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/unbounded_to_bounded/8/0/1/q_dynamic/c_dynamic/\material_diff.png}}}
-    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/upperbound/8/0/1/q_dynamic/c_dynamic/\material_diff.png}}}
-    & \raisebox{-0.5\height}{\frame{\includegraphics[width=.17\linewidth]{cave/\material/twobounds/8/0/1/q_dynamic/c_dynamic/\material_diff.png}}}
+        \rotatebox[origin=c]{90}{diff} &
+        \bgroup\def\arraystretch{0.4}\begin{tabular}{c}
+            % \rotatebox[origin=c]{90}{diff} &
+            \tiny{$\input{\exportdir/\material/\material_max_err.txt}$}\\
+            \frame{\includegraphics[angle=0,origin=c,height=.12\linewidth]{scale.png}}\\
+            \tiny{$0$}
+        \end{tabular}\egroup
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/linear/8/0/1/q_dynamic/c_dynamic/\material_diff.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/linavg/8/0/1/q_dynamic/c_dynamic/\material_diff.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/unbounded/8/0/1/q_dynamic/c_dynamic/\material_diff.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/unbounded_to_bounded/8/0/1/q_dynamic/c_dynamic/\material_diff.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/upperbound/8/0/1/q_dynamic/c_dynamic/\material_diff.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.12\linewidth]{\exportdir/\material/twobounds/8/0/1/q_dynamic/c_dynamic/\material_diff.png}}}
     \\
     \bottomrule
 \end{tabularx}
@@ -164,7 +160,7 @@
 % \section{Balloons}
 
 % \begin{tabularx}{\textwidth}{cX}
-%     \raisebox{-0.5\height}{\includegraphics[height=3cm]{cave/balloons_ms.png}}
+%     \raisebox{-0.5\height}{\includegraphics[height=3cm]{\exportdir/balloons_ms.png}}
 %     &
 %     \begin{tabular}{l}
 %         File size: 6 MiB\\
@@ -174,16 +170,16 @@
 
 % \begin{figure}[h]
 %     \begin{subfigure}{.5\linewidth}
-%         \resizebox*{\linewidth}{!}{\input{cave/balloons_ms_err_q.pgf}}
+%         \resizebox*{\linewidth}{!}{\input{\exportdir/balloons_ms_err_q.pgf}}
 %     \end{subfigure}\hfill%
 %     \begin{subfigure}{.5\linewidth}
-%         \resizebox*{\linewidth}{!}{\input{cave/balloons_ms_err_c.pgf}}
+%         \resizebox*{\linewidth}{!}{\input{\exportdir/balloons_ms_err_c.pgf}}
 %     \end{subfigure}
 %     \begin{subfigure}{.5\linewidth}
-%         \resizebox*{\linewidth}{!}{\input{cave/balloons_ms_ratio.pgf}}
+%         \resizebox*{\linewidth}{!}{\input{\exportdir/balloons_ms_ratio.pgf}}
 %     \end{subfigure}\hfill%
 %     \begin{subfigure}{.5\linewidth}
-%         \resizebox*{\linewidth}{!}{\input{cave/balloons_ms_err_size.pgf}}
+%         \resizebox*{\linewidth}{!}{\input{\exportdir/balloons_ms_err_size.pgf}}
 %     \end{subfigure}
 % \end{figure}
 % \clearpage
@@ -196,18 +192,18 @@
 %         & linear & unbounded & utb & upperbound & twobounds \\
 %     \cline{1-6}
 %     \rotatebox[origin=c]{90}{RGB}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/linear/6/dynamic/balloons_ms.png}}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/unbounded/6/dynamic/balloons_ms.png}}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/unbounded_to_bounded/6/dynamic/balloons_ms.png}}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/upperbound/6/dynamic/balloons_ms.png}}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/twobounds/6/dynamic/balloons_ms.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/linear/6/dynamic/balloons_ms.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/unbounded/6/dynamic/balloons_ms.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/unbounded_to_bounded/6/dynamic/balloons_ms.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/upperbound/6/dynamic/balloons_ms.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/twobounds/6/dynamic/balloons_ms.png}}
 %     \\
 %     \rotatebox[origin=c]{90}{diff}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/linear/6/dynamic/balloons_ms_diff.png}}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/unbounded/6/dynamic/balloons_ms_diff.png}}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/unbounded_to_bounded/6/dynamic/balloons_ms_diff.png}}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/upperbound/6/dynamic/balloons_ms_diff.png}}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/twobounds/6/dynamic/balloons_ms_diff.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/linear/6/dynamic/balloons_ms_diff.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/unbounded/6/dynamic/balloons_ms_diff.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/unbounded_to_bounded/6/dynamic/balloons_ms_diff.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/upperbound/6/dynamic/balloons_ms_diff.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/twobounds/6/dynamic/balloons_ms_diff.png}}
 % \end{tabularx}
 
 % \begin{tabularx}{\linewidth}{l c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}}
@@ -217,18 +213,18 @@
 %         & linear & unbounded & utb & upperbound & twobounds \\
 %     \cline{1-6}
 %     \rotatebox[origin=c]{90}{RGB}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/linear/8/dynamic/balloons_ms.png}}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/unbounded/8/dynamic/balloons_ms.png}}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/unbounded_to_bounded/8/dynamic/balloons_ms.png}}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/upperbound/8/dynamic/balloons_ms.png}}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/twobounds/8/dynamic/balloons_ms.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/linear/8/dynamic/balloons_ms.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/unbounded/8/dynamic/balloons_ms.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/unbounded_to_bounded/8/dynamic/balloons_ms.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/upperbound/8/dynamic/balloons_ms.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/twobounds/8/dynamic/balloons_ms.png}}
 %     \\
 %     \rotatebox[origin=c]{90}{diff}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/linear/8/dynamic/balloons_ms_diff.png}}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/unbounded/8/dynamic/balloons_ms_diff.png}}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/unbounded_to_bounded/8/dynamic/balloons_ms_diff.png}}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/upperbound/8/dynamic/balloons_ms_diff.png}}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/twobounds/8/dynamic/balloons_ms_diff.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/linear/8/dynamic/balloons_ms_diff.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/unbounded/8/dynamic/balloons_ms_diff.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/unbounded_to_bounded/8/dynamic/balloons_ms_diff.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/upperbound/8/dynamic/balloons_ms_diff.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/twobounds/8/dynamic/balloons_ms_diff.png}}
 % \end{tabularx}
 
 % \begin{tabularx}{\linewidth}{l c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}}
@@ -238,18 +234,18 @@
 %         & linear & unbounded & utb & upperbound & twobounds \\
 %     \cline{1-6}
 %     \rotatebox[origin=c]{90}{RGB}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/linear/10/dynamic/balloons_ms.png}}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/unbounded/10/dynamic/balloons_ms.png}}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/unbounded_to_bounded/10/dynamic/balloons_ms.png}}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/upperbound/10/dynamic/balloons_ms.png}}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/twobounds/10/dynamic/balloons_ms.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/linear/10/dynamic/balloons_ms.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/unbounded/10/dynamic/balloons_ms.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/unbounded_to_bounded/10/dynamic/balloons_ms.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/upperbound/10/dynamic/balloons_ms.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/twobounds/10/dynamic/balloons_ms.png}}
 %     \\
 %     \rotatebox[origin=c]{90}{diff}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/linear/10/dynamic/balloons_ms_diff.png}}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/unbounded/10/dynamic/balloons_ms_diff.png}}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/unbounded_to_bounded/10/dynamic/balloons_ms_diff.png}}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/upperbound/10/dynamic/balloons_ms_diff.png}}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/twobounds/10/dynamic/balloons_ms_diff.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/linear/10/dynamic/balloons_ms_diff.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/unbounded/10/dynamic/balloons_ms_diff.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/unbounded_to_bounded/10/dynamic/balloons_ms_diff.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/upperbound/10/dynamic/balloons_ms_diff.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/twobounds/10/dynamic/balloons_ms_diff.png}}
 % \end{tabularx}
 
 % \begin{tabularx}{\linewidth}{l c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}}
@@ -259,16 +255,16 @@
 %         & linear & unbounded & utb & upperbound & twobounds \\
 %     \cline{1-6}
 %     \rotatebox[origin=c]{90}{RGB}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/linear/12/dynamic/balloons_ms.png}}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/unbounded/12/dynamic/balloons_ms.png}}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/unbounded_to_bounded/12/dynamic/balloons_ms.png}}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/upperbound/12/dynamic/balloons_ms.png}}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/twobounds/12/dynamic/balloons_ms.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/linear/12/dynamic/balloons_ms.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/unbounded/12/dynamic/balloons_ms.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/unbounded_to_bounded/12/dynamic/balloons_ms.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/upperbound/12/dynamic/balloons_ms.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/twobounds/12/dynamic/balloons_ms.png}}
 %     \\
 %     \rotatebox[origin=c]{90}{diff}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/linear/12/dynamic/balloons_ms_diff.png}}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/unbounded/12/dynamic/balloons_ms_diff.png}}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/unbounded_to_bounded/12/dynamic/balloons_ms_diff.png}}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/upperbound/12/dynamic/balloons_ms_diff.png}}
-%         & \raisebox{-0.5\height}{\includegraphics[width=.17\linewidth]{cave/balloons_ms/twobounds/12/dynamic/balloons_ms_diff.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/linear/12/dynamic/balloons_ms_diff.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/unbounded/12/dynamic/balloons_ms_diff.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/unbounded_to_bounded/12/dynamic/balloons_ms_diff.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/upperbound/12/dynamic/balloons_ms_diff.png}}
+%         & \raisebox{-0.5\height}{\includegraphics[width=.12\linewidth]{\exportdir/balloons_ms/twobounds/12/dynamic/balloons_ms_diff.png}}
 % \end{tabularx}

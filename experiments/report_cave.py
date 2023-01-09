@@ -8,17 +8,17 @@ import matplotlib
 import matplotlib.pyplot as plt
 import openexr.spectralexr as sexr
 
-path_data = '/home/afichet/spectral_images/EXRs/CAVE/'
-path_bin  = '/home/afichet/Repositories/spectral-compress/build/bin/compress'
-path_out  = 'cave'
+path_data   = '/home/afichet/spectral_images/EXRs/CAVE/'
+path_bin    = '/home/afichet/Repositories/spectral-compress/build/bin/compress'
+path_out    = 'cave'
+path_report = 'cave'
 
-techniques = ['linear', 'unbounded', 'unbounded_to_bounded', 'upperbound', 'twobounds']
-start_bits = [8]
-flat_compression = [True, False]
+techniques        = ['linear', 'linavg', 'unbounded', 'unbounded_to_bounded', 'upperbound', 'twobounds']
+start_bits        = [8]
 flat_quantization = [True, False]
-
-c_dc = 0
-c_ac = 1
+flat_compression  = [True, False]
+c_dc              = 0
+c_ac              = 1
 
 exposure_cave = -6.5
 
@@ -40,12 +40,12 @@ if (save_tex):
     })
 
 
-def get_tex_stream(dataset):
+def get_tex_stream(path_report, dataset):
     with open(os.path.join('export', 'mat_template_cave.tex'), 'r') as f:
         stream = ''.join(f.readlines())
 
+        stream = stream.replace('\\exportdir', path_report)
         stream = stream.replace('\\material', dataset)
-        stream = stream.replace('\\variant', '')
 
         return stream
 
@@ -213,15 +213,14 @@ def plot_c_curves(output_filename, stats, techniques, n_bits):
 def main():
     stats = {}
 
-    prefix_cave = 'cave'
-    path_export = os.path.join('export', prefix_cave)
+    path_export = os.path.join('export', path_report)
 
     n_data = 0
     tex_stream = ''
 
     for d in db:
         stats[d] = {}
-        tex_stream += '\n\\section{' + d.replace('_', ' ') + '}\n'
+        tex_stream += '\n\\subsubsection{' + d.replace('_', ' ') + '}\n'
 
         org_exr_file = common.get_path_cave_in(path_data, d)
         org_png_file = os.path.join(path_export, d, d + '.png')
@@ -230,8 +229,12 @@ def main():
 
         common.run_converter_exr_png(org_exr_file, org_png_file, exposure_cave)
 
+        print(d)
+
         for tech in techniques:
             stats[d][tech] = {}
+
+            print(' ', tech)
 
             for bits in start_bits:
                 stats[d][tech][bits] = {}
@@ -271,7 +274,6 @@ def main():
                         diff_png_file         = os.path.join(path_curr_out, d + '_diff.png')
                         diff_error_file       = os.path.join(path_curr_out, d + '_err.bin')
 
-                        print(compressed_file)
                         common.run_decompressor(compressed_file, decompressed_exr_file)
                         common.run_converter_exr_png(decompressed_exr_file, decompressed_png_file, exposure_cave)
                         common.run_diff(org_exr_file, decompressed_exr_file, curr_max_err, diff_png_file, diff_error_file)
@@ -319,7 +321,7 @@ def main():
         # both emissive and reflective channels
         if org_exr_image.is_emissive:
             spectrum_type = 'Emissive '
-            n_bands = len(org_exr_image.emissive_wavelengths_nm)
+            n_bands = len(org_exr_image.emissive_wavelengths_nm[0])
         if org_exr_image.is_reflective:
             spectrum_type += 'Reflective'
             n_bands += len(org_exr_image.reflective_wavelengths_nm)
@@ -337,7 +339,7 @@ def main():
             f.write(string_err)
 
         # Populate LaTeX stream
-        tex_stream += get_tex_stream(d)
+        tex_stream += get_tex_stream(path_report, d)
         tex_stream += '\n\\clearpage\n'
 
     plot_avg_curve_error_file = os.path.join(path_export, 'avg_error.pgf')
@@ -351,7 +353,7 @@ def main():
     plot_q_curves(plot_avg_q_curve_file, avg_stats, techniques, 8)
     plot_c_curves(plot_avg_c_curve_file, avg_stats, techniques, 8)
 
-    with open(os.path.join('export', 'cave.tex'), 'w') as f:
+    with open(os.path.join('export', path_report + '.tex'), 'w') as f:
         f.write(tex_stream)
 
 

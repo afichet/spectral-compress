@@ -8,17 +8,17 @@ import matplotlib
 import matplotlib.pyplot as plt
 import openexr.spectralexr as sexr
 
-path_data = '/home/afichet/spectral_images/EXRs/Bonn/'
-path_bin  = '/home/afichet/Repositories/spectral-compress/build/bin/compress'
-path_out  = 'bonn'
+path_data   = '/home/afichet/spectral_images/EXRs/Bonn/'
+path_bin    = '/home/afichet/Repositories/spectral-compress/build/bin/compress'
+path_out    = 'bonn_2'
+path_report = 'bonn_2'
 
-techniques = ['linear', 'unbounded', 'unbounded_to_bounded', 'upperbound', 'twobounds']
-start_bits = [8]
-flat_compression = [True, False]
+techniques        = ['linear', 'linavg', 'unbounded', 'unbounded_to_bounded', 'upperbound', 'twobounds']
+start_bits        = [8]
+flat_compression  = [True, False]
 flat_quantization = [True, False]
-
-c_dc = 0
-c_ac = 1
+c_dc              = 0
+c_ac              = 1
 
 exposure_bonn = 0
 
@@ -38,10 +38,11 @@ if (save_tex):
     })
 
 
-def get_tex_stream(dataset, variant):
+def get_tex_stream(path_report: str, dataset: str, variant: str):
     with open(os.path.join('export', 'mat_template_bonn.tex'), 'r') as f:
         stream = ''.join(f.readlines())
 
+        stream = stream.replace('\\exportdir', path_report)
         stream = stream.replace('\\material', dataset)
         stream = stream.replace('\\variant', variant)
 
@@ -219,21 +220,22 @@ def plot_c_curves(output_filename, stats, techniques, n_bits):
 def main():
     stats = {}
 
-    prefix_bonn = 'bonn'
-    path_export = os.path.join('export', prefix_bonn)
+    path_export = os.path.join('export', path_report)
 
     tex_stream = ''
 
     for d in db:
         stats[d] = {}
-        tex_stream += '\n\\section{' + d.replace('_', ' ') + '}\n'
+        tex_stream += '\n\\subsubsection{' + d.replace('_', ' ') + '}\n'
+
+        print(d)
 
         for type in variants:
             # TODO: remove, one material fails the conversion
             if type == 'diffuse' and d == 'Brokat_Sorbonne_pink_aniso_high_gloss_':
                 continue
             stats[d][type] = {}
-            tex_stream += '\n\\subsection{' + type + '}\n'
+            tex_stream += '\n\\paragraph{' + type + '}\n'
 
             org_exr_file = common.get_path_bonn_in(path_data, d, type)
             org_png_file = os.path.join(path_export, d, type, d + '.png')
@@ -242,8 +244,12 @@ def main():
 
             common.run_converter_exr_png(org_exr_file, org_png_file, exposure_bonn)
 
+            print(' ', type)
+
             for tech in techniques:
                 stats[d][type][tech] = {}
+
+                print('  ', tech)
 
                 for bits in start_bits:
                     stats[d][type][tech][bits] = {}
@@ -271,7 +277,7 @@ def main():
                                 bits,
                                 c_dc, c_ac,
                                 q_flat, c_flat)
-                            # print(path_curr_out)
+
                             # Inputs
                             # FIXME: wrong name when writing the original files
                             # d[:-4] shall be replaced by d
@@ -351,7 +357,7 @@ def main():
                 f.write(string_err)
 
             # Populate LaTeX stream
-            tex_stream += get_tex_stream(d, type)
+            tex_stream += get_tex_stream(path_report, d, type)
             tex_stream += '\n\\clearpage\n'
 
     plot_avg_curve_error_file = os.path.join(path_export, 'avg_error.pgf')
@@ -365,7 +371,7 @@ def main():
     plot_q_curves(plot_avg_q_curve_file, avg_stats, techniques, 8)
     plot_c_curves(plot_avg_c_curve_file, avg_stats, techniques, 8)
 
-    with open(os.path.join('export', 'bonn.tex'), 'w') as f:
+    with open(os.path.join('export', path_report + '.tex'), 'w') as f:
         f.write(tex_stream)
 
 
