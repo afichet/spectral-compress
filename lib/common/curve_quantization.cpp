@@ -41,12 +41,14 @@
 #include <cassert>
 #include <chrono>
 
+#include <iostream>
+
 
 void quantize_dequantize_single_image(
     const std::vector<double>& input_image,
     std::vector<double>& output_image,
     size_t n_pixels, size_t n_moments,
-    size_t i, size_t n_bits)
+    size_t i, int n_bits)
 {
     assert(input_image.size() == n_pixels * n_moments);
     assert(i < n_moments);
@@ -66,24 +68,46 @@ void quantize_dequantize_image(
     const std::vector<double>& input_image,
     std::vector<double>& output_image,
     size_t n_pixels, size_t n_moments,
-    const std::vector<int>& quantization_curve)
+    const std::vector<std::pair<int, int>>& quantization_curve)
 {
     assert(input_image.size() == n_pixels * n_moments);
     assert(quantization_curve.size() >= n_moments);
 
     output_image.resize(input_image.size());
 
-    #pragma omp parallel for
-    for (size_t px = 0; px < n_pixels; px++) {
-        // We ignore moment 0
-        output_image[px * n_moments + 0] = input_image[px * n_moments + 0];
+    // #pragma omp parallel for
+    // for (size_t px = 0; px < n_pixels; px++) {
+    //     // We ignore moment 0
+    //     output_image[px * n_moments + 0] = input_image[px * n_moments + 0];
 
-        for (size_t m = 1; m < n_moments; m++) {
-            output_image[px * n_moments + m] =
-                Util::quantize_dequantize(
-                    input_image[px * n_moments + m],
-                    quantization_curve[m]
-                );
+    //     for (size_t m = 1; m < n_moments; m++) {
+    //         if (quantization_curve[m].second != 0) {
+    //             std::cerr << "Cannot run this function with floating point quantization" << std::endl;
+    //         }
+
+    //         output_image[px * n_moments + m] =
+    //             Util::quantize_dequantize(
+    //                 input_image[px * n_moments + m],
+    //                 quantization_curve[m].first
+    //             );
+    //     }
+    // }
+
+    #pragma omp parallel for
+    for (size_t m = 0; m < n_moments; m++) {
+        if (quantization_curve[m].second != 0) {
+            // We skip when using floating points
+            for (size_t px = 0; px < n_pixels; px++) {
+                output_image[px * n_moments + m] = input_image[px * n_moments + m];
+            }
+        } else {
+            for (size_t px = 0; px < n_pixels; px++) {
+                output_image[px * n_moments + m] =
+                    Util::quantize_dequantize(
+                        input_image[px * n_moments + m],
+                        quantization_curve[m].first
+                    );
+            }
         }
     }
 }
@@ -98,12 +122,19 @@ void compute_quantization_curve(
     const std::vector<double>& spectral_image,
     uint32_t width, uint32_t height,
     size_t n_moments,
-    int n_bits_dc,
-    int n_bits_ac1,
+    std::pair<int, int> n_bits_dc,
+    std::pair<int, int> n_bits_ac1,
     bool uses_constant_quantization,
-    std::vector<int>& quantization_curve,
+    std::vector<std::pair<int, int>>& quantization_curve,
+    bool normalize_moments,
     double& timing)
 {
+    if (n_bits_ac1.second != 0 && !uses_constant_quantization) {
+        std::cerr << "Cannot compute a quantization curve with floating point quantization" << std::endl;
+        std::cerr << "Using a flat quantization curve instead" << std::endl;
+        uses_constant_quantization = true;
+    }
+
     if (uses_constant_quantization) {
         quantization_curve.resize(n_moments);
         quantization_curve[0] = n_bits_dc;
@@ -121,7 +152,8 @@ void compute_quantization_curve(
                     wavelengths, spectral_image,
                     width * height, n_moments,
                     n_bits_dc, n_bits_ac1,
-                    quantization_curve
+                    quantization_curve,
+                    normalize_moments
                 );
                 break;
             case LINAVG:
@@ -129,7 +161,8 @@ void compute_quantization_curve(
                     wavelengths, spectral_image,
                     width * height, n_moments,
                     n_bits_dc, n_bits_ac1,
-                    quantization_curve
+                    quantization_curve,
+                    normalize_moments
                 );
                 break;
             case BOUNDED:
@@ -137,7 +170,8 @@ void compute_quantization_curve(
                     wavelengths, spectral_image,
                     width * height, n_moments,
                     n_bits_dc, n_bits_ac1,
-                    quantization_curve
+                    quantization_curve,
+                    normalize_moments
                 );
                 break;
             case UNBOUNDED:
@@ -145,7 +179,8 @@ void compute_quantization_curve(
                     wavelengths, spectral_image,
                     width * height, n_moments,
                     n_bits_dc, n_bits_ac1,
-                    quantization_curve
+                    quantization_curve,
+                    normalize_moments
                 );
                 break;
             case UNBOUNDED_TO_BOUNDED:
@@ -153,7 +188,8 @@ void compute_quantization_curve(
                     wavelengths, spectral_image,
                     width * height, n_moments,
                     n_bits_dc, n_bits_ac1,
-                    quantization_curve
+                    quantization_curve,
+                    normalize_moments
                 );
                 break;
             case UPPERBOUND:
@@ -161,7 +197,8 @@ void compute_quantization_curve(
                     wavelengths, spectral_image,
                     width * height, n_moments,
                     n_bits_dc, n_bits_ac1,
-                    quantization_curve
+                    quantization_curve,
+                    normalize_moments
                 );
                 break;
             case TWOBOUNDS:
@@ -169,7 +206,8 @@ void compute_quantization_curve(
                     wavelengths, spectral_image,
                     width * height, n_moments,
                     n_bits_dc, n_bits_ac1,
-                    quantization_curve
+                    quantization_curve,
+                    normalize_moments
                 );
                 break;
         }
@@ -186,18 +224,24 @@ double linear_compute_quantization_curve(
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,
     size_t n_px, size_t n_moments,
-    int n_bits_dc,
-    int n_bits_ac1,
-    std::vector<int>& quantization_curve)
+    std::pair<int, int> n_bits_dc,
+    std::pair<int, int> n_bits_ac1,
+    std::vector<std::pair<int, int>>& quantization_curve,
+    bool normalize_moments)
 {
     std::vector<double> norm_moments;
     std::vector<double> mins, maxs;
+
+    if (n_bits_ac1.second != 0) {
+        std::cerr << "Cannot run this function with floating point quantization" << std::endl;
+    }
 
     linear_compress_spectral_image(
         wavelengths, spectral_image,
         n_px, n_moments,
         norm_moments,
-        mins, maxs
+        mins, maxs,
+        normalize_moments
     );
 
     quantization_curve.resize(n_moments);
@@ -211,7 +255,7 @@ double linear_compute_quantization_curve(
         norm_moments,
         quantized_moments,
         n_px, n_moments,
-        1, quantization_curve[1]
+        1, quantization_curve[1].first
     );
 
     const double base_err = linear_average_err(
@@ -225,7 +269,7 @@ double linear_compute_quantization_curve(
     for (size_t m = 2; m < n_moments; m++) {
         quantization_curve[m] = quantization_curve[m - 1];
 
-        for (size_t n_bits = quantization_curve[m] - 1; n_bits > 0; n_bits--) {
+        for (size_t n_bits = quantization_curve[m].first - 1; n_bits > 0; n_bits--) {
             quantize_dequantize_single_image(
                 norm_moments,
                 quantized_moments,
@@ -245,7 +289,7 @@ double linear_compute_quantization_curve(
                 break;
             }
 
-            quantization_curve[m] = n_bits;
+            quantization_curve[m] = std::make_pair(n_bits, 0);
         }
     }
 
@@ -264,18 +308,24 @@ double linavg_compute_quantization_curve(
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,
     size_t n_px, size_t n_moments,
-    int n_bits_dc,
-    int n_bits_ac1,
-    std::vector<int>& quantization_curve)
+    std::pair<int, int> n_bits_dc,
+    std::pair<int, int> n_bits_ac1,
+    std::vector<std::pair<int, int>>& quantization_curve,
+    bool normalize_moments)
 {
     std::vector<double> norm_moments;
     std::vector<double> mins, maxs;
+
+    if (n_bits_ac1.second != 0) {
+        std::cerr << "Cannot run this function with floating point quantization" << std::endl;
+    }
 
     linavg_compress_spectral_image(
         wavelengths, spectral_image,
         n_px, n_moments,
         norm_moments,
-        mins, maxs
+        mins, maxs,
+        normalize_moments
     );
 
     quantization_curve.resize(n_moments);
@@ -289,7 +339,7 @@ double linavg_compute_quantization_curve(
         norm_moments,
         quantized_moments,
         n_px, n_moments,
-        1, quantization_curve[1]
+        1, quantization_curve[1].first
     );
 
     const double base_err = linavg_average_err(
@@ -303,7 +353,7 @@ double linavg_compute_quantization_curve(
     for (size_t m = 2; m < n_moments; m++) {
         quantization_curve[m] = quantization_curve[m - 1];
 
-        for (size_t n_bits = quantization_curve[m] - 1; n_bits > 0; n_bits--) {
+        for (size_t n_bits = quantization_curve[m].first - 1; n_bits > 0; n_bits--) {
             quantize_dequantize_single_image(
                 norm_moments,
                 quantized_moments,
@@ -323,7 +373,7 @@ double linavg_compute_quantization_curve(
                 break;
             }
 
-            quantization_curve[m] = n_bits;
+            quantization_curve[m] = std::make_pair(n_bits, 0);
         }
     }
 
@@ -342,18 +392,24 @@ double unbounded_compute_quantization_curve(
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,
     size_t n_px, size_t n_moments,
-    int n_bits_dc,
-    int n_bits_ac1,
-    std::vector<int>& quantization_curve)
+    std::pair<int, int> n_bits_dc,
+    std::pair<int, int> n_bits_ac1,
+    std::vector<std::pair<int, int>>& quantization_curve,
+    bool normalize_moments)
 {
     std::vector<double> norm_moments;
     std::vector<double> mins, maxs;
+
+    if (n_bits_ac1.second != 0) {
+        std::cerr << "Cannot run this function with floating point quantization" << std::endl;
+    }
 
     unbounded_compress_spectral_image(
         wavelengths, spectral_image,
         n_px, n_moments,
         norm_moments,
-        mins, maxs
+        mins, maxs,
+        normalize_moments
     );
 
     quantization_curve.resize(n_moments);
@@ -367,7 +423,7 @@ double unbounded_compute_quantization_curve(
         norm_moments,
         quantized_moments,
         n_px, n_moments,
-        1, quantization_curve[1]
+        1, quantization_curve[1].first
     );
 
     const double base_err = unbounded_average_err(
@@ -381,7 +437,7 @@ double unbounded_compute_quantization_curve(
     for (size_t m = 2; m < n_moments; m++) {
         quantization_curve[m] = quantization_curve[m - 1];
 
-        for (size_t n_bits = quantization_curve[m] - 1; n_bits > 0; n_bits--) {
+        for (size_t n_bits = quantization_curve[m].first - 1; n_bits > 0; n_bits--) {
             quantize_dequantize_single_image(
                 norm_moments,
                 quantized_moments,
@@ -401,7 +457,7 @@ double unbounded_compute_quantization_curve(
                 break;
             }
 
-            quantization_curve[m] = n_bits;
+            quantization_curve[m] = std::make_pair(n_bits, 0);
         }
     }
 
@@ -420,18 +476,24 @@ double bounded_compute_quantization_curve(
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,
     size_t n_px, size_t n_moments,
-    int n_bits_dc,
-    int n_bits_ac1,
-    std::vector<int>& quantization_curve)
+    std::pair<int, int> n_bits_dc,
+    std::pair<int, int> n_bits_ac1,
+    std::vector<std::pair<int, int>>& quantization_curve,
+    bool normalize_moments)
 {
     std::vector<double> norm_moments;
     std::vector<double> mins, maxs;
+
+    if (n_bits_ac1.second != 0) {
+        std::cerr << "Cannot run this function with floating point quantization" << std::endl;
+    }
 
     bounded_compress_spectral_image(
         wavelengths, spectral_image,
         n_px, n_moments,
         norm_moments,
-        mins, maxs
+        mins, maxs,
+        normalize_moments
     );
 
     quantization_curve.resize(n_moments);
@@ -445,7 +507,7 @@ double bounded_compute_quantization_curve(
         norm_moments,
         quantized_moments,
         n_px, n_moments,
-        1, quantization_curve[1]
+        1, quantization_curve[1].first
     );
 
     const double base_err = bounded_average_err(
@@ -459,7 +521,7 @@ double bounded_compute_quantization_curve(
     for (size_t m = 2; m < n_moments; m++) {
         quantization_curve[m] = quantization_curve[m - 1];
 
-        for (size_t n_bits = quantization_curve[m] - 1; n_bits > 0; n_bits--) {
+        for (size_t n_bits = quantization_curve[m].first - 1; n_bits > 0; n_bits--) {
             quantize_dequantize_single_image(
                 norm_moments,
                 quantized_moments,
@@ -480,7 +542,7 @@ double bounded_compute_quantization_curve(
                 break;
             }
 
-            quantization_curve[m] = n_bits;
+            quantization_curve[m] = std::make_pair(n_bits, 0);
         }
     }
 
@@ -500,18 +562,24 @@ double unbounded_to_bounded_compute_quantization_curve(
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,
     size_t n_px, size_t n_moments,
-    int n_bits_dc,
-    int n_bits_ac1,
-    std::vector<int>& quantization_curve)
+    std::pair<int, int> n_bits_dc,
+    std::pair<int, int> n_bits_ac1,
+    std::vector<std::pair<int, int>>& quantization_curve,
+    bool normalize_moments)
 {
     std::vector<double> norm_moments;
     std::vector<double> mins, maxs;
+
+    if (n_bits_ac1.second != 0) {
+        std::cerr << "Cannot run this function with floating point quantization" << std::endl;
+    }
 
     unbounded_to_bounded_compress_spectral_image(
         wavelengths, spectral_image,
         n_px, n_moments,
         norm_moments,
-        mins, maxs
+        mins, maxs,
+        normalize_moments
     );
 
     quantization_curve.resize(n_moments);
@@ -525,7 +593,7 @@ double unbounded_to_bounded_compute_quantization_curve(
         norm_moments,
         quantized_moments,
         n_px, n_moments,
-        1, quantization_curve[1]
+        1, quantization_curve[1].first
     );
 
     const double base_err = unbounded_to_bounded_average_err(
@@ -539,7 +607,7 @@ double unbounded_to_bounded_compute_quantization_curve(
     for (size_t m = 2; m < n_moments; m++) {
         quantization_curve[m] = quantization_curve[m - 1];
 
-        for (size_t n_bits = quantization_curve[m] - 1; n_bits > 0; n_bits--) {
+        for (size_t n_bits = quantization_curve[m].first - 1; n_bits > 0; n_bits--) {
             quantize_dequantize_single_image(
                 norm_moments,
                 quantized_moments,
@@ -559,7 +627,7 @@ double unbounded_to_bounded_compute_quantization_curve(
                 break;
             }
 
-            quantization_curve[m] = n_bits;
+            quantization_curve[m] = std::make_pair(n_bits, 0);
         }
     }
 
@@ -579,14 +647,19 @@ double upperbound_compute_quantization_curve(
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,
     size_t n_px, size_t n_moments,
-    int n_bits_dc,
-    int n_bits_ac1,
-    std::vector<int>& quantization_curve)
+    std::pair<int, int> n_bits_dc,
+    std::pair<int, int> n_bits_ac1,
+    std::vector<std::pair<int, int>>& quantization_curve,
+    bool normalize_moments)
 {
     std::vector<double> normalized_moments_image;
     std::vector<double> mins, maxs;
     std::vector<uint8_t> relative_scales;
     double global_max;
+
+    if (n_bits_ac1.second != 0) {
+        std::cerr << "Cannot run this function with floating point quantization" << std::endl;
+    }
 
     upperbound_compress_spectral_image(
         wavelengths,
@@ -594,6 +667,7 @@ double upperbound_compute_quantization_curve(
         n_px, n_moments,
         normalized_moments_image,
         mins, maxs,
+        normalize_moments,
         relative_scales,
         global_max
     );
@@ -609,7 +683,7 @@ double upperbound_compute_quantization_curve(
         normalized_moments_image,
         quantized_moments,
         n_px, n_moments,
-        1, quantization_curve[1]
+        1, quantization_curve[1].first
     );
 
     const double base_err = upperbound_average_err(
@@ -625,7 +699,7 @@ double upperbound_compute_quantization_curve(
     for (size_t m = 2; m < n_moments; m++) {
         quantization_curve[m] = quantization_curve[m - 1];
 
-        for (size_t n_bits = quantization_curve[m] - 1; n_bits > 0; n_bits--) {
+        for (size_t n_bits = quantization_curve[m].first - 1; n_bits > 0; n_bits--) {
             quantize_dequantize_single_image(
                 normalized_moments_image,
                 quantized_moments,
@@ -647,7 +721,7 @@ double upperbound_compute_quantization_curve(
                 break;
             }
 
-            quantization_curve[m] = n_bits;
+            quantization_curve[m] = std::make_pair(n_bits, 0);
         }
     }
 
@@ -669,14 +743,19 @@ double twobounds_compute_quantization_curve(
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,
     size_t n_px, size_t n_moments,
-    int n_bits_dc,
-    int n_bits_ac1,
-    std::vector<int>& quantization_curve)
+    std::pair<int, int> n_bits_dc,
+    std::pair<int, int> n_bits_ac1,
+    std::vector<std::pair<int, int>>& quantization_curve,
+    bool normalize_moments)
 {
     std::vector<double> normalized_moments_image;
     std::vector<double> mins, maxs;
     std::vector<uint8_t> relative_scales;
     double global_min, global_max;
+
+    if (n_bits_ac1.second != 0) {
+        std::cerr << "Cannot run this function with floating point quantization" << std::endl;
+    }
 
     twobounds_compress_spectral_image(
         wavelengths,
@@ -684,6 +763,7 @@ double twobounds_compute_quantization_curve(
         n_px, n_moments,
         normalized_moments_image,
         mins, maxs,
+        normalize_moments,
         relative_scales,
         global_min,
         global_max
@@ -700,7 +780,7 @@ double twobounds_compute_quantization_curve(
         normalized_moments_image,
         quantized_moments,
         n_px, n_moments,
-        1, quantization_curve[1]
+        1, quantization_curve[1].first
     );
 
     const double base_err = twobounds_average_err(
@@ -717,7 +797,7 @@ double twobounds_compute_quantization_curve(
     for (size_t m = 2; m < n_moments; m++) {
         quantization_curve[m] = quantization_curve[m - 1];
 
-        for (size_t n_bits = quantization_curve[m] - 1; n_bits > 0; n_bits--) {
+        for (size_t n_bits = quantization_curve[m].first - 1; n_bits > 0; n_bits--) {
             quantize_dequantize_single_image(
                 normalized_moments_image,
                 quantized_moments,
@@ -740,7 +820,7 @@ double twobounds_compute_quantization_curve(
                 break;
             }
 
-            quantization_curve[m] = n_bits;
+            quantization_curve[m] = std::make_pair(n_bits, 0);
         }
     }
 
@@ -769,7 +849,7 @@ double linear_error_for_quantization_curve(
     const std::vector<double>& normalized_moments,
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
-    const std::vector<int>& quantization_curve)
+    const std::vector<std::pair<int, int>>& quantization_curve)
 {
     assert(normalized_moments.size() == n_px * n_moments);
 
@@ -800,7 +880,7 @@ double linavg_error_for_quantization_curve(
     const std::vector<double>& normalized_moments,
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
-    const std::vector<int>& quantization_curve)
+    const std::vector<std::pair<int, int>>& quantization_curve)
 {
     assert(normalized_moments.size() == n_px * n_moments);
 
@@ -831,7 +911,7 @@ double unbounded_error_for_quantization_curve(
     const std::vector<double>& normalized_moments,
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
-    const std::vector<int>& quantization_curve)
+    const std::vector<std::pair<int, int>>& quantization_curve)
 {
     assert(normalized_moments.size() == n_px * n_moments);
 
@@ -862,7 +942,7 @@ double bounded_error_for_quantization_curve(
     const std::vector<double>& normalized_moments,
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
-    const std::vector<int>& quantization_curve)
+    const std::vector<std::pair<int, int>>& quantization_curve)
 {
     assert(normalized_moments.size() == n_px * n_moments);
 
@@ -893,7 +973,7 @@ double unbounded_to_bounded_error_for_quantization_curve(
     const std::vector<double>& normalized_moments,
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
-    const std::vector<int>& quantization_curve)
+    const std::vector<std::pair<int, int>>& quantization_curve)
 {
     assert(normalized_moments.size() == n_px * n_moments);
 
@@ -926,7 +1006,7 @@ double upperbound_error_for_quantization_curve(
     const std::vector<double>& maxs,
     const std::vector<uint8_t>& relative_scales,
     double global_max,
-    const std::vector<int>& quantization_curve)
+    const std::vector<std::pair<int, int>>& quantization_curve)
 {
     assert(normalized_moments.size() == n_px * n_moments);
 
@@ -962,7 +1042,7 @@ double twobounds_error_for_quantization_curve(
     const std::vector<uint8_t>& relative_scales,
     double global_min,
     double global_max,
-    const std::vector<int>& quantization_curve)
+    const std::vector<std::pair<int, int>>& quantization_curve)
 {
     assert(normalized_moments.size() == n_px * n_moments);
 

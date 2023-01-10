@@ -64,7 +64,7 @@ int main(int argc, char* argv[])
         SGEGGrayGroup gg;
         const char* layer_name = fb->getName();
 
-        gg.layer_index = jxl_out.appendFramebuffer(fb->getPixelDataConst(), 1, 32, 8, 1, framedistance, fb->getName());
+        gg.layer_index = jxl_out.appendFramebuffer(fb->getPixelDataConst(), 1, std::make_pair(32, 8), 1, framedistance, fb->getName());
 
         gg.layer_name.resize(std::strlen(layer_name) + 1);
         std::memcpy(gg.layer_name.data(), layer_name, gg.layer_name.size() * sizeof(char));

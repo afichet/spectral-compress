@@ -12,14 +12,15 @@ add_subdirectory(stupid-decompress)
 add_subdirectory(generate-macbeth-img)
 
 # Evaluation tools
-add_subdirectory(quantization-from-image)
-add_subdirectory(eval-quantization)
+# add_subdirectory(quantization-from-image)
+# add_subdirectory(eval-quantization)
 
 # Image conversion tools
 add_subdirectory(cave-to-exr)
 add_subdirectory(envi-to-exr)
 add_subdirectory(exr-diff)
 add_subdirectory(exr-png)
+add_subdirectory(exr-pfm)
 
 # REMOVE!
 add_subdirectory(temp-diff)

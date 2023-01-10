@@ -244,7 +244,7 @@ int main(int argc, char* argv[])
         JXLImage jxl_out(width, height);
         jxl_out.appendFramebuffer(
             framebuffer, 1,
-            q, 0,
+            std::make_pair(q, 0),
             1, 0.1f
         );
 
@@ -257,7 +257,7 @@ int main(int argc, char* argv[])
     for (size_t q = 8; q > 1; q--) {
         jxl_out.appendFramebuffer(
             framebuffer, 1,
-            q, 0,
+            std::make_pair(q, 0),
             1, 0.1f
         );
     }
@@ -272,7 +272,8 @@ int main(int argc, char* argv[])
         compress_framebuffer(
             framebuffer,
             ss.str().c_str(),
-            width, height, q, 0,
+            width, height,
+            q, 0,
             0, 1
         );
     }
@@ -294,7 +295,8 @@ int main(int argc, char* argv[])
         quantize_dequantize_single_image(
             framebuffer_d, qdq_d,
             width * height,
-            1, 0, q
+            1,
+            0, q
         );
 
         Util::cast_vector(qdq_d, qdq);
@@ -305,7 +307,7 @@ int main(int argc, char* argv[])
         JXLImage jxl_out(width, height);
         jxl_out.appendFramebuffer(
             qdq, 1,
-            32, 8,
+            std::make_pair(32, 8),
             1, 0.f
         );
 
@@ -350,7 +352,7 @@ int main(int argc, char* argv[])
         JXLImage jxl_out(width, height);
         jxl_out.appendFramebuffer(
             framebuffer, 1,
-            8, 0,
+            std::make_pair(8, 0),
             downsampling, 0.f
         );
 

@@ -32,6 +32,7 @@
  */
 
 #include "curve_compression.h"
+#include "curve_quantization.h"
 
 #include "moments_image.h"
 #include "moments_error.h"
@@ -83,8 +84,7 @@ void compress_decompress_framebuffer(
     const std::vector<float>& framebuffer_in,
     std::vector<float>& framebuffer_out,
     uint32_t width, uint32_t height,
-    uint32_t bits_per_sample,
-    uint32_t exponent_bits_per_sample,
+    std::pair<int, int> bits_per_sample,
     uint32_t downsampling_factor,
     float frame_distance,
     int effort)
@@ -121,8 +121,8 @@ void compress_decompress_framebuffer(
     basic_info.ysize                    = height;
     basic_info.num_extra_channels       = 0;
     basic_info.num_color_channels       = 1;
-    basic_info.bits_per_sample          = bits_per_sample;
-    basic_info.exponent_bits_per_sample = exponent_bits_per_sample;
+    basic_info.bits_per_sample          = bits_per_sample.first;
+    basic_info.exponent_bits_per_sample = bits_per_sample.second;
     basic_info.uses_original_profile    = JXL_TRUE;
 
     enc_status = JxlEncoderSetBasicInfo(enc.get(), &basic_info);
@@ -164,12 +164,12 @@ void compress_decompress_framebuffer(
     // FIXME: There is a bug in the current JXL implementation: it ignores
     //        the quantization when the compression is not lossless.
     //        This issue is addressed with a hack.
-    if (encodes_lossless || exponent_bits_per_sample != 0) {
+    if (encodes_lossless || basic_info.exponent_bits_per_sample != 0) {
         // When we are dealing with lossless file and halfs, libjxl
         // triggers an error if the half rounding cause imprecision.
         // So we explicitely cast to half and back to float before
         // providing the buffer.
-        if (exponent_bits_per_sample == 5 && bits_per_sample == 16) {
+        if (basic_info.exponent_bits_per_sample == 5 && basic_info.bits_per_sample == 16) {
             quantized_framebuffer.resize(width * height);
 
             #pragma omp parallel for
@@ -325,7 +325,7 @@ void compress_decompress_single_image(
     std::vector<double>& output_image,
     uint32_t width, uint32_t height,
     size_t n_moments,
-    uint32_t bits_per_sample,
+    std::pair<int, int> bits_per_sample,
     uint32_t downsampling_factor,
     size_t i, float frame_distance,
     int effort)
@@ -345,7 +345,7 @@ void compress_decompress_single_image(
         input_framebuffer,
         compressed_framebuffer,
         width, height,
-        bits_per_sample, 0,
+        bits_per_sample,
         downsampling_factor,
         frame_distance,
         effort
@@ -373,7 +373,7 @@ void compress_decompress_image(
     std::vector<double>& output_image,
     uint32_t width, uint32_t height,
     size_t n_moments,
-    const std::vector<int>& quantization_curve,
+    const std::vector<std::pair<int, int>>& quantization_curve,
     const std::vector<uint32_t>& downsampling_factor_curve,
     const std::vector<float>& compression_curve,
     int effort)
@@ -398,24 +398,11 @@ void compress_decompress_image(
         }
 
         // Compress / decompress
-        const int bps = quantization_curve[m];
-        int exponent_bits = 0;
-
-        if (m == 0) {
-            if (bps == 16) {
-                exponent_bits = 5;
-            } else if (bps == 32) {
-                exponent_bits = 8;
-            } else {
-                throw std::runtime_error("Unknown quantization ratio for 0th moment");
-            }
-        }
-
         compress_decompress_framebuffer(
             framebuffer_in,
             framebuffer_out,
             width, height,
-            bps, exponent_bits,
+            quantization_curve[m],
             downsampling_factor_curve[m],
             compression_curve[m],
             effort);
@@ -439,7 +426,8 @@ void compute_compression_curve(
     const std::vector<double>& spectral_image,
     uint32_t width, uint32_t height,
     size_t n_moments,
-    const std::vector<int>& quantization_curve,
+    const std::vector<std::pair<int, int>>& quantization_curve,
+    bool normalize_moments,
     const std::vector<uint32_t>& downsampling_factor_curve,
     float compression_dc,
     float compression_ac1,
@@ -466,6 +454,7 @@ void compute_compression_curve(
                     wavelengths, spectral_image,
                     width, height, n_moments,
                     quantization_curve,
+                    normalize_moments,
                     downsampling_factor_curve,
                     compression_dc, compression_ac1,
                     compression_curve,
@@ -477,6 +466,7 @@ void compute_compression_curve(
                     wavelengths, spectral_image,
                     width, height, n_moments,
                     quantization_curve,
+                    normalize_moments,
                     downsampling_factor_curve,
                     compression_dc, compression_ac1,
                     compression_curve,
@@ -488,6 +478,7 @@ void compute_compression_curve(
                     wavelengths, spectral_image,
                     width, height, n_moments,
                     quantization_curve,
+                    normalize_moments,
                     downsampling_factor_curve,
                     compression_dc, compression_ac1,
                     compression_curve,
@@ -499,6 +490,7 @@ void compute_compression_curve(
                     wavelengths, spectral_image,
                     width, height, n_moments,
                     quantization_curve,
+                    normalize_moments,
                     downsampling_factor_curve,
                     compression_dc, compression_ac1,
                     compression_curve,
@@ -510,6 +502,7 @@ void compute_compression_curve(
                     wavelengths, spectral_image,
                     width, height, n_moments,
                     quantization_curve,
+                    normalize_moments,
                     downsampling_factor_curve,
                     compression_dc, compression_ac1,
                     compression_curve,
@@ -521,6 +514,7 @@ void compute_compression_curve(
                     wavelengths, spectral_image,
                     width, height, n_moments,
                     quantization_curve,
+                    normalize_moments,
                     downsampling_factor_curve,
                     compression_dc, compression_ac1,
                     compression_curve,
@@ -532,6 +526,7 @@ void compute_compression_curve(
                     wavelengths, spectral_image,
                     width, height, n_moments,
                     quantization_curve,
+                    normalize_moments,
                     downsampling_factor_curve,
                     compression_dc, compression_ac1,
                     compression_curve,
@@ -553,7 +548,8 @@ double linear_compute_compression_curve(
     const std::vector<double>& spectral_image,
     uint32_t width, uint32_t height,
     size_t n_moments,
-    const std::vector<int>& quantization_curve,
+    const std::vector<std::pair<int, int>>& quantization_curve,
+    bool normalize_moments,
     const std::vector<uint32_t>& downsampling_factor_curve,
     float compression_dc,
     float compression_ac1,
@@ -574,7 +570,8 @@ double linear_compute_compression_curve(
         wavelengths, spectral_image,
         width * height, n_moments,
         normalized_moments,
-        mins, maxs
+        mins, maxs,
+        normalize_moments
     );
 
     assert(normalized_moments.size() == width * height * n_moments);
@@ -583,21 +580,15 @@ double linear_compute_compression_curve(
 
     // Quantize / dequantize each moment based on the provided quantization
     // curve
-    std::vector<double> q_normalized_moments(normalized_moments.size());
+    std::vector<double> q_normalized_moments;
 
-    #pragma omp parallel for
-    for (size_t px = 0; px < width * height; px++) {
-        // We ignore moment 0
-        q_normalized_moments[px * n_moments + 0] = normalized_moments[px * n_moments + 0];
-
-        for (size_t m = 1; m < n_moments; m++) {
-            q_normalized_moments[px * n_moments + m] =
-                Util::quantize_dequantize(
-                    normalized_moments[px * n_moments + m],
-                    quantization_curve[m]
-                );
-        }
-    }
+    quantize_dequantize_image(
+        normalized_moments,
+        q_normalized_moments,
+        width * height,
+        n_moments,
+        quantization_curve
+    );
 
     compression_curve[0] = compression_dc;
     compression_curve[1] = compression_ac1;
@@ -719,7 +710,8 @@ double linavg_compute_compression_curve(
     const std::vector<double>& spectral_image,
     uint32_t width, uint32_t height,
     size_t n_moments,
-    const std::vector<int>& quantization_curve,
+    const std::vector<std::pair<int, int>>& quantization_curve,
+    bool normalize_moments,
     const std::vector<uint32_t>& downsampling_factor_curve,
     float compression_dc,
     float compression_ac1,
@@ -740,7 +732,8 @@ double linavg_compute_compression_curve(
         wavelengths, spectral_image,
         width * height, n_moments,
         normalized_moments,
-        mins, maxs
+        mins, maxs,
+        normalize_moments
     );
 
     assert(normalized_moments.size() == width * height * n_moments);
@@ -749,21 +742,15 @@ double linavg_compute_compression_curve(
 
     // Quantize / dequantize each moment based on the provided quantization
     // curve
-    std::vector<double> q_normalized_moments(normalized_moments.size());
+    std::vector<double> q_normalized_moments;
 
-    #pragma omp parallel for
-    for (size_t px = 0; px < width * height; px++) {
-        // We ignore moment 0
-        q_normalized_moments[px * n_moments + 0] = normalized_moments[px * n_moments + 0];
-
-        for (size_t m = 1; m < n_moments; m++) {
-            q_normalized_moments[px * n_moments + m] =
-                Util::quantize_dequantize(
-                    normalized_moments[px * n_moments + m],
-                    quantization_curve[m]
-                );
-        }
-    }
+    quantize_dequantize_image(
+        normalized_moments,
+        q_normalized_moments,
+        width * height,
+        n_moments,
+        quantization_curve
+    );
 
     compression_curve[0] = compression_dc;
     compression_curve[1] = compression_ac1;
@@ -885,7 +872,8 @@ double unbounded_compute_compression_curve(
     const std::vector<double>& spectral_image,
     uint32_t width, uint32_t height,
     size_t n_moments,
-    const std::vector<int>& quantization_curve,
+    const std::vector<std::pair<int, int>>& quantization_curve,
+    bool normalize_moments,
     const std::vector<uint32_t>& downsampling_factor_curve,
     float compression_dc,
     float compression_ac1,
@@ -905,7 +893,8 @@ double unbounded_compute_compression_curve(
         wavelengths, spectral_image,
         width * height, n_moments,
         normalized_moments,
-        mins, maxs
+        mins, maxs,
+        normalize_moments
     );
 
     assert(normalized_moments.size() == width * height * n_moments);
@@ -914,21 +903,15 @@ double unbounded_compute_compression_curve(
 
     // Quantize / dequantize each moment based on the provided quantization
     // curve
-    std::vector<double> q_normalized_moments(normalized_moments.size());
+    std::vector<double> q_normalized_moments;
 
-    #pragma omp parallel for
-    for (size_t px = 0; px < width * height; px++) {
-        // We ignore moment 0
-        q_normalized_moments[px * n_moments + 0] = normalized_moments[px * n_moments + 0];
-
-        for (size_t m = 1; m < n_moments; m++) {
-            q_normalized_moments[px * n_moments + m] =
-                Util::quantize_dequantize(
-                    normalized_moments[px * n_moments + m],
-                    quantization_curve[m]
-                );
-        }
-    }
+    quantize_dequantize_image(
+        normalized_moments,
+        q_normalized_moments,
+        width * height,
+        n_moments,
+        quantization_curve
+    );
 
     compression_curve[0] = compression_dc;
     compression_curve[1] = compression_ac1;
@@ -1050,7 +1033,8 @@ double bounded_compute_compression_curve(
     const std::vector<double>& spectral_image,
     uint32_t width, uint32_t height,
     size_t n_moments,
-    const std::vector<int>& quantization_curve,
+    const std::vector<std::pair<int, int>>& quantization_curve,
+    bool normalize_moments,
     const std::vector<uint32_t>& downsampling_factor_curve,
     float compression_dc,
     float compression_ac1,
@@ -1070,7 +1054,8 @@ double bounded_compute_compression_curve(
         wavelengths, spectral_image,
         width * height, n_moments,
         normalized_moments,
-        mins, maxs
+        mins, maxs,
+        normalize_moments
     );
 
     assert(normalized_moments.size() == width * height * n_moments);
@@ -1079,21 +1064,15 @@ double bounded_compute_compression_curve(
 
     // Quantize / dequantize each moment based on the provided quantization
     // curve
-    std::vector<double> q_normalized_moments(normalized_moments.size());
+    std::vector<double> q_normalized_moments;
 
-    #pragma omp parallel for
-    for (size_t px = 0; px < width * height; px++) {
-        // We ignore moment 0
-        q_normalized_moments[px * n_moments + 0] = normalized_moments[px * n_moments + 0];
-
-        for (size_t m = 1; m < n_moments; m++) {
-            q_normalized_moments[px * n_moments + m] =
-                Util::quantize_dequantize(
-                    normalized_moments[px * n_moments + m],
-                    quantization_curve[m]
-                );
-        }
-    }
+    quantize_dequantize_image(
+        normalized_moments,
+        q_normalized_moments,
+        width * height,
+        n_moments,
+        quantization_curve
+    );
 
     compression_curve[0] = compression_dc;
     compression_curve[1] = compression_ac1;
@@ -1215,7 +1194,8 @@ double unbounded_to_bounded_compute_compression_curve(
     const std::vector<double>& spectral_image,
     uint32_t width, uint32_t height,
     size_t n_moments,
-    const std::vector<int>& quantization_curve,
+    const std::vector<std::pair<int, int>>& quantization_curve,
+    bool normalize_moments,
     const std::vector<uint32_t>& downsampling_factor_curve,
     float compression_dc,
     float compression_ac1,
@@ -1235,7 +1215,8 @@ double unbounded_to_bounded_compute_compression_curve(
         wavelengths, spectral_image,
         width * height, n_moments,
         normalized_moments,
-        mins, maxs
+        mins, maxs,
+        normalize_moments
     );
 
     assert(normalized_moments.size() == width * height * n_moments);
@@ -1244,21 +1225,15 @@ double unbounded_to_bounded_compute_compression_curve(
 
     // Quantize / dequantize each moment based on the provided quantization
     // curve
-    std::vector<double> q_normalized_moments(normalized_moments.size());
+    std::vector<double> q_normalized_moments;
 
-    #pragma omp parallel for
-    for (size_t px = 0; px < width * height; px++) {
-        // We ignore moment 0
-        q_normalized_moments[px * n_moments + 0] = normalized_moments[px * n_moments + 0];
-
-        for (size_t m = 1; m < n_moments; m++) {
-            q_normalized_moments[px * n_moments + m] =
-                Util::quantize_dequantize(
-                    normalized_moments[px * n_moments + m],
-                    quantization_curve[m]
-                );
-        }
-    }
+    quantize_dequantize_image(
+        normalized_moments,
+        q_normalized_moments,
+        width * height,
+        n_moments,
+        quantization_curve
+    );
 
     compression_curve[0] = compression_dc;
     compression_curve[1] = compression_ac1;
@@ -1380,7 +1355,8 @@ double upperbound_compute_compression_curve(
     const std::vector<double>& spectral_image,
     uint32_t width, uint32_t height,
     size_t n_moments,
-    const std::vector<int>& quantization_curve,
+    const std::vector<std::pair<int, int>>& quantization_curve,
+    bool normalize_moments,
     const std::vector<uint32_t>& downsampling_factor_curve,
     float compression_dc,
     float compression_ac1,
@@ -1403,6 +1379,7 @@ double upperbound_compute_compression_curve(
         width * height, n_moments,
         normalized_moments,
         mins, maxs,
+        normalize_moments,
         relative_scales,
         global_max
     );
@@ -1414,21 +1391,15 @@ double upperbound_compute_compression_curve(
 
     // Quantize / dequantize each moment based on the provided quantization
     // curve
-    std::vector<double> q_normalized_moments(normalized_moments.size());
+    std::vector<double> q_normalized_moments;
 
-    #pragma omp parallel for
-    for (size_t px = 0; px < width * height; px++) {
-        // We ignore moment 0
-        q_normalized_moments[px * n_moments + 0] = normalized_moments[px * n_moments + 0];
-
-        for (size_t m = 1; m < n_moments; m++) {
-            q_normalized_moments[px * n_moments + m] =
-                Util::quantize_dequantize(
-                    normalized_moments[px * n_moments + m],
-                    quantization_curve[m]
-                );
-        }
-    }
+    quantize_dequantize_image(
+        normalized_moments,
+        q_normalized_moments,
+        width * height,
+        n_moments,
+        quantization_curve
+    );
 
     compression_curve[0] = compression_dc;
     compression_curve[1] = compression_ac1;
@@ -1556,7 +1527,8 @@ double twobounds_compute_compression_curve(
     const std::vector<double>& spectral_image,
     uint32_t width, uint32_t height,
     size_t n_moments,
-    const std::vector<int>& quantization_curve,
+    const std::vector<std::pair<int, int>>& quantization_curve,
+    bool normalize_moments,
     const std::vector<uint32_t>& downsampling_factor_curve,
     float compression_dc,
     float compression_ac1,
@@ -1579,6 +1551,7 @@ double twobounds_compute_compression_curve(
         width * height, n_moments,
         normalized_moments,
         mins, maxs,
+        normalize_moments,
         relative_scales,
         global_min,
         global_max
@@ -1591,21 +1564,15 @@ double twobounds_compute_compression_curve(
 
     // Quantize / dequantize each moment based on the provided quantization
     // curve
-    std::vector<double> q_normalized_moments(normalized_moments.size());
+    std::vector<double> q_normalized_moments;
 
-    #pragma omp parallel for
-    for (size_t px = 0; px < width * height; px++) {
-        // We ignore moment 0
-        q_normalized_moments[px * n_moments + 0] = normalized_moments[px * n_moments + 0];
-
-        for (size_t m = 1; m < n_moments; m++) {
-            q_normalized_moments[px * n_moments + m] =
-                Util::quantize_dequantize(
-                    normalized_moments[px * n_moments + m],
-                    quantization_curve[m]
-                );
-        }
-    }
+    quantize_dequantize_image(
+        normalized_moments,
+        q_normalized_moments,
+        width * height,
+        n_moments,
+        quantization_curve
+    );
 
     compression_curve[0] = compression_dc;
     compression_curve[1] = compression_ac1;
@@ -1743,7 +1710,7 @@ double linear_error_for_compression_curve(
     const std::vector<double>& normalized_moments,
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
-    const std::vector<int>& quantization_curve,
+    const std::vector<std::pair<int, int>>& quantization_curve,
     const std::vector<uint32_t>& downsampling_factor_curve,
     const std::vector<float>& compression_curve,
     int effort)
@@ -1798,7 +1765,7 @@ double linavg_error_for_compression_curve(
     const std::vector<double>& normalized_moments,
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
-    const std::vector<int>& quantization_curve,
+    const std::vector<std::pair<int, int>>& quantization_curve,
     const std::vector<uint32_t>& downsampling_factor_curve,
     const std::vector<float>& compression_curve,
     int effort)
@@ -1853,7 +1820,7 @@ double unbounded_error_for_compression_curve(
     const std::vector<double>& normalized_moments,
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
-    const std::vector<int>& quantization_curve,
+    const std::vector<std::pair<int, int>>& quantization_curve,
     const std::vector<uint32_t>& downsampling_factor_curve,
     const std::vector<float>& compression_curve,
     int effort)
@@ -1908,7 +1875,7 @@ double bounded_error_for_compression_curve(
     const std::vector<double>& normalized_moments,
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
-    const std::vector<int>& quantization_curve,
+    const std::vector<std::pair<int, int>>& quantization_curve,
     const std::vector<uint32_t>& downsampling_factor_curve,
     const std::vector<float>& compression_curve,
     int effort)
@@ -1963,7 +1930,7 @@ double unbounded_to_bounded_error_for_compression_curve(
     const std::vector<double>& normalized_moments,
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
-    const std::vector<int>& quantization_curve,
+    const std::vector<std::pair<int, int>>& quantization_curve,
     const std::vector<uint32_t>& downsampling_factor_curve,
     const std::vector<float>& compression_curve,
     int effort)
@@ -2020,7 +1987,7 @@ double upperbound_error_for_compression_curve(
     const std::vector<double>& maxs,
     const std::vector<uint8_t>& relative_scales,
     double global_max,
-    const std::vector<int>& quantization_curve,
+    const std::vector<std::pair<int, int>>& quantization_curve,
     const std::vector<uint32_t>& downsampling_factor_curve,
     const std::vector<float>& compression_curve,
     int effort)
@@ -2081,7 +2048,7 @@ double twobounds_error_for_compression_curve(
     const std::vector<uint8_t>& relative_scales,
     double global_min,
     double global_max,
-    const std::vector<int>& quantization_curve,
+    const std::vector<std::pair<int, int>>& quantization_curve,
     const std::vector<uint32_t>& downsampling_factor_curve,
     const std::vector<float>& compression_curve,
     int effort)

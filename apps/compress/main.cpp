@@ -68,10 +68,11 @@ void compress_spectral_framebuffer(
     const SpectralFramebuffer* framebuffer,
     uint32_t width, uint32_t height,
     // Quantization
-    int n_bits_dc,
-    int n_bits_ac1,
+    std::pair<int, int> n_bits_dc,
+    std::pair<int, int> n_bits_ac1,
     bool uses_constant_quantization,
-    std::vector<int>& quantization_curve,
+    std::vector<std::pair<int, int>>& quantization_curve,
+    bool normalize_moments,
     // Compression
     float compression_dc,
     float compression_ac1,
@@ -139,9 +140,11 @@ void compress_spectral_framebuffer(
         method,
         wavelengths, spectral_image,
         width, height, n_moments,
-        n_bits_dc, n_bits_ac1,
+        n_bits_dc,
+        n_bits_ac1,
         uses_constant_quantization,
         quantization_curve,
+        normalize_moments,
         quantization_curve_timing
     );
 
@@ -158,6 +161,7 @@ void compress_spectral_framebuffer(
         wavelengths, spectral_image,
         width, height, n_moments,
         quantization_curve,
+        normalize_moments,
         downsampling_factor_curve,
         compression_dc, compression_ac1,
         uses_constant_compression,
@@ -172,6 +176,7 @@ void compress_spectral_framebuffer(
         width, height, n_moments,
         compressed_moments_d,
         mins_d, maxs_d,
+        normalize_moments,
         relative_scales,
         global_min_d, global_max_d,
         compression_timing
@@ -228,7 +233,7 @@ void compress_spectral_framebuffer(
         assert(relative_scales.size() == n_pixels);
 
         // Extend by 1 for the extra scaling framebuffer
-        quantization_curve.push_back(8);
+        quantization_curve.push_back(std::make_pair(8, 0));
         compression_curve.push_back(compression_dc);
         downsampling_factor_curve.push_back(1);
 
@@ -268,10 +273,15 @@ void compress_spectral_framebuffer(
                 break;
         }
         log_stream << "Quantization curve:" << std::endl;
-        for (const int& q : quantization_curve) {
-            log_stream << q << " ";
+        for (const std::pair<int, int>& q : quantization_curve) {
+            log_stream << q.first << " ";
         }
         log_stream << std::endl;
+        for (const std::pair<int, int>& q : quantization_curve) {
+            log_stream << q.second << " ";
+        }
+        log_stream << std::endl;
+
         log_stream << "rmse: "  << quantization_error.rmse_error << std::endl;
         log_stream << "rrmse: " << quantization_error.rrmse_error << std::endl;
         log_stream << "avg: "   << quantization_error.avg_error << std::endl;
@@ -295,21 +305,21 @@ void compress_spectral_framebuffer(
 }
 
 
-void quantization_from_exr(PixelType type, size_t& n_bits, size_t& n_exponent_bits) {
+void quantization_from_exr(PixelType type, std::pair<int, int>& n_bits) {
     switch (type) {
         case PixelType::UINT:
-            n_bits = 32;
-            n_exponent_bits = 0;
+            n_bits.first = 32;
+            n_bits.second = 0;
             break;
 
         case PixelType::HALF:
-            n_bits = 16;
-            n_exponent_bits = 5;
+            n_bits.first = 16;
+            n_bits.second = 5;
             break;
 
         case PixelType::FLOAT:
-            n_bits = 32;
-            n_exponent_bits = 8;
+            n_bits.first = 32;
+            n_bits.second = 8;
             break;
 
         default:
@@ -336,8 +346,9 @@ int main(int argc, char *argv[])
     bool use_flat_compression = false;
     int compression_effort = 7;
 
-    int n_bits_ac1 = 10;
+    std::pair<int, int> n_bits_ac1;
     bool use_flat_quantization = false;
+    bool normalize_moments = false;
 
     int downsampling_factor_ac1 = 1;
 
@@ -375,10 +386,14 @@ int main(int argc, char *argv[])
         cmd.add(compressionEffortArg);
 
         // Quantization tweaking
-        TCLAP::ValueArg<int> quantizationStartArg("q", "quantization", "Sets the starting number of bits for quantizing the first AC component. The program use the same number of bits for the remaining components when `--q_flat` is set. Otherwise, the program generates a custom quantization curve starting with the number of bits for the first AC component using the provided value based on the image data (can be slow).", false, 8, "integer");
+        TCLAP::ValueArg<int> quantizationMainStartArg("q", "quantization_bits", "Sets the starting number of bits for quantizing the first AC component. The program use the same number of bits for the remaining components when `--q_flat` is set. Otherwise, the program generates a custom quantization curve starting with the number of bits for the first AC component using the provided value based on the image data (can be slow).", false, 8, "integer");
+        TCLAP::ValueArg<int> quantizationExpoStartArg("r", "quantization_exp", "Sets the starting number of bits for quantizing the first AC component. The program use the same number of bits for the remaining components when `--q_flat` is set. Otherwise, the program generates a custom quantization curve starting with the number of bits for the first AC component using the provided value based on the image data (can be slow).", false, 0, "integer");
         TCLAP::SwitchArg useFlatQuantizationArg("u", "q_flat", "Sets a flat quantization curve. The DC component uses the same quantization as the one used for all spectral data in the OpenEXR file while the remaining AC components use the number of bits provided in `--quantization parameter`.");
-        cmd.add(quantizationStartArg);
+        TCLAP::SwitchArg normalizeMomentsArg("n", "normalize", "Normalize the moment images (set framebuffer fit in 0..1). May cause problem when using integer framebuffer for storing moments.", false);
+        cmd.add(quantizationMainStartArg);
+        cmd.add(quantizationExpoStartArg);
         cmd.add(useFlatQuantizationArg);
+        cmd.add(normalizeMomentsArg);
 
         // Downsampling tweaking
         DownsamplingFactorConstraint downsamplingFactorConstraint;
@@ -425,8 +440,10 @@ int main(int argc, char *argv[])
         use_flat_compression = useFlatCompressionArg.getValue();
         compression_effort   = compressionEffortArg.getValue();
 
-        n_bits_ac1            = quantizationStartArg.getValue();
+        n_bits_ac1.first      = quantizationMainStartArg.getValue();
+        n_bits_ac1.second     = quantizationExpoStartArg.getValue();
         use_flat_quantization = useFlatQuantizationArg.getValue();
+        normalize_moments     = normalizeMomentsArg.getValue();
 
         downsampling_factor_ac1 = downsamplingFactorArg.getValue();
 
@@ -477,14 +494,13 @@ int main(int argc, char *argv[])
         std::memcpy(sg.root_name.data(), fb->root_name.c_str(), sg.root_name.size() * sizeof(char));
         sg.wavelengths = fb->wavelengths_nm;
 
-        size_t n_bits_dc;
-        size_t main_n_exponent_bits;
+        std::pair<int, int> n_bits_dc;
 
-        quantization_from_exr(fb->pixel_type, n_bits_dc, main_n_exponent_bits);
+        quantization_from_exr(fb->pixel_type, n_bits_dc);
 
         std::vector<std::vector<float>> compressed_moments;
         std::vector<uint8_t> relative_scales;
-        std::vector<int> quantization_curve;
+        std::vector<std::pair<int, int>> quantization_curve;
         std::vector<uint32_t> downsampling_factor_curve;
         std::vector<float> compression_curve;
 
@@ -495,6 +511,7 @@ int main(int argc, char *argv[])
             fb,
             exr_in.width(), exr_in.height(),
             n_bits_dc,      n_bits_ac1,      use_flat_quantization, quantization_curve,
+            normalize_moments,
             compression_dc, compression_ac1, use_flat_compression,  compression_curve, compression_effort,
             downsampling_factor_ac1, downsampling_factor_curve,
             compressed_moments,
@@ -513,22 +530,10 @@ int main(int argc, char *argv[])
 
         // Now we can save to JPEG XL
         for (size_t m = 0; m < compressed_moments.size(); m++) {
-            float n_bits;
-            float n_exponent_bits;
-
-            if (m == 0) {
-                n_bits          = n_bits_dc;
-                n_exponent_bits = main_n_exponent_bits;
-            } else {
-                n_bits          = quantization_curve[m];
-                n_exponent_bits = 0;
-            }
-
             const size_t idx = jxl_out.appendFramebuffer(
                 compressed_moments[m],
                 1,
-                n_bits,
-                n_exponent_bits,
+                quantization_curve[m],
                 downsampling_factor_curve[m],
                 compression_curve[m],
                 fb->root_name.c_str());
@@ -546,16 +551,14 @@ int main(int argc, char *argv[])
         gg.layer_name.resize(fb->layer_name.size() + 1);
         std::memcpy(gg.layer_name.data(), fb->layer_name.c_str(), gg.layer_name.size() * sizeof(char));
 
-        size_t n_bits;
-        size_t n_exponent_bits;
+        std::pair<int, int> n_bits;
 
-        quantization_from_exr(fb->pixel_type, n_bits, n_exponent_bits);
+        quantization_from_exr(fb->pixel_type, n_bits);
 
         gg.layer_index = jxl_out.appendFramebuffer(
             fb->image_data,
             1,
             n_bits,
-            n_exponent_bits,
             1,
             compression_dc,
             fb->layer_name.c_str()

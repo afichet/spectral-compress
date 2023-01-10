@@ -55,8 +55,7 @@ public:
     JXLFramebuffer(
         uint32_t width, uint32_t height,
         uint32_t n_color_channels = 1,
-        uint32_t n_bits_per_sample = 32,
-        uint32_t n_exponent_bits_per_sample = 8,
+        std::pair<int, int> n_bits_per_sample = std::make_pair(32, 8),
         uint32_t downsampling_factor = 1,
         float    framedistance = 0,
         const char* name = nullptr);
@@ -64,8 +63,7 @@ public:
     JXLFramebuffer(
         const std::vector<float>& framebuffer,
         uint32_t n_color_channels = 1,
-        uint32_t n_bits_per_sample = 32,
-        uint32_t n_exponent_bits_per_sample = 8,
+        std::pair<int, int> n_bits_per_sample = std::make_pair(32, 8),
         uint32_t downsampling_factor = 1,
         float    framedistance = 0,
         const char* name = nullptr);
@@ -73,8 +71,8 @@ public:
     virtual ~JXLFramebuffer();
 
     uint32_t getNColorChannels() const { return _pixel_format.num_channels; }
-    uint32_t getBitsPerSample()  const { return _n_bits_per_sample; }
-    uint32_t getExponentBitsPerSample() const { return _n_exponent_bits_per_sample; }
+    uint32_t getBitsPerSample()  const { return _n_bits_per_sample.first; }
+    uint32_t getExponentBitsPerSample() const { return _n_bits_per_sample.second; }
     uint32_t getDownsamplingFactor() const { return _downsampling_factor; }
     float getFramedistance() const { return _framedistance; }
 
@@ -98,10 +96,9 @@ public:
 protected:
     char* _name;
 
-    uint32_t _n_bits_per_sample;
-    uint32_t _n_exponent_bits_per_sample;
-    uint32_t _downsampling_factor; // Not possible with the current state of the API
-    float    _framedistance;
+    std::pair<int, int> _n_bits_per_sample;
+    uint32_t            _downsampling_factor; // Not possible with the current state of the API
+    float               _framedistance;
 
     JxlPixelFormat _pixel_format;
 
@@ -122,8 +119,7 @@ public:
     size_t appendFramebuffer(
         const std::vector<float>& framebuffer,
         uint32_t n_channels,
-        uint32_t enc_bits_per_sample = 32,
-        uint32_t enc_exponent_bits_per_sample = 8,
+        std::pair<int, int> enc_bits_per_sample = std::make_pair(32, 8),
         uint32_t enc_downsampling_factor = 1,
         float    enc_framedistance = .1f,
         const char* name = nullptr);

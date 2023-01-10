@@ -47,14 +47,14 @@ void quantize_dequantize_single_image(
     const std::vector<double>& input_image,
     std::vector<double>& output_image,
     size_t n_pixels, size_t n_moments,
-    size_t i, size_t n_bits);
+    size_t i, int n_bits);
 
 
 void quantize_dequantize_image(
     const std::vector<double>& input_image,
     std::vector<double>& output_image,
     size_t n_pixels, size_t n_moments,
-    const std::vector<int>& quantization_curve);
+    const std::vector<std::pair<int, int>>& quantization_curve);
 
 
 /*****************************************************************************/
@@ -67,10 +67,11 @@ void compute_quantization_curve(
     const std::vector<double>& spectral_image,
     uint32_t width, uint32_t height,
     size_t n_moments,
-    int n_bits_dc,
-    int n_bits_ac1,
+    std::pair<int, int> n_bits_dc,
+    std::pair<int, int> n_bits_ac1,
     bool uses_constant_quantization,
-    std::vector<int>& quantization_curve,
+    std::vector<std::pair<int, int>>& quantization_curve,
+    bool normalize_moments,
     double& timing);
 
 
@@ -78,63 +79,70 @@ double linear_compute_quantization_curve(
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,
     size_t n_px, size_t n_moments,
-    int n_bits_dc,
-    int n_bits_ac1,
-    std::vector<int>& quantization_curve);
+    std::pair<int, int> n_bits_dc,
+    std::pair<int, int> n_bits_ac1,
+    std::vector<std::pair<int, int>>& quantization_curve,
+    bool normalize_moments);
 
 
 double linavg_compute_quantization_curve(
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,
     size_t n_px, size_t n_moments,
-    int n_bits_dc,
-    int n_bits_ac1,
-    std::vector<int>& quantization_curve);
+    std::pair<int, int> n_bits_dc,
+    std::pair<int, int> n_bits_ac1,
+    std::vector<std::pair<int, int>>& quantization_curve,
+    bool normalize_moments);
 
 
 double unbounded_compute_quantization_curve(
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,
     size_t n_px, size_t n_moments,
-    int n_bits_dc,
-    int n_bits_ac1,
-    std::vector<int>& quantization_curve);
+    std::pair<int, int> n_bits_dc,
+    std::pair<int, int> n_bits_ac1,
+    std::vector<std::pair<int, int>>& quantization_curve,
+    bool normalize_moments);
 
 
 double bounded_compute_quantization_curve(
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,
     size_t n_px, size_t n_moments,
-    int n_bits_dc,
-    int n_bits_ac1,
-    std::vector<int>& quantization_curve);
+    std::pair<int, int> n_bits_dc,
+    std::pair<int, int> n_bits_ac1,
+    std::vector<std::pair<int, int>>& quantization_curve,
+    bool normalize_moments);
 
 
 double unbounded_to_bounded_compute_quantization_curve(
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,
     size_t n_px, size_t n_moments,
-    int n_bits_dc,
-    int n_bits_ac1,
-    std::vector<int>& quantization_curve);
+    std::pair<int, int> n_bits_dc,
+    std::pair<int, int> n_bits_ac1,
+    std::vector<std::pair<int, int>>& quantization_curve,
+    bool normalize_moments);
 
 
 double upperbound_compute_quantization_curve(
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,
     size_t n_px, size_t n_moments,
-    int n_bits_dc,
-    int n_bits_ac1,
-    std::vector<int>& quantization_curve);
+    std::pair<int, int> n_bits_dc,
+    std::pair<int, int> n_bits_ac1,
+    std::vector<std::pair<int, int>>& quantization_curve,
+    bool normalize_moments);
 
 
 double twobounds_compute_quantization_curve(
     const std::vector<double>& wavelengths,
     const std::vector<double>& spectral_image,
     size_t n_px, size_t n_moments,
-    int n_bits_dc,
-    int n_bits_ac1,
-    std::vector<int>& quantization_curve);
+    std::pair<int, int> n_bits_dc,
+    std::pair<int, int> n_bits_ac1,
+    std::vector<std::pair<int, int>>& quantization_curve,
+    bool normalize_moments);
 
 
 /*****************************************************************************/
@@ -148,7 +156,7 @@ double linear_error_for_quantization_curve(
     const std::vector<double>& normalized_moments,
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
-    const std::vector<int>& quantization_curve);
+    const std::vector<std::pair<int, int>>& quantization_curve);
 
 
 double linavg_error_for_quantization_curve(
@@ -158,7 +166,7 @@ double linavg_error_for_quantization_curve(
     const std::vector<double>& normalized_moments,
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
-    const std::vector<int>& quantization_curve);
+    const std::vector<std::pair<int, int>>& quantization_curve);
 
 
 double unbounded_error_for_quantization_curve(
@@ -168,7 +176,7 @@ double unbounded_error_for_quantization_curve(
     const std::vector<double>& normalized_moments,
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
-    const std::vector<int>& quantization_curve);
+    const std::vector<std::pair<int, int>>& quantization_curve);
 
 
 double bounded_error_for_quantization_curve(
@@ -178,7 +186,7 @@ double bounded_error_for_quantization_curve(
     const std::vector<double>& normalized_moments,
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
-    const std::vector<int>& quantization_curve);
+    const std::vector<std::pair<int, int>>& quantization_curve);
 
 
 double unbounded_to_bounded_error_for_quantization_curve(
@@ -188,7 +196,7 @@ double unbounded_to_bounded_error_for_quantization_curve(
     const std::vector<double>& normalized_moments,
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
-    const std::vector<int>& quantization_curve);
+    const std::vector<std::pair<int, int>>& quantization_curve);
 
 
 // TODO: template?
@@ -201,7 +209,7 @@ double upperbound_error_for_quantization_curve(
     const std::vector<double>& maxs,
     const std::vector<uint8_t>& relative_scales,
     double global_max,
-    const std::vector<int>& quantization_curve);
+    const std::vector<std::pair<int, int>>& quantization_curve);
 
 
 // TODO: template?
@@ -215,4 +223,4 @@ double twobounds_error_for_quantization_curve(
     const std::vector<uint8_t>& relative_scales,
     double global_min,
     double global_max,
-    const std::vector<int>& quantization_curve);
+    const std::vector<std::pair<int, int>>& quantization_curve);

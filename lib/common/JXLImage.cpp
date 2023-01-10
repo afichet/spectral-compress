@@ -72,14 +72,12 @@
 JXLFramebuffer::JXLFramebuffer(
     uint32_t width, uint32_t height,
     uint32_t n_color_channels,
-    uint32_t n_bits_per_sample,
-    uint32_t n_exponent_bits_per_sample,
+    std::pair<int, int> n_bits_per_sample,
     uint32_t downsampling_factor,
     float    framedistance,
     const char* name)
     : _name(nullptr)
     , _n_bits_per_sample(n_bits_per_sample)
-    , _n_exponent_bits_per_sample(n_exponent_bits_per_sample)
     , _downsampling_factor(downsampling_factor)
     , _framedistance(framedistance)
     , _pixel_format(
@@ -101,14 +99,12 @@ JXLFramebuffer::JXLFramebuffer(
 JXLFramebuffer::JXLFramebuffer(
     const std::vector<float>& framebuffer,
     uint32_t n_color_channels,
-    uint32_t n_bits_per_sample,
-    uint32_t n_exponent_bits_per_sample,
+    std::pair<int, int> n_bits_per_sample,
     uint32_t downsampling_factor,
     float    framedistance,
     const char* name)
     : _name(nullptr)
     , _n_bits_per_sample(n_bits_per_sample)
-    , _n_exponent_bits_per_sample(n_exponent_bits_per_sample)
     , _downsampling_factor(downsampling_factor)
     , _framedistance(framedistance)
     , _pixel_format(
@@ -153,8 +149,8 @@ void JXLFramebuffer::dump(FILE* stream) const
         std::fwrite(_name, sizeof(char), len_name, stream);
     }
 
-    std::fwrite(&_n_bits_per_sample, sizeof(uint32_t), 1, stream);
-    std::fwrite(&_n_exponent_bits_per_sample, sizeof(uint32_t), 1, stream);
+    std::fwrite(&_n_bits_per_sample.first, sizeof(uint32_t), 1, stream);
+    std::fwrite(&_n_bits_per_sample.second, sizeof(uint32_t), 1, stream);
     std::fwrite(&_downsampling_factor, sizeof(uint32_t), 1, stream);
     std::fwrite(&_pixel_format, sizeof(JxlPixelFormat), 1, stream);
 
@@ -180,8 +176,8 @@ JXLFramebuffer* JXLFramebuffer::read_dump(FILE* stream)
         fb->_name = nullptr;
     }
 
-    std::fread(&(fb->_n_bits_per_sample), sizeof(uint32_t), 1, stream);
-    std::fread(&(fb->_n_exponent_bits_per_sample), sizeof(uint32_t), 1, stream);
+    std::fread(&(fb->_n_bits_per_sample.first), sizeof(uint32_t), 1, stream);
+    std::fread(&(fb->_n_bits_per_sample.second), sizeof(uint32_t), 1, stream);
     std::fread(&(fb->_downsampling_factor), sizeof(uint32_t), 1, stream);
     std::fread(&(fb->_pixel_format), sizeof(JxlPixelFormat), 1, stream);
 
@@ -237,8 +233,7 @@ void JXLImage::setBox(const SGEGBox& box)
 size_t JXLImage::appendFramebuffer(
     const std::vector<float>& framebuffer,
     uint32_t n_channels,
-    uint32_t enc_bits_per_sample,
-    uint32_t enc_exponent_bits_per_sample,
+    std::pair<int, int> enc_bits_per_sample,
     uint32_t enc_downsampling_factor,
     float    enc_framedistance,
     const char* name)
@@ -249,7 +244,6 @@ size_t JXLImage::appendFramebuffer(
         framebuffer,
         n_channels,
         enc_bits_per_sample,
-        enc_exponent_bits_per_sample,
         enc_downsampling_factor,
         enc_framedistance,
         name
@@ -537,6 +531,11 @@ void JXLImage::write(const char* filename, int effort) const {
 
         // Write file
         std::FILE* file = std::fopen(curr_filename.data(), "wb");
+
+        if (file == NULL) {
+            throw std::runtime_error("Could not open file for writting");
+        }
+
         std::fwrite(compressed.data(), sizeof(uint8_t), compressed.size(), file);
         std::fclose(file);
     }
@@ -713,8 +712,7 @@ void JXLImage::load(const char* filename)
                         _framebuffers.push_back(new JXLFramebuffer(
                             _width, _height,
                             basic_info.num_color_channels,
-                            basic_info.bits_per_sample,
-                            basic_info.exponent_bits_per_sample
+                            std::make_pair(basic_info.bits_per_sample, basic_info.exponent_bits_per_sample)
                         ));
 
                         // Extra layer metadata
@@ -733,8 +731,7 @@ void JXLImage::load(const char* filename)
                             _framebuffers.push_back(new JXLFramebuffer(
                                 _width, _height,
                                 basic_info.num_color_channels, // TODO, is this really the case?
-                                extra_info.bits_per_sample,
-                                extra_info.exponent_bits_per_sample,
+                                std::make_pair(extra_info.bits_per_sample, extra_info.exponent_bits_per_sample),
                                 1,
                                 0, // TODO: The current API does not gives the used framedistance
                                 (extra_info.name_length > 0) ? layer_name.data() : nullptr

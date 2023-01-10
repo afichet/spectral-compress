@@ -400,7 +400,8 @@ void linear_compress_spectral_image(
     size_t n_moments,
     std::vector<double>& normalized_moments_image,
     std::vector<double>& mins,
-    std::vector<double>& maxs);
+    std::vector<double>& maxs,
+    bool normalize_image);
 
 
 void linavg_compress_spectral_image(
@@ -410,7 +411,8 @@ void linavg_compress_spectral_image(
     size_t n_moments,
     std::vector<double>& normalized_moments_image,
     std::vector<double>& mins,
-    std::vector<double>& maxs);
+    std::vector<double>& maxs,
+    bool normalize_image);
 
 
 void bounded_compress_spectral_image(
@@ -420,7 +422,8 @@ void bounded_compress_spectral_image(
     size_t n_moments,
     std::vector<double>& normalized_moments_image,
     std::vector<double>& mins,
-    std::vector<double>& maxs);
+    std::vector<double>& maxs,
+    bool normalize_image);
 
 
 void unbounded_compress_spectral_image(
@@ -430,7 +433,8 @@ void unbounded_compress_spectral_image(
     size_t n_moments,
     std::vector<double>& normalized_moments_image,
     std::vector<double>& mins,
-    std::vector<double>& maxs);
+    std::vector<double>& maxs,
+    bool normalize_image);
 
 
 void unbounded_to_bounded_compress_spectral_image(
@@ -440,7 +444,8 @@ void unbounded_to_bounded_compress_spectral_image(
     size_t n_moments,
     std::vector<double>& normalized_moments_image,
     std::vector<double>& mins,
-    std::vector<double>& maxs);
+    std::vector<double>& maxs,
+    bool normalize_image);
 
 
 template<typename T>
@@ -452,6 +457,7 @@ void upperbound_compress_spectral_image(
     std::vector<double>& normalized_moments_image,
     std::vector<double>& mins,
     std::vector<double>& maxs,
+    bool normalize_image,
     std::vector<T>& relative_scales,
     double& global_max)
 {
@@ -493,7 +499,8 @@ void upperbound_compress_spectral_image(
         rescaled_spectral_image,
         n_pixels, n_moments,
         normalized_moments_image,
-        mins, maxs
+        mins, maxs,
+        normalize_image
     );
 
     // Rescale DC components to match the average / pixel for better previewing
@@ -513,6 +520,7 @@ void twobounds_compress_spectral_image(
     std::vector<double>& normalized_moments_image,
     std::vector<double>& mins,
     std::vector<double>& maxs,
+    bool normalize_image,
     std::vector<T>& relative_scales,
     double& r_min,
     double& r_max)
@@ -572,7 +580,8 @@ void twobounds_compress_spectral_image(
         rescaled_spectral_image,
         n_pixels, n_moments,
         normalized_moments_image,
-        mins, maxs
+        mins, maxs,
+        normalize_image
     );
 
     // Rescale DC components to match the average / pixel for better previewing
@@ -595,6 +604,7 @@ void compress_spectral_image(
     size_t n_moments,
     std::vector<double>& compressed_moments,
     std::vector<double>& mins, std::vector<double>& maxs,
+    bool normalize_image,
     std::vector<T>& relative_scales,
     double& global_min, double& global_max,
     double& timing)
@@ -609,7 +619,8 @@ void compress_spectral_image(
                 wavelengths, spectral_image,
                 n_pixels, n_moments,
                 compressed_moments,
-                mins, maxs
+                mins, maxs,
+                normalize_image
             );
             break;
 
@@ -618,7 +629,8 @@ void compress_spectral_image(
                 wavelengths, spectral_image,
                 n_pixels, n_moments,
                 compressed_moments,
-                mins, maxs
+                mins, maxs,
+                normalize_image
             );
             break;
 
@@ -627,7 +639,8 @@ void compress_spectral_image(
                 wavelengths, spectral_image,
                 n_pixels, n_moments,
                 compressed_moments,
-                mins, maxs
+                mins, maxs,
+                normalize_image
             );
             break;
 
@@ -636,7 +649,8 @@ void compress_spectral_image(
                 wavelengths, spectral_image,
                 n_pixels, n_moments,
                 compressed_moments,
-                mins, maxs
+                mins, maxs,
+                normalize_image
             );
             break;
 
@@ -645,7 +659,8 @@ void compress_spectral_image(
                 wavelengths, spectral_image,
                 n_pixels, n_moments,
                 compressed_moments,
-                mins, maxs
+                mins, maxs,
+                normalize_image
             );
             break;
 
@@ -655,6 +670,7 @@ void compress_spectral_image(
                 n_pixels, n_moments,
                 compressed_moments,
                 mins, maxs,
+                normalize_image,
                 relative_scales,
                 global_max
             );
@@ -666,6 +682,7 @@ void compress_spectral_image(
                 n_pixels, n_moments,
                 compressed_moments,
                 mins, maxs,
+                normalize_image,
                 relative_scales,
                 global_min,
                 global_max
