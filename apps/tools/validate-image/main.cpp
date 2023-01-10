@@ -38,6 +38,7 @@
 #include <cstdint>
 #include <vector>
 #include <string>
+#include <limits>
 
 int main(int argc, char *argv[])
 {
@@ -70,6 +71,8 @@ int main(int argc, char *argv[])
     size_t n_nans     = 0;
     size_t n_inf      = 0;
     size_t n_neg      = 0;
+    float min = std::numeric_limits<float>::max();
+    float max = std::numeric_limits<float>::min();
 
     const std::vector<EXRFramebuffer*>& framebuffers = exr_in.getFramebuffersConst();
 
@@ -77,6 +80,7 @@ int main(int argc, char *argv[])
         // Ignore RGB layers
         const std::string name = fb->getName();
         if (name.find("R") && name.find("G") && name.find("B")) {
+            std::cout << "Checking " << name << "..." << std::endl;
             for (size_t i = 0; i < width * height; i++) {
                 const float v = fb->getPixelDataConst()[i];
 
@@ -92,6 +96,9 @@ int main(int argc, char *argv[])
                 }
 
                 mask_err[4 * i + 3] = 255;
+
+                min = std::min(min, v);
+                max = std::max(max, v);
             }
         }
     }
@@ -100,6 +107,7 @@ int main(int argc, char *argv[])
     std::cout << "        NaNs: " << n_nans << std::endl;
     std::cout << "         Inf: " << n_inf << std::endl;
     std::cout << "         Neg: " << n_neg << std::endl;
+    std::cout << "       Range: " << min << " " << max << std::endl;
 
     if (write_mask) {
         lodepng::encode(filename_mask, mask_err.data(), width, height);
