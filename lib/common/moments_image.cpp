@@ -484,6 +484,8 @@ void normalize_moment_image(
             assert(min < max);
 
             dest[px * n_moments + m] = (src[px * n_moments + m] - min) / (max - min);
+            assert(dest[px * n_moments + m] >= 0.);
+            assert(dest[px * n_moments + m] <= 1.);
         }
     }
 }
@@ -526,6 +528,8 @@ void denormalize_moment_image(
     #pragma omp parallel for
     for (size_t px = 0; px < n_pixels; px++) {
         // DC component
+        assert(!std::isnan(src[px * n_moments]));
+        assert(!std::isinf(src[px * n_moments]));
         dest[px * n_moments] = src[px * n_moments];
 
         // AC components
@@ -534,7 +538,11 @@ void denormalize_moment_image(
             const double& max = maxs[m - 1];
             assert(min < max);
 
-            dest[px * n_moments + m] = (max - min) * src[px * n_moments + m] + min;
+            const double normalized_moment = src[px * n_moments + m];
+
+            assert(!std::isnan(normalized_moment));
+            assert(!std::isinf(normalized_moment));
+            dest[px * n_moments + m] = (max - min) * normalized_moment + min;
         }
     }
 }

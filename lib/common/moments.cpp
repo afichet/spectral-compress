@@ -410,12 +410,20 @@ void bounded_compress_moments(
         dot_levinson(toeplitz_first_column, dots);
 
         const std::complex<double> m = std::abs(exponential_moments[0]) / (std::complex<double>(0., 1.) * exponential_moments[0]);
+        assert(!std::isinf(m.real()));
+        assert(!std::isinf(m.imag()));
+        assert(!std::isnan(m.real()));
+        assert(!std::isnan(m.imag()));
 
         for (size_t i = 1; i < n_moments; i++) {
             compressed_moments[i] = (dots[i] * m).real();
+            assert(!std::isinf(compressed_moments[i]));
+            assert(!std::isnan(compressed_moments[i]));
         }
 
         compressed_moments[0] = moments[0];
+        assert(!std::isinf(compressed_moments[0]));
+        assert(!std::isnan(compressed_moments[0]));
     } else {
         for (size_t m = 0; m < n_moments; m++) {
             compressed_moments[m] = 0;
@@ -533,11 +541,19 @@ void bounded_decompress_moments(
     if (compressed_moments[0] > 0) {
         const std::complex<double> J(0., 1.);
         const std::complex<double> exp_0 = std::exp(J * M_PI * (compressed_moments[0] - .5)) / (4. * M_PI);
+        assert(!std::isinf(exp_0.real()));
+        assert(!std::isinf(exp_0.imag()));
+        assert(!std::isnan(exp_0.real()));
+        assert(!std::isnan(exp_0.imag()));
 
         std::vector<std::complex<double>> dots(n_compressed_moments);
 
         for (size_t i = 1; i < n_compressed_moments; i++) {
             dots[i] = compressed_moments[i] * J * exp_0 / std::abs(exp_0);
+            assert(!std::isinf(dots[i].real()));
+            assert(!std::isinf(dots[i].imag()));
+            assert(!std::isnan(dots[i].real()));
+            assert(!std::isnan(dots[i].imag()));
         }
 
         dots[0] = exp_0.real() / M_PI;
@@ -838,7 +854,11 @@ void moments_to_exponential_moments(
 {
     exponential_moments.resize(n_moments);
 
-    exponential_moments[0] = std::exp(std::complex<double>(0., M_PI * (moments[0] - .5f))) / (4. * M_PI);
+    exponential_moments[0] = std::exp(std::complex<double>(0., M_PI * (moments[0] - .5))) / (4. * M_PI);
+    assert(!std::isnan(exponential_moments[0].real()));
+    assert(!std::isnan(exponential_moments[0].imag()));
+    assert(!std::isinf(exponential_moments[0].real()));
+    assert(!std::isinf(exponential_moments[0].imag()));
 
     for (size_t i = 1; i < n_moments; i++) {
         for (size_t k = 0; k < i; k++) {
@@ -846,6 +866,10 @@ void moments_to_exponential_moments(
         }
 
         exponential_moments[i] *= std::complex<double>(0., 2. * M_PI) / (double)i;
+        assert(!std::isnan(exponential_moments[i].real()));
+        assert(!std::isnan(exponential_moments[i].imag()));
+        assert(!std::isinf(exponential_moments[i].real()));
+        assert(!std::isinf(exponential_moments[i].imag()));
     }
 }
 
@@ -857,9 +881,9 @@ void exponential_moments_to_moments(
     const std::complex<double> J(0., 1.);
 
     memset(moments, 0, exponential_moments.size() * sizeof(double));
-    moments[0] = std::arg(exponential_moments[0]) / M_PI + .5f;
+    moments[0] = std::arg(exponential_moments[0]) / M_PI + .5;
 
-    const std::complex<double> exp_0 = std::exp(J * M_PI * (moments[0] - .5f)) / (4. * M_PI);
+    const std::complex<double> exp_0 = std::exp(J * M_PI * (moments[0] - .5)) / (4. * M_PI);
 
     for (size_t i = 1; i < exponential_moments.size(); i++) {
         std::complex<double> sum(0);
