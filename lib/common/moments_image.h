@@ -525,12 +525,12 @@ void twobounds_compress_spectral_image(
 
     std::vector<double> r_local(n_pixels);
     r_min = std::numeric_limits<double>::max();
-    r_max = 0;
+    r_max = std::numeric_limits<double>::min();
 
     for (size_t px = 0; px < n_pixels; px++) {
         // eqn 1, 2
         double avg_local = 0;
-        double max_local = 0;
+        double max_local = spectral_image[px * n_bands];
 
         for (size_t b = 0; b < n_bands; b++) {
             avg_local += spectral_image[px * n_bands + b];
@@ -546,6 +546,8 @@ void twobounds_compress_spectral_image(
         r_min = std::min(r_min, r_local[px]);
         r_max = std::max(r_max, r_local[px]);
     }
+
+    assert(r_min < r_max);
 
     // eqn 6
     for (size_t px = 0; px < n_pixels; px++) {
