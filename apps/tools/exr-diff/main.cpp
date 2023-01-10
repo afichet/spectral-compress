@@ -115,7 +115,6 @@ void diff_to_rgba(
     size_t lut_size,
     std::vector<uint8_t>& rgba_image)
 {
-    std::cout << lower_bound << " | " << upper_bound << std::endl;
     assert(lower_bound < upper_bound);
 
     rgba_image.resize(4 * diff_image.size());
