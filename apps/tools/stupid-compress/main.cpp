@@ -52,7 +52,7 @@ int main(int argc, char* argv[])
     const char* filename_out = argv[2];
     const float framedistance = (argc >= 4) ? std::stof(argv[3]) : 0.1f;
 
-    EXRImage exr_in(filename_in);
+    const EXRImage exr_in(filename_in);
     JXLImage jxl_out(exr_in.width(), exr_in.height());
     SGEGBox box;
 
