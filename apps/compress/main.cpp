@@ -389,7 +389,7 @@ int main(int argc, char *argv[])
         TCLAP::ValueArg<int> quantizationMainStartArg("q", "quantization_bits", "Sets the starting number of bits for quantizing the first AC component. The program use the same number of bits for the remaining components when `--q_flat` is set. Otherwise, the program generates a custom quantization curve starting with the number of bits for the first AC component using the provided value based on the image data (can be slow).", false, 8, "integer");
         TCLAP::ValueArg<int> quantizationExpoStartArg("r", "quantization_exp", "Sets the starting number of bits for quantizing the first AC component. The program use the same number of bits for the remaining components when `--q_flat` is set. Otherwise, the program generates a custom quantization curve starting with the number of bits for the first AC component using the provided value based on the image data (can be slow).", false, 0, "integer");
         TCLAP::SwitchArg useFlatQuantizationArg("u", "q_flat", "Sets a flat quantization curve. The DC component uses the same quantization as the one used for all spectral data in the OpenEXR file while the remaining AC components use the number of bits provided in `--quantization parameter`.");
-        TCLAP::SwitchArg normalizeMomentsArg("k", "kill_normalize", "Do not normalize the moment images. May cause problem when using integer framebuffer for storing moments.", false);
+        TCLAP::SwitchArg normalizeMomentsArg("z", "kill_normalize", "Do not normalize the moment images. May cause problem when using integer framebuffer for storing moments.", false);
         cmd.add(quantizationMainStartArg);
         cmd.add(quantizationExpoStartArg);
         cmd.add(useFlatQuantizationArg);
