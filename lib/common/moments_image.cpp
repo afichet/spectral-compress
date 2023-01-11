@@ -449,6 +449,8 @@ void bounded_compute_density_lagrange_image(
 }
 
 
+#ifdef MIN_MAX
+
 extern "C"
 void normalize_moment_image(
     const double src[],
@@ -490,6 +492,48 @@ void normalize_moment_image(
     }
 }
 
+#else
+
+extern "C"
+void normalize_moment_image(
+    const double src[],
+    size_t n_pixels, size_t n_moments,
+    double normalized[],
+    double means[],
+    double stds[])
+{
+    // Compute stats
+    for (size_t m = 1; m < n_moments; m++) {
+        double b[3] = {0};
+
+        b[0] = n_pixels;
+
+        for (size_t px = 0; px < n_pixels; px++) {
+            const double px_value_1 = src[px * n_moments + m];
+            const double px_value_2 = px_value_1 * px_value_1;
+
+            b[1] += px_value_1;
+            b[2] += px_value_2;
+        }
+
+        means[m - 1] = b[1] / b[0];
+        stds[m - 1]  = std::sqrt(b[0] * b[2] - b[1] * b[1]) / b[0];
+    }
+
+    // Rescale moments
+    for (size_t px = 0; px < n_pixels; px++) {
+        // Ignore for 0th moment
+        normalized[px * n_moments + 0] = src[px * n_moments + 0];
+
+        for (size_t m = 1; m < n_moments; m++) {
+            normalized[px * n_moments + m] = (src[px * n_moments + m] - means[m - 1]) / stds[m - 1];
+        }
+    }
+}
+
+#endif // MIN_MAX
+
+
 void normalize_moment_image(
     const std::vector<double>& src,
     size_t n_pixels, size_t n_moments,
@@ -516,6 +560,8 @@ void normalize_moment_image(
     assert(maxs.size() == n_moments - 1);
 }
 
+
+#ifdef MIN_MAX
 
 extern "C"
 void denormalize_moment_image(
@@ -547,6 +593,29 @@ void denormalize_moment_image(
     }
 }
 
+#else
+
+extern "C"
+void denormalize_moment_image(
+    const double normalized[],
+    size_t n_pixels, size_t n_moments,
+    const double means[],
+    const double stds[],
+    double dest[])
+{
+    for (size_t px = 0; px < n_pixels; px++) {
+        // Ignore for 0th moment
+        dest[px * n_moments + 0] = normalized[px * n_moments + 0];
+
+        for (size_t m = 1; m < n_moments; m++) {
+            dest[px * n_moments + m] = normalized[px * n_moments + m] * stds[m - 1] + means[m - 1];
+        }
+    }
+}
+
+#endif // MIN_MAX
+
+
 void denormalize_moment_image(
     const std::vector<double>& src,
     size_t n_pixels, size_t n_moments,
@@ -555,8 +624,8 @@ void denormalize_moment_image(
     std::vector<double>& dest)
 {
     assert(src.size() == n_pixels * n_moments);
-    assert(mins.size() >= n_moments - 1);
-    assert(maxs.size() >= n_moments - 1);
+    assert(mins.size() == n_moments - 1);
+    assert(maxs.size() == n_moments - 1);
 
     dest.resize(src.size());
 
