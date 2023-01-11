@@ -104,6 +104,12 @@ void compare_spectral_images(
     }
 
     avg_err /= (double)(width * height);
+
+    std::cout << "    average: " << avg_err << std::endl;
+    std::cout << "    max avg: " << max_val << std::endl;
+    std::cout << "       rmse: " << Util::rmse_images(data_a, data_b, width * height, n_bands) << std::endl;
+    std::cout << "      rrmse: " << Util::rrmse_images(data_a, data_b, width * height, n_bands) << std::endl;
+    std::cout << " max / band: " << Util::max_error_images(data_a, data_b, width * height, n_bands) << std::endl;
 }
 
 
@@ -273,6 +279,8 @@ int main(int argc, char* argv[])
                     std::vector<double> framebuffer_error;
                     double min_err, max_err, avg_err;
 
+                    std::cout << "Statistics for " << fb_a->root_name << std::endl;
+
                     compare_spectral_images(
                         fb_a, fb_b,
                         width, height,
@@ -284,7 +292,6 @@ int main(int argc, char* argv[])
                     if (error_output_is_set) {
                         fwrite(&avg_err, sizeof(double), 1, f_err);
                     }
-                    // std::cout << "Error: [" << min_err << ", " << max_err << "]" << std::endl;
 
                     float lower, upper;
 
