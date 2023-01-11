@@ -527,6 +527,7 @@ void normalize_moment_image(
 
         for (size_t m = 1; m < n_moments; m++) {
             normalized[px * n_moments + m] = (src[px * n_moments + m] - means[m - 1]) / stds[m - 1];
+            normalized[px * n_moments + m] = normalized[px * n_moments + m] / 2. + .5;
         }
     }
 }
@@ -608,7 +609,9 @@ void denormalize_moment_image(
         dest[px * n_moments + 0] = normalized[px * n_moments + 0];
 
         for (size_t m = 1; m < n_moments; m++) {
-            dest[px * n_moments + m] = normalized[px * n_moments + m] * stds[m - 1] + means[m - 1];
+            double n = 2. * (normalized[px * n_moments + m] - .5);
+
+            dest[px * n_moments + m] = n * stds[m - 1] + means[m - 1];
         }
     }
 }
