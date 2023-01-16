@@ -335,7 +335,7 @@ void bounded_compute_density_lagrange_image(
  * @param maxs      Upper bound for a given moment over all pixels.
  */
 extern "C"
-void normalize_moment_image(
+void normalize_moment_image_min_max(
     const double src[],
     size_t n_pixels, size_t n_moments,
     double dest[],
@@ -343,7 +343,7 @@ void normalize_moment_image(
     double maxs[]);
 
 #ifdef __cplusplus
-void normalize_moment_image(
+void normalize_moment_image_min_max(
     const std::vector<double>& src,
     size_t n_pixels, size_t n_moments,
     std::vector<double>& dest,
@@ -368,7 +368,7 @@ void normalize_moment_image(
  *                  `n_pixel * n_moments`.
  */
 extern "C"
-void denormalize_moment_image(
+void denormalize_moment_image_min_max(
     const double src[],
     size_t n_pixels, size_t n_moments,
     const double mins[],
@@ -376,11 +376,82 @@ void denormalize_moment_image(
     double dest[]);
 
 #ifdef __cplusplus
-void denormalize_moment_image(
+void denormalize_moment_image_min_max(
     const std::vector<double>& src,
     size_t n_pixels, size_t n_moments,
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
+    std::vector<double>& dest);
+#endif // __cplusplus
+
+
+/**
+ * @brief Rescale AC components of the image in [0, 1]
+ *
+ * For each AC component, rescale those to ensure all components are within
+ * [0, 1]. The scaling factors are then populated in `mins[]` and `maxs[]`.
+ *
+ * Moments are scaled with:
+ *  dest[px * n_moments + m] = (src[px * n_moments + m] - mins[m]) / (maxs[m] - mins[m])
+ *
+ * for all m > 0.
+ *
+ * @param src       Source array to rescale of size `n_pixel * n_moments`.
+ * @param n_pixels  Number of the pixels in the image.
+ * @param n_moments Number of moments per pixel.
+ * @param dest      Destination array containig rescaled values for
+ *                  moments > 0. Must be initialized with size
+ *                  `n_pixel * n_moments`.
+ * @param means     Mean for a given moment over all pixels.
+ * @param stddevs   Standard deviation for a given moment over all pixels.
+ */
+extern "C"
+void normalize_moment_image_stddev(
+    const double src[],
+    size_t n_pixels, size_t n_moments,
+    double dest[],
+    double means[],
+    double stddevs[]);
+
+#ifdef __cplusplus
+void normalize_moment_image_stddev(
+    const std::vector<double>& src,
+    size_t n_pixels, size_t n_moments,
+    std::vector<double>& dest,
+    std::vector<double>& means,
+    std::vector<double>& stddevs);
+#endif // __cplusplus
+
+
+/**
+ * @brief Revert a rescaed vector.
+ *
+ * For each AC component (moment > 0), the destination is computed as follows:
+ *  dest[px * n_moments + m] = src[x * n_moments + m] * (maxs[m] - mins[m]) + mins[m]
+ *
+ * @param src       Source array to rescale of size `n_pixel * n_moments`.
+ * @param n_pixels  Number of the pixels in the image.
+ * @param n_moments Number of moments per pixel.
+ * @param means     Mean for a given moment over all pixels.
+ * @param stddevs   Standard deviation for a given moment over all pixels.
+ * @param dest      Destination array containig rescaled values for
+ *                  moments > 0. Must be initialized with size
+ *                  `n_pixel * n_moments`.
+ */
+extern "C"
+void denormalize_moment_image_stddev(
+    const double src[],
+    size_t n_pixels, size_t n_moments,
+    const double means[],
+    const double stddevs[],
+    double dest[]);
+
+#ifdef __cplusplus
+void denormalize_moment_image_stddev(
+    const std::vector<double>& src,
+    size_t n_pixels, size_t n_moments,
+    const std::vector<double>& means,
+    const std::vector<double>& stddevs,
     std::vector<double>& dest);
 #endif // __cplusplus
 

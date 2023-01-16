@@ -348,7 +348,7 @@ int main(int argc, char *argv[])
 
     std::pair<int, int> n_bits_ac1;
     bool use_flat_quantization = false;
-    bool normalize_moments = false;
+    bool normalize_moments = true;
 
     int downsampling_factor_ac1 = 1;
 
@@ -443,7 +443,7 @@ int main(int argc, char *argv[])
         n_bits_ac1.first      = quantizationMainStartArg.getValue();
         n_bits_ac1.second     = quantizationExpoStartArg.getValue();
         use_flat_quantization = useFlatQuantizationArg.getValue();
-        normalize_moments     = !normalizeMomentsArg.getValue();
+        // normalize_moments     = !normalizeMomentsArg.getValue();
 
         downsampling_factor_ac1 = downsamplingFactorArg.getValue();
 
