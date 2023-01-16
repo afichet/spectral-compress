@@ -13,7 +13,7 @@ def run_compressor(
     input_file: str, output_file: str,
     log_file: str, binlog_file: str, dump_file: str,
     technique: str,
-    n_bits_start: int, flat_quantization: bool,
+    n_bits_start: int, n_exponent_bits: int, flat_quantization: bool,
     compression_ac: float, compression_start_dc: float, flat_compression: bool,
     downsampling_ratio_ac: int = 1,
     effort: int = 7):
@@ -31,6 +31,7 @@ def run_compressor(
         '-d', dump_file,
         '-m', technique,
         '-q', str(n_bits_start),
+        '-r', str(n_exponent_bits),
         '-a', str(compression_ac),
         '-b', str(compression_start_dc),
         '-e', str(effort),
@@ -187,7 +188,7 @@ def get_c_curve_from_txt_log(path: str):
 
     with open(path, 'r') as f:
         lines = f.readlines()
-        for n in lines[8].split():
+        for n in lines[9].split():
             c_curve.append(float(n))
 
     return c_curve

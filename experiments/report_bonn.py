@@ -8,23 +8,23 @@ import matplotlib
 import matplotlib.pyplot as plt
 import openexr.spectralexr as sexr
 
+techniques            = ["linavg"] #['linear', 'linavg', 'unbounded', 'unbounded_to_bounded', 'upperbound', 'twobounds']
+start_bits            = [16]
+flat_quantization     = [True] #[True, False]
+flat_compression      = [True, False]
+c_dc                  = 0
+c_ac                  = 1
+downsampling_ratio_ac = 1
+
 path_data   = '/home/afichet/spectral_images/EXRs/Bonn/'
 path_bin    = '/home/afichet/Repositories/spectral-compress/build/bin/compress'
-path_out    = 'bonn_2'
-path_report = 'bonn_2'
-
-techniques        = ['linear', 'linavg', 'unbounded', 'unbounded_to_bounded', 'upperbound', 'twobounds']
-start_bits        = [8]
-flat_compression  = [True, False]
-flat_quantization = [True, False]
-c_dc              = 0
-c_ac              = 1
+path_out    = 'bonn_{}'.format(downsampling_ratio_ac)
+path_report = 'bonn_{}'.format(downsampling_ratio_ac)
+variants    = ["diffuse", "specular"]
 
 exposure_bonn = 0
 
 db = [ d for d in os.listdir(path_out) ]
-
-variants = ['diffuse', 'specular']
 
 save_tex = True
 
@@ -64,9 +64,9 @@ def get_avg_stats(
     for t in techniques:
         y[t] = {}
         y[t][n_bits] = {}
-        for q_curve in [True, False]:
+        for q_curve in flat_quantization:
             y[t][n_bits][q_curve] = {}
-            for c_curve in [True, False]:
+            for c_curve in flat_compression:
                 y[t][n_bits][q_curve][c_curve] = {}
                 y[t][n_bits][q_curve][c_curve]['error'] = 0
                 y[t][n_bits][q_curve][c_curve]['ratio'] = 0
@@ -85,8 +85,8 @@ def get_avg_stats(
                 continue
             else:
                 for t in techniques:
-                    for q_curve in [True, False]:
-                        for c_curve in [True, False]:
+                    for q_curve in flat_quantization:
+                        for c_curve in flat_compression:
                             y[t][n_bits][q_curve][c_curve]['error'] += div * stats[d][v][t][n_bits][q_curve][c_curve]['error']
                             y[t][n_bits][q_curve][c_curve]['ratio'] += div * stats[d][v][t][n_bits][q_curve][c_curve]['ratio']
 
@@ -107,7 +107,7 @@ def plot_mode_curves_param(
     w = 0.8
     fig, ax = plt.subplots(1, 1, figsize=(5, 4))
 
-    x = np.arange(4)
+    x = np.arange(len(flat_compression) * len(flat_quantization))
 
     n_techinques = len(techniques)
     x_offset = n_techinques / 2 - n_techinques
@@ -115,9 +115,9 @@ def plot_mode_curves_param(
     for tech, i in zip(techniques, range(n_techinques)):
         y = [
             stats[tech][n_bits][True][True][key],
-            stats[tech][n_bits][False][True][key],
+            # stats[tech][n_bits][False][True][key],
             stats[tech][n_bits][True][False][key],
-            stats[tech][n_bits][False][False][key],
+            # stats[tech][n_bits][False][False][key],
         ]
 
         x_offset = i - n_techinques / 2 + .5
@@ -126,9 +126,10 @@ def plot_mode_curves_param(
 
     ax.set_xticks(x, [
         'flat quant\nflat comp',
-        'dyn quant\nflat comp',
+        # 'dyn quant\nflat comp',
         'flat quant\ndyn comp',
-        'dyn quant\ndyn comp']
+        # 'dyn quant\ndyn comp'
+        ]
     )
     ax.set_xlabel('Curves')
     ax.set_ylabel(y_label)
@@ -161,11 +162,11 @@ def plot_q_curves(output_filename, stats, techniques, n_bits):
 
     for tech in techniques:
         if tech == 'upperbound' or tech == 'twobounds':
-            x = np.arange(len(stats[tech][n_bits][False][False]['q_curve'][1:-1])) + 1
-            y =               stats[tech][n_bits][False][False]['q_curve'][1:-1]
+            x = np.arange(len(stats[tech][n_bits][True][False]['q_curve'][1:-1])) + 1
+            y =               stats[tech][n_bits][True][False]['q_curve'][1:-1]
         else:
-            x = np.arange(len(stats[tech][n_bits][False][False]['q_curve'][1:])) + 1
-            y =               stats[tech][n_bits][False][False]['q_curve'][1:]
+            x = np.arange(len(stats[tech][n_bits][True][False]['q_curve'][1:])) + 1
+            y =               stats[tech][n_bits][True][False]['q_curve'][1:]
 
         ax.plot(x, y, label=tech.replace('_', ' '))
 
@@ -184,29 +185,28 @@ def plot_q_curves(output_filename, stats, techniques, n_bits):
 
 
 def plot_c_curves(output_filename, stats, techniques, n_bits):
-    fig, ax = plt.subplots(1, 2, figsize=(10, 4))
+    fig, ax = plt.subplots(1, 1, figsize=(10, 4))
 
     for tech in techniques:
         if tech == 'upperbound' or tech == 'twobounds':
-            x  = np.arange(len(stats[tech][n_bits][False][False]['c_curve'][1:-1])) + 1
+            x  = np.arange(len(stats[tech][n_bits][True][False]['c_curve'][1:-1])) + 1
             y0 =               stats[tech][n_bits][True][False]['c_curve'][1:-1]
-            y1 =               stats[tech][n_bits][False][False]['c_curve'][1:-1]
+            # y1 =               stats[tech][n_bits][False][False]['c_curve'][1:-1]
         else:
-            x  = np.arange(len(stats[tech][n_bits][False][False]['c_curve'][1:])) + 1
+            x  = np.arange(len(stats[tech][n_bits][True][False]['c_curve'][1:])) + 1
             y0 =               stats[tech][n_bits][True][False]['c_curve'][1:]
-            y1 =               stats[tech][n_bits][False][False]['c_curve'][1:]
+            # y1 =               stats[tech][n_bits][False][False]['c_curve'][1:]
 
-        ax[0].plot(x, y0, label=tech.replace('_', ' '))
-        ax[1].plot(x, y1, label=tech.replace('_', ' '))
+        ax.plot(x, y0, label=tech.replace('_', ' '))
+        # ax[1].plot(x, y1, label=tech.replace('_', ' '))
 
-    ax[1].legend()
+    ax.legend()
 
-    ax[0].set_title('Without quantization')
-    ax[1].set_title('With quantization')
+    # ax[0].set_title('Without quantization')
+    # ax[1].set_title('With quantization')
 
-    for i in range(2):
-        ax[i].set_xlabel('Moment order')
-        ax[i].set_ylabel('Framedistance (compression parameter)')
+    ax.set_xlabel('Moment order')
+    ax.set_ylabel('Framedistance (compression parameter)')
 
     fig.tight_layout()
 
@@ -240,7 +240,7 @@ def main():
             org_exr_file = common.get_path_bonn_in(path_data, d, type)
             org_png_file = os.path.join(path_export, d, type, d + '.png')
             org_file_size = os.path.getsize(org_exr_file)
-            curr_max_err = 5E-3
+            curr_max_err = 1E-3
 
             common.run_converter_exr_png(org_exr_file, org_png_file, exposure_bonn)
 
@@ -279,12 +279,10 @@ def main():
                                 q_flat, c_flat)
 
                             # Inputs
-                            # FIXME: wrong name when writing the original files
-                            # d[:-4] shall be replaced by d
-                            compressed_file = os.path.join(path_curr_in, d[:-4] + '.jxl')
-                            log_file        = os.path.join(path_curr_in, d[:-4] + '.txt')
-                            binlog_file     = os.path.join(path_curr_in, d[:-4] + '.bin')
-                            dump_file       = os.path.join(path_curr_in, d[:-4] + '.dat')
+                            compressed_file = os.path.join(path_curr_in, d + '.jxl')
+                            log_file        = os.path.join(path_curr_in, d + '.txt')
+                            binlog_file     = os.path.join(path_curr_in, d + '.bin')
+                            dump_file       = os.path.join(path_curr_in, d + '.dat')
 
                             # Outputs
                             decompressed_exr_file = os.path.join(path_curr_out, d + '.exr')
@@ -320,11 +318,11 @@ def main():
             meta_spectrum_type_file = os.path.join(path_export, d, type, d + '_spectrum_type.txt')
             meta_max_error_file     = os.path.join(path_export, d, type, d + '_max_err.txt')
 
-            plot_mode_curve_error(plot_curve_error_file, stats[d][type], techniques, 8)
-            plot_mode_curve_size (plot_curve_size_file , stats[d][type], techniques, 8)
-            plot_mode_curve_ratio(plot_curve_ratio_file, stats[d][type], techniques, 8)
-            plot_q_curves(plot_q_curve_file, stats[d][type], techniques, 8)
-            plot_c_curves(plot_c_curve_file, stats[d][type], techniques, 8)
+            plot_mode_curve_error(plot_curve_error_file, stats[d][type], techniques, 16)
+            plot_mode_curve_size (plot_curve_size_file , stats[d][type], techniques, 16)
+            plot_mode_curve_ratio(plot_curve_ratio_file, stats[d][type], techniques, 16)
+            plot_q_curves(plot_q_curve_file, stats[d][type], techniques, 16)
+            plot_c_curves(plot_c_curve_file, stats[d][type], techniques, 16)
 
             with open(meta_org_file_size_file, 'w') as f:
                 f.write('{:.2f} MiB'.format(org_file_size / (1000*1000)))
@@ -365,11 +363,11 @@ def main():
     plot_avg_q_curve_file     = os.path.join(path_export, 'avg_q_curve.pgf')
     plot_avg_c_curve_file     = os.path.join(path_export, 'avg_c_curve.pgf')
 
-    avg_stats = get_avg_stats(stats, db, variants, techniques, 8)
-    plot_mode_curve_error(plot_avg_curve_error_file, avg_stats, techniques, 8)
-    plot_mode_curve_ratio(plot_avg_curve_ratio_file, avg_stats, techniques, 8)
-    plot_q_curves(plot_avg_q_curve_file, avg_stats, techniques, 8)
-    plot_c_curves(plot_avg_c_curve_file, avg_stats, techniques, 8)
+    avg_stats = get_avg_stats(stats, db, variants, techniques, 16)
+    plot_mode_curve_error(plot_avg_curve_error_file, avg_stats, techniques, 16)
+    plot_mode_curve_ratio(plot_avg_curve_ratio_file, avg_stats, techniques, 16)
+    plot_q_curves(plot_avg_q_curve_file, avg_stats, techniques, 16)
+    plot_c_curves(plot_avg_c_curve_file, avg_stats, techniques, 16)
 
     with open(os.path.join('export', path_report + '.tex'), 'w') as f:
         f.write(tex_stream)
