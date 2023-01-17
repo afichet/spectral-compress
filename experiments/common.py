@@ -1,8 +1,22 @@
 #!/usr/bin/env python3
 
 import os, subprocess, struct
+import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
 
 path_bin  = '/home/afichet/Repositories/spectral-compress/build/bin/'
+
+save_tex = True
+
+if (save_tex):
+    matplotlib.use("pgf")
+    matplotlib.rcParams.update({
+        "pgf.texsystem": "pdflatex",
+        'font.family': 'serif',
+        'text.usetex': True,
+        'pgf.rcfonts': False,
+    })
 
 
 ###############################################################################
@@ -104,14 +118,15 @@ def get_path_cave_in(folder: str, dataset_name: str):
 
 
 def get_path_cave_out(
-    start: str, dataset_name: str,
+    start: str, downsampling_ratio_ac: int,
+    dataset_name: str,
     technique: str,
     n_bits_start: int,
     c_dc: float, c_ac: float,
     flat_q: bool, flat_c: bool):
 
     return os.path.join(
-        start,
+        '{}_{}'.format(start, downsampling_ratio_ac),
         dataset_name,
         technique,
         str(n_bits_start),
@@ -130,16 +145,17 @@ def get_path_bonn_in(folder: str, dataset_name: str, type: str):
 
 
 def get_path_bonn_out(
-    start: str, dataset_name: str, type: str,
+    start: str, downsampling_ratio_ac: int,
+    dataset_name: str, variant: str,
     technique: str,
     n_bits_start: int,
     c_dc: float, c_ac: float,
     flat_q: bool, flat_c: bool):
 
     return os.path.join(
-        start,
+        '{}_{}'.format(start, downsampling_ratio_ac),
         dataset_name,
-        type,
+        variant,
         technique,
         str(n_bits_start),
         str(c_dc), str(c_ac),
@@ -194,6 +210,15 @@ def get_c_curve_from_txt_log(path: str):
     return c_curve
 
 
+def get_duration_from_txt_log(path: str):
+    duration = 0
+
+    with open(path, 'r') as f:
+        lines = f.readlines()
+        duration = lines[18].split()[2]
+
+    return float(duration)
+
 def get_jxl_dir_size(path: str):
     size = 0
 
@@ -202,3 +227,132 @@ def get_jxl_dir_size(path: str):
             size += os.path.getsize(os.path.join(path, f))
 
     return size
+
+
+###############################################################################
+# Plotting
+###############################################################################
+
+def plot_mode_curves_param(
+    output_filename: str,
+    stats: dict,
+    technique: str,
+    n_bits: int,
+    downsampling_ratios_ac: list,
+    framedistances: list,
+    flat_compression: list,
+    key: str,
+    y_label: str):
+    w = 0.8
+    fig, ax = plt.subplots(1, 1, figsize=(5, 4))
+
+    x = np.arange(len(flat_compression))
+
+    n_downsampling_ratio_ac = len(downsampling_ratios_ac)
+    n_framedistances        = len(framedistances)
+    n_el_per_group = n_downsampling_ratio_ac * n_framedistances
+    x_offset = n_el_per_group / 2 - n_el_per_group
+
+    for ratio, i in zip(downsampling_ratios_ac, range(n_downsampling_ratio_ac)):
+        for (dc, ac), j  in zip(framedistances, range(n_framedistances)):
+            y = [
+                stats[ratio][technique][n_bits][dc][ac][True][True][key],
+                stats[ratio][technique][n_bits][dc][ac][True][False][key],
+            ]
+
+            x_offset = (i * n_framedistances + j) - n_el_per_group / 2 + .5
+
+            ax.bar(
+                x + x_offset * w/n_el_per_group,
+                y,
+                width=w/n_el_per_group,
+                label="dc = {}, ac = {}, chroma downsampling: 1:{}".format(dc, ac, ratio))
+
+    ax.set_xticks(x, [
+        'Flat',
+        'Dynamic',
+        ]
+    )
+    ax.set_xlabel('Framedistance (compression quality)')
+    ax.set_ylabel(y_label)
+
+    ax.legend()
+
+    fig.tight_layout()
+
+    if (save_tex):
+        plt.savefig(output_filename)
+        plt.close()
+    else:
+        plt.show()
+
+
+def plot_mode_curve_error(output_filename:str, stats:dict, technique:str, n_bits:int, downsampling_ratio_ac:list, frame_distances:list, flat_compression: list):
+    plot_mode_curves_param(output_filename, stats, technique, n_bits, downsampling_ratio_ac, frame_distances, flat_compression, 'error', 'Error')
+
+
+def plot_mode_curve_size(output_filename:str, stats:dict, technique:str, n_bits:int, downsampling_ratio_ac:list, frame_distances:list, flat_compression: list):
+   plot_mode_curves_param(output_filename, stats, technique, n_bits, downsampling_ratio_ac, frame_distances, flat_compression, 'size', 'File size')
+
+
+def plot_mode_curve_ratio(output_filename:str, stats:dict, technique:str, n_bits:int, downsampling_ratio_ac:list, frame_distances:list, flat_compression: list):
+   plot_mode_curves_param(output_filename, stats, technique, n_bits, downsampling_ratio_ac, frame_distances, flat_compression, 'ratio', 'Compression ratio')
+
+
+def plot_mode_curve_duration(output_filename:str, stats:dict, technique:str, n_bits:int, downsampling_ratio_ac:list, frame_distances:list, flat_compression: list):
+   plot_mode_curves_param(output_filename, stats, technique, n_bits, downsampling_ratio_ac, frame_distances, flat_compression, 'duration', 'Computation time (ms)')
+
+
+def plot_q_curves(output_filename, stats, techniques, n_bits):
+    fig, ax = plt.subplots(1, 1, figsize=(5, 4))
+
+    for tech in techniques:
+        if tech == 'upperbound' or tech == 'twobounds':
+            x = np.arange(len(stats[tech][n_bits][True][False]['q_curve'][1:-1])) + 1
+            y =               stats[tech][n_bits][True][False]['q_curve'][1:-1]
+        else:
+            x = np.arange(len(stats[tech][n_bits][True][False]['q_curve'][1:])) + 1
+            y =               stats[tech][n_bits][True][False]['q_curve'][1:]
+
+        ax.plot(x, y, label=tech.replace('_', ' '))
+
+    ax.legend()
+    ax.set_title('Dynamic compression curves')
+    ax.set_xlabel('Moment order')
+    ax.set_ylabel('Number of bits')
+
+    fig.tight_layout()
+
+    if (save_tex):
+        plt.savefig(output_filename)
+        plt.close()
+    else:
+        plt.show()
+
+
+def plot_c_curves(
+    output_filename: str,
+    stats: dict,
+    technique: str,
+    n_bits: int,
+    downsampling_ratio_ac: list,
+    framedistances: list):
+    fig, ax = plt.subplots(1, 1, figsize=(5, 4))
+
+    for ratio in downsampling_ratio_ac:
+        for (c_dc, c_ac) in framedistances:
+            y = stats[ratio][technique][n_bits][c_dc][c_ac][True][False]['c_curve'][1:]
+            x = np.arange(len(y)) + 1
+            ax.plot(x, y, label='dc = {}, ac = {}, Chroma downsampling = 1:{}'.format(c_dc, c_ac, ratio))
+
+    ax.legend()
+    ax.set_xlabel('Moment order')
+    ax.set_ylabel('Framedistance (compression parameter)')
+
+    fig.tight_layout()
+
+    if (save_tex):
+        plt.savefig(output_filename)
+        plt.close()
+    else:
+        plt.show()

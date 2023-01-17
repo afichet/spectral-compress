@@ -1,9 +1,14 @@
+% \newcommand{\material}{Brokat_Neuschwanstein_blau_aniso_medium_gloss_}
+% \newcommand{\variant}{diffuse}
+% \newcommand{\exportdir}{bonn_1}
+
 \begin{tabularx}{\textwidth}{cX}
     \raisebox{-0.5\height}{\frame{\includegraphics[height=3cm]{\exportdir/\material/\variant/\material.png}}}
     &
     \begin{tabular}{ll}
         File size:&\input{\exportdir/\material/\variant/\material_org_size.txt}\\
         Spectrum type:&\input{\exportdir/\material/\variant/\material_spectrum_type.txt}\\
+        Resolution:&\input{\exportdir/\material/\variant/\material_dim.txt}\\
         Spectral bands:&\input{\exportdir/\material/\variant/\material_n_bands.txt}\\
     \end{tabular}\\
 \end{tabularx}
@@ -18,32 +23,93 @@
 \end{figure}
 
 \begin{figure}[h]
-    \resizebox*{\linewidth}{!}{\input{\exportdir/\material/\variant/\material_c_curve.pgf}}
+    \begin{subfigure}{.5\linewidth}
+        \resizebox*{\linewidth}{!}{\input{\exportdir/\material/\variant/\material_c_curve.pgf}}
+    \end{subfigure}\hfill%
+    \begin{subfigure}{.5\linewidth}
+        \resizebox*{\linewidth}{!}{\input{\exportdir/\material/\variant/\material_duration.pgf}}
+    \end{subfigure}
 \end{figure}
+
+\pagebreak
+\hspace{0pt}
+\vfill
 
 \begin{tabularx}{\linewidth}{X@{\hskip 0pt}c c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}}
     \toprule
-        && \multicolumn{2}{c}{\thead{flat quantization \& flat compression}} & \multicolumn{2}{c}{\thead{flat quantization \& dynamic compression}}\\
+        \multicolumn{6}{c}{\thead{\textbf{Flat compression curve}}}
+    \\
     \midrule
-        && linavg & twobounds & linavg & twobounds \\
+        && \multicolumn{2}{c}{\thead{No downsampling (1:1)}} & \multicolumn{2}{c}{\thead{Chroma downsampling (1:2)}}
+    \\
+    \midrule
+        && dc = 0, ac = 1 & ac = 0.5, dc = 2 & dc = 0, ac = 1 & ac = 0.5, dc = 2
+    \\
+    \midrule
+        \multicolumn{2}{l}{Compressed size}
+        & \input{bonn_1/\material/\variant/linavg/16/0/1/q_flat/c_flat/\material_size.txt}
+        & \input{bonn_1/\material/\variant/linavg/16/0.5/2/q_flat/c_flat/\material_size.txt}
+        & \input{bonn_2/\material/\variant/linavg/16/0/1/q_flat/c_flat/\material_size.txt}
+        & \input{bonn_2/\material/\variant/linavg/16/0.5/2/q_flat/c_flat/\material_size.txt}
+    \\
     \midrule
         \rotatebox[origin=c]{90}{RGB} &
-        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.22\linewidth]{\exportdir/\material/\variant/linavg/16/0/1/q_flat/c_flat/\material.png}}}
-        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.22\linewidth]{\exportdir/\material/\variant/twobounds/16/0/1/q_flat/c_flat/\material.png}}}
-        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.22\linewidth]{\exportdir/\material/\variant/linavg/16/0/1/q_flat/c_dynamic/\material.png}}}
-        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.22\linewidth]{\exportdir/\material/\variant/twobounds/16/0/1/q_flat/c_dynamic/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.2\linewidth]{bonn_1/\material/\variant/linavg/16/0/1/q_flat/c_flat/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.2\linewidth]{bonn_1/\material/\variant/linavg/16/0.5/2/q_flat/c_flat/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.2\linewidth]{bonn_2/\material/\variant/linavg/16/0/1/q_flat/c_flat/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.2\linewidth]{bonn_2/\material/\variant/linavg/16/0.5/2/q_flat/c_flat/\material.png}}}
     \\
         \rotatebox[origin=c]{90}{diff} &
         \bgroup\def\arraystretch{0.4}\begin{tabular}{c}
             % \rotatebox[origin=c]{90}{diff} &
             \tiny{$\input{\exportdir/\material/\variant/\material_max_err.txt}$}\\
-            \frame{\includegraphics[angle=0,origin=c,height=.22\linewidth]{scale.png}}\\
+            \frame{\includegraphics[angle=0,origin=c,height=.16\linewidth]{scale.png}}\\
             \tiny{$0$}
         \end{tabular}\egroup
-        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.22\linewidth]{\exportdir/\material/\variant/linavg/16/0/1/q_flat/c_flat/\material_diff.png}}}
-        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.22\linewidth]{\exportdir/\material/\variant/twobounds/16/0/1/q_flat/c_flat/\material_diff.png}}}
-        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.22\linewidth]{\exportdir/\material/\variant/linavg/16/0/1/q_flat/c_dynamic/\material_diff.png}}}
-        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.22\linewidth]{\exportdir/\material/\variant/twobounds/16/0/1/q_flat/c_dynamic/\material_diff.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.2\linewidth]{bonn_1/\material/\variant/linavg/16/0/1/q_flat/c_flat/\material_diff.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.2\linewidth]{bonn_1/\material/\variant/linavg/16/0.5/2/q_flat/c_flat/\material_diff.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.2\linewidth]{bonn_2/\material/\variant/linavg/16/0/1/q_flat/c_flat/\material_diff.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.2\linewidth]{bonn_2/\material/\variant/linavg/16/0.5/2/q_flat/c_flat/\material_diff.png}}}
+    \\
+    \bottomrule
+    \toprule
+        \multicolumn{6}{c}{\thead{\textbf{Dynamic compression curve}}}
+    \\
+    \midrule
+        && \multicolumn{2}{c}{\thead{No downsampling (1:1)}} & \multicolumn{2}{c}{\thead{Chroma downsampling (1:2)}}
+    \\
+    \midrule
+        && dc = 0, ac = 1 & ac = 0.5, dc = 2 & dc = 0, ac = 1 & ac = 0.5, dc = 2
+    \\
+    \midrule
+        \multicolumn{2}{l}{Compressed size}
+        & \input{bonn_1/\material/\variant/linavg/16/0/1/q_flat/c_dynamic/\material_size.txt}
+        & \input{bonn_1/\material/\variant/linavg/16/0.5/2/q_flat/c_dynamic/\material_size.txt}
+        & \input{bonn_2/\material/\variant/linavg/16/0/1/q_flat/c_dynamic/\material_size.txt}
+        & \input{bonn_2/\material/\variant/linavg/16/0.5/2/q_flat/c_dynamic/\material_size.txt}
+    \\
+    \midrule
+        \rotatebox[origin=c]{90}{RGB} &
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.2\linewidth]{bonn_1/\material/\variant/linavg/16/0/1/q_flat/c_dynamic/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.2\linewidth]{bonn_1/\material/\variant/linavg/16/0.5/2/q_flat/c_dynamic/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.2\linewidth]{bonn_2/\material/\variant/linavg/16/0/1/q_flat/c_dynamic/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.2\linewidth]{bonn_2/\material/\variant/linavg/16/0.5/2/q_flat/c_dynamic/\material.png}}}
+    \\
+        \rotatebox[origin=c]{90}{Error} &
+        \bgroup\def\arraystretch{0.4}\begin{tabular}{c}
+            % \rotatebox[origin=c]{90}{diff} &
+            \tiny{$\input{\exportdir/\material/\variant/\material_max_err.txt}$}\\
+            \frame{\includegraphics[angle=0,origin=c,height=.16\linewidth]{scale.png}}\\
+            \tiny{$0$}
+        \end{tabular}\egroup
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.2\linewidth]{bonn_1/\material/\variant/linavg/16/0/1/q_flat/c_dynamic/\material_diff.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.2\linewidth]{bonn_1/\material/\variant/linavg/16/0.5/2/q_flat/c_dynamic/\material_diff.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.2\linewidth]{bonn_2/\material/\variant/linavg/16/0/1/q_flat/c_dynamic/\material_diff.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.2\linewidth]{bonn_2/\material/\variant/linavg/16/0.5/2/q_flat/c_dynamic/\material_diff.png}}}
     \\
     \bottomrule
 \end{tabularx}
+
+\vfill
+\hspace{0pt}
+\pagebreak
