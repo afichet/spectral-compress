@@ -12,7 +12,7 @@ frame_distances       = [(0, 1), (0.5, 2)]
 downsampling_ratio_ac = [1, 2]
 
 path_data = '/home/afichet/spectral_images/EXRs/CAVE/'
-path_out  = 'cave_{}'.format(downsampling_ratio_ac)
+prefix_path_out  = 'cave'
 
 for filename in os.listdir(path_data):
     dataset_name = filename[:-4]
@@ -33,7 +33,7 @@ for filename in os.listdir(path_data):
                     for q_flat in flat_quantization:
                         for c_flat in flat_compression:
                             path_curr_out = common.get_path_cave_out(
-                                path_out, downsampling,
+                                prefix_path_out, downsampling,
                                 dataset_name,
                                 tech,
                                 bits,
