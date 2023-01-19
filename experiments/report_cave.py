@@ -81,9 +81,13 @@ def get_avg_stats(
                     for c_dc, c_ac in framedistances:
                         for q_flat in flat_quantization:
                             for c_flat in flat_compression:
+                                width    = stats[d][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['width']
+                                height   = stats[d][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['height']
+                                n_pixels = width * height
+
                                 avg_stats[downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['error']    += div * stats[d][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['error']
                                 avg_stats[downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['ratio']    += div * stats[d][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['ratio']
-                                avg_stats[downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['duration'] += div * stats[d][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['duration']
+                                avg_stats[downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['duration'] += div * stats[d][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['duration'] / n_pixels
 
                                 for i in range(len(stats[d][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['q_curve'])):
                                     avg_stats[downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['q_curve'][i] += div * stats[d][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['q_curve'][i]
@@ -116,14 +120,35 @@ def main():
     tex_stream = ''
 
     for d in db:
-        tex_stream += '\n\\subsection{' + d.replace('_', ' ') + '}\n'
-
         print(d)
+
+        tex_stream += '\n\\subsection{' + d.replace('_', ' ') + '}\n'
 
         org_exr_file = common.get_path_cave_in(path_data, d)
         org_png_file = os.path.join(path_report, d, d + '.png')
         org_file_size = os.path.getsize(org_exr_file)
         curr_max_err = 1E-2
+
+        # Retrive misc. info about the original OpenEXR file
+        org_exr_image = sexr.SpectralEXRFile(org_exr_file)
+
+        spectrum_type = ''
+        wl_min, wl_max = 0, 0
+        n_bands = 0
+        width, height = org_exr_image.width, org_exr_image.height
+
+        # Two ifs not else to account for cases where the file contains
+        # both emissive and reflective channels
+        if org_exr_image.is_emissive:
+            spectrum_type = 'Emissive '
+            n_bands = len(org_exr_image.emissive_wavelengths_nm[0])
+            wl_min = org_exr_image.emissive_wavelengths_nm[0][0]
+            wl_max = org_exr_image.emissive_wavelengths_nm[0][-1]
+        if org_exr_image.is_reflective:
+            spectrum_type += 'Reflective'
+            n_bands += len(org_exr_image.reflective_wavelengths_nm)
+            wl_min = org_exr_image.reflective_wavelengths_nm[0]
+            wl_max = org_exr_image.reflective_wavelengths_nm[-1]
 
         common.run_converter_exr_png(org_exr_file, org_png_file, exposure_cave)
 
@@ -173,6 +198,8 @@ def main():
                                 c_curve  = common.get_c_curve_from_txt_log(log_file)
                                 duration = common.get_duration_from_txt_log(log_file)
 
+                                stats[d][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['width']    = width
+                                stats[d][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['height']   = height
                                 stats[d][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['size']     = size
                                 stats[d][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['ratio']    = ratio
                                 stats[d][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['error']    = error
@@ -191,6 +218,7 @@ def main():
 
         meta_org_file_size_file = os.path.join(path_report, d, d + '_org_size.txt')
         meta_org_file_dim_file  = os.path.join(path_report, d, d + '_dim.txt')
+        meta_wl_range_file      = os.path.join(path_report, d, d + '_wl_range.txt')
         meta_n_bands_file       = os.path.join(path_report, d, d + '_n_bands.txt')
         meta_spectrum_type_file = os.path.join(path_report, d, d + '_spectrum_type.txt')
         meta_max_error_file     = os.path.join(path_report, d, d + '_max_err.txt')
@@ -204,24 +232,11 @@ def main():
         with open(meta_org_file_size_file, 'w') as f:
             f.write('{:.2f} MiB'.format(org_file_size / (1000 * 1000)))
 
-        # Retrive misc. info about the original OpenEXR file
-        org_exr_image = sexr.SpectralEXRFile(org_exr_file)
-
-        spectrum_type = ''
-        n_bands = 0
-        width, height = org_exr_image.width, org_exr_image.height
-
-        # Two ifs not else to account for cases where the file contains
-        # both emissive and reflective channels
-        if org_exr_image.is_emissive:
-            spectrum_type = 'Emissive '
-            n_bands = len(org_exr_image.emissive_wavelengths_nm[0])
-        if org_exr_image.is_reflective:
-            spectrum_type += 'Reflective'
-            n_bands += len(org_exr_image.reflective_wavelengths_nm)
-
         with open(meta_spectrum_type_file, 'w') as f:
             f.write(spectrum_type)
+
+        with open(meta_wl_range_file, 'w') as f:
+            f.write('[{}, {}] nm'.format(wl_min, wl_max))
 
         with open(meta_n_bands_file, 'w') as f:
             f.write('{}'.format(n_bands))
@@ -246,10 +261,10 @@ def main():
 
     avg_stats = get_avg_stats(stats, db, techniques, start_bits, downsampling_ratios_ac, framedistances, flat_quantization, flat_compression)
 
-    common.plot_mode_curve_error(plot_avg_curve_error_file      , avg_stats, 'linavg', 16, downsampling_ratios_ac, framedistances, flat_compression)
-    common.plot_mode_curve_ratio(plot_avg_curve_ratio_file      , avg_stats, 'linavg', 16, downsampling_ratios_ac, framedistances, flat_compression)
-    common.plot_mode_curve_duration(plot_avg_curve_duration_file, avg_stats, 'linavg', 16, downsampling_ratios_ac, framedistances, flat_compression)
-    common.plot_c_curves(plot_avg_c_curve_file                  , avg_stats, 'linavg', 16, downsampling_ratios_ac, framedistances)
+    common.plot_mode_curve_error(plot_avg_curve_error_file                , avg_stats, 'linavg', 16, downsampling_ratios_ac, framedistances, flat_compression)
+    common.plot_mode_curve_ratio(plot_avg_curve_ratio_file                , avg_stats, 'linavg', 16, downsampling_ratios_ac, framedistances, flat_compression)
+    common.plot_mode_curve_duration_per_pixel(plot_avg_curve_duration_file, avg_stats, 'linavg', 16, downsampling_ratios_ac, framedistances, flat_compression)
+    common.plot_c_curves(plot_avg_c_curve_file                            , avg_stats, 'linavg', 16, downsampling_ratios_ac, framedistances)
 
 
     with open(os.path.join(path_report + '.tex'), 'w') as f:

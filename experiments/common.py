@@ -303,6 +303,10 @@ def plot_mode_curve_duration(output_filename:str, stats:dict, technique:str, n_b
    plot_mode_curves_param(output_filename, stats, technique, n_bits, downsampling_ratio_ac, frame_distances, flat_compression, 'duration', 'Computation time (ms)')
 
 
+def plot_mode_curve_duration_per_pixel(output_filename:str, stats:dict, technique:str, n_bits:int, downsampling_ratio_ac:list, frame_distances:list, flat_compression: list):
+   plot_mode_curves_param(output_filename, stats, technique, n_bits, downsampling_ratio_ac, frame_distances, flat_compression, 'duration', 'Computation time per pixel (ms)')
+
+
 def plot_q_curves(output_filename, stats, techniques, n_bits):
     fig, ax = plt.subplots(1, 1, figsize=(5, 4))
 
