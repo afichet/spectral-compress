@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 
 import os
-import numpy as np
-
 import common
-import matplotlib
 import openexr.spectralexr as sexr
 
 techniques             = ['linavg'] #['linear', 'linavg', 'unbounded', 'unbounded_to_bounded', 'upperbound', 'twobounds']
@@ -215,6 +212,7 @@ def main():
         plot_curve_ratio_file    = os.path.join(path_report, d, d + '_ratio.pgf')
         plot_curve_duration_file = os.path.join(path_report, d, d + '_duration.pgf')
         plot_c_curve_file        = os.path.join(path_report, d, d + '_c_curve.pgf')
+        plot_legend              = os.path.join(path_report, d, d + '_legend.pgf')
 
         meta_org_file_size_file = os.path.join(path_report, d, d + '_org_size.txt')
         meta_org_file_dim_file  = os.path.join(path_report, d, d + '_dim.txt')
@@ -228,6 +226,7 @@ def main():
         common.plot_mode_curve_ratio(plot_curve_ratio_file      , stats[d], 'linavg', 16, downsampling_ratios_ac, framedistances, flat_compression)
         common.plot_mode_curve_duration(plot_curve_duration_file, stats[d], 'linavg', 16, downsampling_ratios_ac, framedistances, flat_compression)
         common.plot_c_curves(plot_c_curve_file                  , stats[d], 'linavg', 16, downsampling_ratios_ac, framedistances)
+        common.plot_legend(plot_legend, downsampling_ratios_ac, framedistances)
 
         with open(meta_org_file_size_file, 'w') as f:
             f.write('{:.2f} MiB'.format(org_file_size / (1000 * 1000)))
@@ -258,6 +257,7 @@ def main():
     plot_avg_curve_ratio_file    = os.path.join(path_report, 'avg_ratio.pgf')
     plot_avg_curve_duration_file = os.path.join(path_report, 'avg_duration.pgf')
     plot_avg_c_curve_file        = os.path.join(path_report, 'avg_c_curve.pgf')
+    plot_avg_legend              = os.path.join(path_report, 'avg_legend.pgf')
 
     avg_stats = get_avg_stats(stats, db, techniques, start_bits, downsampling_ratios_ac, framedistances, flat_quantization, flat_compression)
 
@@ -265,7 +265,7 @@ def main():
     common.plot_mode_curve_ratio(plot_avg_curve_ratio_file                , avg_stats, 'linavg', 16, downsampling_ratios_ac, framedistances, flat_compression)
     common.plot_mode_curve_duration_per_pixel(plot_avg_curve_duration_file, avg_stats, 'linavg', 16, downsampling_ratios_ac, framedistances, flat_compression)
     common.plot_c_curves(plot_avg_c_curve_file                            , avg_stats, 'linavg', 16, downsampling_ratios_ac, framedistances)
-
+    common.plot_legend(plot_avg_legend, downsampling_ratios_ac, framedistances)
 
     with open(os.path.join(path_report + '.tex'), 'w') as f:
         f.write(tex_stream)

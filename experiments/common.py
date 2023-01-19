@@ -276,7 +276,7 @@ def plot_mode_curves_param(
     ax.set_xlabel('Framedistance (compression quality)')
     ax.set_ylabel(y_label)
 
-    ax.legend()
+    # ax.legend()
 
     fig.tight_layout()
 
@@ -287,24 +287,24 @@ def plot_mode_curves_param(
         plt.show()
 
 
-def plot_mode_curve_error(output_filename:str, stats:dict, technique:str, n_bits:int, downsampling_ratio_ac:list, frame_distances:list, flat_compression: list):
-    plot_mode_curves_param(output_filename, stats, technique, n_bits, downsampling_ratio_ac, frame_distances, flat_compression, 'error', 'Error')
+def plot_mode_curve_error(output_filename:str, stats:dict, technique:str, n_bits:int, downsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
+    plot_mode_curves_param(output_filename, stats, technique, n_bits, downsampling_ratios_ac, frame_distances, flat_compression, 'error', 'Error')
 
 
-def plot_mode_curve_size(output_filename:str, stats:dict, technique:str, n_bits:int, downsampling_ratio_ac:list, frame_distances:list, flat_compression: list):
-   plot_mode_curves_param(output_filename, stats, technique, n_bits, downsampling_ratio_ac, frame_distances, flat_compression, 'size', 'File size')
+def plot_mode_curve_size(output_filename:str, stats:dict, technique:str, n_bits:int, downsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
+   plot_mode_curves_param(output_filename, stats, technique, n_bits, downsampling_ratios_ac, frame_distances, flat_compression, 'size', 'File size')
 
 
-def plot_mode_curve_ratio(output_filename:str, stats:dict, technique:str, n_bits:int, downsampling_ratio_ac:list, frame_distances:list, flat_compression: list):
-   plot_mode_curves_param(output_filename, stats, technique, n_bits, downsampling_ratio_ac, frame_distances, flat_compression, 'ratio', 'Compression ratio')
+def plot_mode_curve_ratio(output_filename:str, stats:dict, technique:str, n_bits:int, downsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
+   plot_mode_curves_param(output_filename, stats, technique, n_bits, downsampling_ratios_ac, frame_distances, flat_compression, 'ratio', 'Compression ratio')
 
 
-def plot_mode_curve_duration(output_filename:str, stats:dict, technique:str, n_bits:int, downsampling_ratio_ac:list, frame_distances:list, flat_compression: list):
-   plot_mode_curves_param(output_filename, stats, technique, n_bits, downsampling_ratio_ac, frame_distances, flat_compression, 'duration', 'Computation time (ms)')
+def plot_mode_curve_duration(output_filename:str, stats:dict, technique:str, n_bits:int, downsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
+   plot_mode_curves_param(output_filename, stats, technique, n_bits, downsampling_ratios_ac, frame_distances, flat_compression, 'duration', 'Computation time (ms)')
 
 
-def plot_mode_curve_duration_per_pixel(output_filename:str, stats:dict, technique:str, n_bits:int, downsampling_ratio_ac:list, frame_distances:list, flat_compression: list):
-   plot_mode_curves_param(output_filename, stats, technique, n_bits, downsampling_ratio_ac, frame_distances, flat_compression, 'duration', 'Computation time per pixel (ms)')
+def plot_mode_curve_duration_per_pixel(output_filename:str, stats:dict, technique:str, n_bits:int, downsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
+   plot_mode_curves_param(output_filename, stats, technique, n_bits, downsampling_ratios_ac, frame_distances, flat_compression, 'duration', 'Computation time per pixel (ms)')
 
 
 def plot_q_curves(output_filename, stats, techniques, n_bits):
@@ -320,7 +320,7 @@ def plot_q_curves(output_filename, stats, techniques, n_bits):
 
         ax.plot(x, y, label=tech.replace('_', ' '))
 
-    ax.legend()
+    # ax.legend()
     ax.set_title('Dynamic compression curves')
     ax.set_xlabel('Moment order')
     ax.set_ylabel('Number of bits')
@@ -339,17 +339,17 @@ def plot_c_curves(
     stats: dict,
     technique: str,
     n_bits: int,
-    downsampling_ratio_ac: list,
+    downsampling_ratios_ac: list,
     framedistances: list):
     fig, ax = plt.subplots(1, 1, figsize=(5, 4))
 
-    for ratio in downsampling_ratio_ac:
+    for ratio in downsampling_ratios_ac:
         for (c_dc, c_ac) in framedistances:
             y = stats[ratio][technique][n_bits][c_dc][c_ac][True][False]['c_curve'][1:]
             x = np.arange(len(y)) + 1
-            ax.plot(x, y, label='dc = {}, ac = {}, Chroma downsampling = 1:{}'.format(c_dc, c_ac, ratio))
+            ax.plot(x, y, label='dc = {}, ac = {}, chroma downsampling = 1:{}'.format(c_dc, c_ac, ratio))
 
-    ax.legend()
+    # ax.legend()
     ax.set_xlabel('Moment order')
     ax.set_ylabel('Framedistance (compression parameter)')
 
@@ -357,6 +357,34 @@ def plot_c_curves(
 
     if (save_tex):
         plt.savefig(output_filename)
+        plt.close()
+    else:
+        plt.show()
+
+
+def plot_legend(
+    output_filename: str,
+    downsampling_ratios_ac: list,
+    framedistances: list):
+
+    fig, ax = plt.subplots(1, 1)
+
+    for ratio in downsampling_ratios_ac:
+        for (c_dc, c_ac) in framedistances:
+            ax.plot([], [], marker='s', ls="none", label='chroma downsampling = 1:{}, dc = {}, ac = {}'.format(ratio, c_dc, c_ac))
+
+    legend = ax.legend()
+
+    expand=[-5,-5,5,5]
+
+    fig = legend.figure
+    fig.canvas.draw()
+    bbox  = legend.get_window_extent()
+    bbox = bbox.from_extents(*(bbox.extents + np.array(expand)))
+    bbox = bbox.transformed(fig.dpi_scale_trans.inverted())
+
+    if (save_tex):
+        fig.savefig(output_filename, bbox_inches=bbox)
         plt.close()
     else:
         plt.show()
