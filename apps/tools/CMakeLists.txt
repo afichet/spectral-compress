@@ -24,3 +24,4 @@ add_subdirectory(exr-pfm)
 add_subdirectory(exr-diff)
 
 add_subdirectory(exr-strip-rgb)
+add_subdirectory(exr-change-compression)
