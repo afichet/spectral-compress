@@ -73,5 +73,7 @@ int main (int argc, char* argv[])
         }
     }
 
+    // TODO: backup original metadata
+
     image_out.write(path_image_out);
 }
