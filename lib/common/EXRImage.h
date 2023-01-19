@@ -72,7 +72,7 @@ public:
 
     EXRImage(const std::string& filename);
 
-    EXRImage(uint32_t width, uint32_t height, Imf::Compression = Imf::Compression::ZIP_COMPRESSION);
+    EXRImage(uint32_t width, uint32_t height, Imf::Compression compression = Imf::Compression::ZIP_COMPRESSION);
 
     virtual ~EXRImage();
 
