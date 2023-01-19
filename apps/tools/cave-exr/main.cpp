@@ -180,7 +180,7 @@ int main(int argc, char* argv[])
         allowedPixelTypes.push_back("uint32");
 
         TCLAP::ValuesConstraint<std::string> allowedPixelTypesVals(allowedPixelTypes);
-        TCLAP::ValueArg<std::string> pixelTypeArg("t", "type", "Pixel type to use in the resulting OpenEXR file.", false, "float", &allowedPixelTypesVals);
+        TCLAP::ValueArg<std::string> pixelTypeArg("t", "type", "Pixel type to use in the resulting OpenEXR file.", false, "uint32", &allowedPixelTypesVals);
 
         cmd.add(pixelTypeArg);
 
