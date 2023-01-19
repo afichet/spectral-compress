@@ -196,6 +196,7 @@ void EXRImage::load(const char* filename)
 
     _width  = exr_datawindow.max.x - exr_datawindow.min.x + 1;
     _height = exr_datawindow.max.y - exr_datawindow.min.y + 1;
+
     _compression = exr_header.compression();
 
     // Read attributes
