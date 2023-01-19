@@ -112,7 +112,7 @@ int main(int argc, char* argv[]) {
         image_out.appendFramebuffer(fb->getPixelDataConst(), fb->getName());
     }
 
-    // TODO: backup original metadata
+    image_out.setAttributesData(image_in.getAttributesData());
 
     image_out.write(path_image_out);
 }
