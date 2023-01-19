@@ -43,6 +43,8 @@ int main(int argc, char* argv[]) {
 
     std::string path_image_in, path_image_out;
     Imf::Compression compression;
+    bool change_pixel_type = false;
+    Imf::PixelType pixel_type;
 
     try {
         TCLAP::CmdLine cmd("Change the compression used in an OpenEXR image");
@@ -69,6 +71,17 @@ int main(int argc, char* argv[]) {
         TCLAP::ValueArg<std::string> compressionMethodArg("m", "method", "Specify the compression method to use for the output OpenEXR image.", true, "zip", &allowedCompressionMethodsVals);
 
         cmd.add(compressionMethodArg);
+
+        std::vector<std::string> allowedPixelTypeConstraint;
+        allowedPixelTypeConstraint.push_back("same");
+        allowedPixelTypeConstraint.push_back("float");
+        allowedPixelTypeConstraint.push_back("half");
+        allowedPixelTypeConstraint.push_back("uint");
+
+        TCLAP::ValuesConstraint<std::string> allowedPixelTypeVals(allowedPixelTypeConstraint);
+        TCLAP::ValueArg<std::string> pixelTypeArg("t", "type", "Specify the type to use for framebuffers.", false, "same", &allowedPixelTypeVals);
+
+        cmd.add(pixelTypeArg);
 
         cmd.parse(argc, argv);
 
@@ -98,18 +111,41 @@ int main(int argc, char* argv[]) {
             return 1;
         }
 
+        if (pixelTypeArg.isSet()) {
+            if (pixelTypeArg.getValue() == "same") {
+                change_pixel_type = false;
+            } else if (pixelTypeArg.getValue() == "half") {
+                change_pixel_type = true;
+                pixel_type = Imf::PixelType::HALF;
+            } else if (pixelTypeArg.getValue() == "float") {
+                change_pixel_type = true;
+                pixel_type = Imf::PixelType::FLOAT;
+            } else if (pixelTypeArg.getValue() == "uint") {
+                change_pixel_type = true;
+                pixel_type = Imf::PixelType::UINT;
+            }
+        } else {
+            change_pixel_type = false;
+        }
     }  catch (TCLAP::ArgException  &e) {
         std::cerr << "Error: " << e.error() << " for argument " << e.argId() << std::endl;
         return 1;
     }
-
 
     const EXRImage image_in(path_image_in);
 
     EXRImage image_out(image_in.width(), image_in.height(), compression);
 
     for (const EXRFramebuffer* fb: image_in.getFramebuffersConst()) {
-        image_out.appendFramebuffer(fb->getPixelDataConst(), fb->getName());
+        Imf::PixelType channel_pixel_type;
+
+        if (change_pixel_type) {
+            channel_pixel_type = pixel_type;
+        } else {
+            channel_pixel_type = fb->getPixelType();
+        }
+
+        image_out.appendFramebuffer(fb->getPixelDataConst(), fb->getName(), channel_pixel_type);
     }
 
     image_out.setAttributesData(image_in.getAttributesData());
