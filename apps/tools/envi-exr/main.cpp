@@ -54,7 +54,7 @@ int main(int argc, char* argv[])
             envi_image.wavelengths(),
             envi_image.getImage(),
             "S0",
-            PixelType::HALF
+            Imf::PixelType::FLOAT
         );
 
         exr_out.write(argv[2]);

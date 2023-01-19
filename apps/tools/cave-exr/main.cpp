@@ -36,14 +36,24 @@
 #include <vector>
 #include <sstream>
 #include <iomanip>
+#include <limits>
 
 #include <cstdint>
 #include <cmath>
 #include <cassert>
 
+#include <tclap/CmdLine.h>
+
 #include <png.h>
 
-#include <EXRSpectralImage.h>
+#include <SpectrumConverter.h>
+
+#include <OpenEXR/ImfInputFile.h>
+#include <OpenEXR/ImfOutputFile.h>
+#include <OpenEXR/ImfChannelList.h>
+#include <OpenEXR/ImfStringAttribute.h>
+#include <OpenEXR/ImfFrameBuffer.h>
+#include <OpenEXR/ImfHeader.h>
 
 // TODO: accept 8bit PNGs. One of the CAVE image is saved in 8bpp instead of 16bpp...
 
@@ -150,47 +160,85 @@ bool get_png_image_buffer(
 
 int main(int argc, char* argv[])
 {
-    if (argc < 3) {
-        std::cout << "Usage:" << std::endl
-                  << "------" << std::endl
-                  << argv[0] << " <path_first_image> <spectral_exr_out>" << std::endl;
-        return 0;
-    }
+    std::string path_first_image, path_output_image;
+    Imf::PixelType pixelType;
+    bool write_rgb;
 
-    const std::string path_first_image  = argv[1];
-    const std::string path_output_image = argv[2];
+    // Parse arguments
+    try {
+        TCLAP::CmdLine cmd("Converts a CAVE spectral image to Spectral EXR");
+
+        TCLAP::UnlabeledValueArg<std::string> inputFileArg ("Input", "Path to the first PNG image of the CAVE spectral data.", true, "cd_ms_01.png", "path");
+        TCLAP::UnlabeledValueArg<std::string> outputFileArg("Output", "Path to the OpenEXR image to write into.", true, "cd_ms.exr", "path");
+
+        cmd.add(inputFileArg);
+        cmd.add(outputFileArg);
+
+        std::vector<std::string> allowedPixelTypes;
+        allowedPixelTypes.push_back("half");
+        allowedPixelTypes.push_back("float");
+        allowedPixelTypes.push_back("uint32");
+
+        TCLAP::ValuesConstraint<std::string> allowedPixelTypesVals(allowedPixelTypes);
+        TCLAP::ValueArg<std::string> pixelTypeArg("t", "type", "Pixel type to use in the resulting OpenEXR file.", false, "float", &allowedPixelTypesVals);
+
+        cmd.add(pixelTypeArg);
+
+        TCLAP::SwitchArg ignoreRgbArg("r", "no_rgb", "Do not write RGB version of the image in the resulting OpenEXR file.", false);
+
+        cmd.add(ignoreRgbArg);
+
+        cmd.parse(argc, argv);
+
+        path_first_image  = inputFileArg.getValue();
+        path_output_image = outputFileArg.getValue();
+
+        if (pixelTypeArg.getValue() == "half") {
+            pixelType = Imf::PixelType::HALF;
+        } else if (pixelTypeArg.getValue() == "float") {
+            pixelType = Imf::PixelType::FLOAT;
+        } else if (pixelTypeArg.getValue() == "uint32") {
+            pixelType = Imf::PixelType::UINT;
+        }
+
+        write_rgb = !ignoreRgbArg.getValue();
+    } catch (TCLAP::ArgException &e) {
+        std::cerr << "Error: " << e.error() << " for argument " << e.argId() << std::endl;
+
+        return 1;
+    }
 
     const std::string path_root = path_first_image.substr(0, path_first_image.size() - 6);
 
-    const int n_bands = 31;
-    const int start_wavelength_nm = 400;
+    // Constants for CAVE database
+    const int n_bands                 = 31;
+    const int start_wavelength_nm     = 400;
     const int wavelength_increment_nm = 10;
 
+    // Read contents of PNGs
     uint32_t width = 0, height = 0;
     bool success = false;
 
-    std::vector<float> wavelengths_nm(n_bands);
-    std::vector<float> spectral_framebuffer;
+    std::vector<int> wavelengths_nm(n_bands);
+    std::vector<std::vector<uint16_t>> original_framebuffers(n_bands);
 
-    for (int i = 0; i < n_bands; i++) {
+    for (int band = 0; band < n_bands; band++) {
         uint32_t curr_w, curr_h;
-        std::vector<uint16_t> grey_framebuffer;
 
         std::ostringstream ss;
-        ss << std::setfill('0') << std::setw(2) << (i + 1);
+        ss << std::setfill('0') << std::setw(2) << (band + 1);
         std::string current_filename = path_root + ss.str() + ".png";
 
-        success = get_png_image_buffer(current_filename.c_str(), grey_framebuffer, &curr_w, &curr_h);
+        success = get_png_image_buffer(current_filename.c_str(), original_framebuffers[band], &curr_w, &curr_h);
 
         if (!success) {
             std::cerr << "Could not load: " << current_filename << ". Exiting" << std::endl;
             break;
         }
 
-        if (i == 0) {
+        if (band == 0) {
             width  = curr_w;
             height = curr_h;
-            spectral_framebuffer.resize(n_bands * width * height);
         } else {
             if (curr_w != width || curr_h != height) {
                 success = false;
@@ -199,25 +247,122 @@ int main(int argc, char* argv[])
             }
         }
 
-        wavelengths_nm[i] = start_wavelength_nm + i * wavelength_increment_nm;
-
-        const int stride = n_bands;
-        const int start_offset = i;
-
-        for (uint32_t i = 0; i < width * height; i++) {
-            assert(start_offset + i * stride < n_bands * width * height);
-
-            spectral_framebuffer[start_offset + i * stride] =
-                (float)grey_framebuffer[i]
-                / 65535.f;
-        }
+        wavelengths_nm[band] = start_wavelength_nm + band * wavelength_increment_nm;
     }
 
+    // Convert to OpenEXR
     if (success) {
-        EXRSpectralImage exr_out(width, height);
-        exr_out.appendSpectralFramebuffer(wavelengths_nm, spectral_framebuffer, "S0", PixelType::HALF);
+        // Perform type conversion
 
-        exr_out.write(path_output_image.c_str());
+        std::vector<float> framebuffers_float;
+        std::vector<Imath::half> framebuffers_half;
+        std::vector<uint32_t> framebuffers_uint32_t;
+        std::vector<float> rgb_images;
+
+        char* data_ptr = NULL;
+        size_t type_stride = 0;
+
+        switch (pixelType) {
+            case Imf::PixelType::HALF:
+                framebuffers_half.resize(width * height * n_bands);
+
+                for (size_t band = 0; band < n_bands; band++) {
+                    for (size_t px = 0; px < width * height; px++) {
+                        framebuffers_half[px * n_bands + band] = imath_float_to_half(float(original_framebuffers[band][px]) / float(65535));
+                    }
+                }
+
+                data_ptr = (char*)framebuffers_half.data();
+                type_stride = 2;
+                break;
+
+            case Imf::PixelType::FLOAT:
+                framebuffers_float.resize(width * height * n_bands);
+                for (size_t band = 0; band < n_bands; band++) {
+                    for (size_t px = 0; px < width * height; px++) {
+                        framebuffers_float[px * n_bands + band] = float(original_framebuffers[band][px]) / float(65535);
+                    }
+                }
+
+                data_ptr = (char*)framebuffers_float.data();
+                type_stride = 4;
+                break;
+
+            case Imf::PixelType::UINT:
+                framebuffers_uint32_t.resize(width * height * n_bands);
+                for (size_t band = 0; band < n_bands; band++) {
+                    for (size_t px = 0; px < width * height; px++) {
+                        framebuffers_uint32_t[px * n_bands + band] = original_framebuffers[band][px];
+                    }
+                }
+
+                data_ptr = (char*)framebuffers_uint32_t.data();
+                type_stride = 4;
+                break;
+
+            default:
+                std::cerr << "Incorect type selected for writing" << std::endl;
+                return 1;
+        }
+
+        Imf::Header       exr_header(width, height);
+        Imf::ChannelList &exr_channels = exr_header.channels();
+        Imf::FrameBuffer  exr_framebuffer;
+
+        SpectrumConverter emissive_converter(true);
+
+        const size_t x_stride = n_bands * type_stride;
+        const size_t y_stride = x_stride * width;
+
+
+        for (size_t band = 0; band < n_bands; band++) {
+            const std::string layer_name = "S0." + std::to_string(wavelengths_nm[band]) + "nm";
+
+            exr_channels.insert(layer_name, Imf::Channel(pixelType));
+
+            exr_framebuffer.insert(
+                layer_name,
+                Imf::Slice(
+                    pixelType,
+                    &data_ptr[type_stride * band],
+                    x_stride, y_stride)
+            );
+        }
+
+        if (write_rgb) {
+            std::vector<float> wavelengths_nm_f(n_bands);
+
+            framebuffers_float.resize(width * height * n_bands);
+
+            for (size_t band = 0; band < n_bands; band++) {
+                wavelengths_nm_f[band] = wavelengths_nm[band];
+
+                for (size_t px = 0; px < width * height; px++) {
+                    framebuffers_float[px * n_bands + band] = float(original_framebuffers[band][px]) / float(65535);
+                }
+            }
+
+            emissive_converter.spectralImageToRGB(wavelengths_nm_f, framebuffers_float, width, height, rgb_images);
+
+            const char* RGB[3] = {"R", "G", "B"};
+
+            for (int c = 0; c < 3; c++) {
+                exr_channels.insert(RGB[c], Imf::Channel(Imf::FLOAT));
+
+                exr_framebuffer.insert(
+                    RGB[c],
+                    Imf::Slice(
+                        Imf::FLOAT,
+                        (char*)&rgb_images[c],
+                        3 * sizeof(float),
+                        3 * width * sizeof(float))
+                );
+            }
+        }
+
+        Imf::OutputFile exr_out(path_output_image.c_str(), exr_header);
+        exr_out.setFrameBuffer(exr_framebuffer);
+        exr_out.writePixels(height);
     }
 
     return 0;

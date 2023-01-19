@@ -118,15 +118,15 @@ void decompress_spectral_framebuffer(
 }
 
 
-PixelType quantization_to_exr(size_t n_bits, size_t n_exponent_bits) {
+Imf::PixelType quantization_to_exr(size_t n_bits, size_t n_exponent_bits) {
     if (n_exponent_bits > 0) {
         if (n_bits > 16) {
-            return PixelType::FLOAT;
+            return Imf::PixelType::FLOAT;
         } else {
-            return PixelType::HALF;
+            return Imf::PixelType::HALF;
         }
     } else {
-        return PixelType::UINT;
+        return Imf::PixelType::UINT;
     }
 }
 
@@ -175,7 +175,7 @@ int main(int argc, char* argv[])
         const JXLFramebuffer* main_fb = jxl_image.getFramebuffer(sg.layer_indices[0]);
         const size_t n_bits           = main_fb->getBitsPerSample();
         const size_t n_exponent_bits  = main_fb->getExponentBitsPerSample();
-        const PixelType pixel_type    = quantization_to_exr(n_bits, n_exponent_bits);
+        const Imf::PixelType pixel_type = quantization_to_exr(n_bits, n_exponent_bits);
 
         exr_out.appendSpectralFramebuffer(
             sg.wavelengths,
@@ -189,7 +189,7 @@ int main(int argc, char* argv[])
         const JXLFramebuffer* main_fb = jxl_image.getFramebuffer(gg.layer_index);
         const size_t n_bits           = main_fb->getBitsPerSample();
         const size_t n_exponent_bits  = main_fb->getExponentBitsPerSample();
-        const PixelType pixel_type    = quantization_to_exr(n_bits, n_exponent_bits);
+        const Imf::PixelType pixel_type = quantization_to_exr(n_bits, n_exponent_bits);
 
         exr_out.appendExtraFramebuffer(
             jxl_image.getFramebufferDataConst(gg.layer_index),

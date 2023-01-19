@@ -305,19 +305,19 @@ void compress_spectral_framebuffer(
 }
 
 
-void quantization_from_exr(PixelType type, std::pair<int, int>& n_bits) {
+void quantization_from_exr(Imf::PixelType type, std::pair<int, int>& n_bits) {
     switch (type) {
-        case PixelType::UINT:
+        case Imf::PixelType::UINT:
             n_bits.first = 32;
             n_bits.second = 0;
             break;
 
-        case PixelType::HALF:
+        case Imf::PixelType::HALF:
             n_bits.first = 16;
             n_bits.second = 5;
             break;
 
-        case PixelType::FLOAT:
+        case Imf::PixelType::FLOAT:
             n_bits.first = 32;
             n_bits.second = 8;
             break;

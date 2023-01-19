@@ -38,13 +38,8 @@
 #include <vector>
 #include <string>
 
+#include <OpenEXR/ImfPixelType.h>
 
-enum PixelType {
-    UINT = 0,
-    HALF = 1,
-    FLOAT = 2,
-    N_PIXEL_TYPES
-};
 
 struct SpectralFramebuffer
 {
@@ -52,7 +47,7 @@ struct SpectralFramebuffer
     std::vector<float> wavelengths_nm;
     std::vector<float> image_data;
 
-    PixelType pixel_type;
+    Imf::PixelType pixel_type;
 };
 
 
@@ -61,7 +56,7 @@ struct GreyFramebuffer
     std::string layer_name;
     std::vector<float> image_data;
 
-    PixelType pixel_type;
+    Imf::PixelType pixel_type;
 };
 
 
@@ -80,23 +75,23 @@ public:
         const std::vector<float> &wavelengths_nm,
         const std::vector<float> &framebuffer,
         const std::string& prefix,
-        const PixelType save_as_type = PixelType::FLOAT);
+        const Imf::PixelType save_as_type = Imf::PixelType::FLOAT);
 
     void appendSpectralFramebuffer(
         const std::vector<float> &wavelengths_nm,
         const std::vector<float> &framebuffer,
         const char* prefix,
-        const PixelType save_as_type = PixelType::FLOAT);
+        const Imf::PixelType save_as_type = Imf::PixelType::FLOAT);
 
     void appendExtraFramebuffer(
         const std::vector<float>& framenuffer,
         const std::string& name,
-        const PixelType save_as_type = PixelType::FLOAT);
+        const Imf::PixelType save_as_type = Imf::PixelType::FLOAT);
 
     void appendExtraFramebuffer(
         const std::vector<float>& framenuffer,
         const char* name,
-        const PixelType save_as_type = PixelType::FLOAT);
+        const Imf::PixelType save_as_type = Imf::PixelType::FLOAT);
 
     void write(const char* filename) const;
 
