@@ -40,28 +40,33 @@
 
 #include <OpenEXR/ImfIO.h>
 #include <OpenEXR/ImfCompression.h>
-
+#include <OpenEXR/ImfPixelType.h>
 
 class EXRFramebuffer
 {
 public:
     EXRFramebuffer(
         uint32_t width, uint32_t height,
-        const char* name);
+        const char* name,
+        Imf::PixelType save_as_type = Imf::PixelType::FLOAT);
 
     EXRFramebuffer(
         const std::vector<float>& framebuffer,
-        const char* name);
+        const char* name,
+        Imf::PixelType save_as_type = Imf::PixelType::FLOAT);
 
     virtual ~EXRFramebuffer();
 
     const char* getName() const { return _name.data(); }
     const std::vector<float>& getPixelDataConst() const { return _pixel_data; }
     std::vector<float>& getPixelData() { return _pixel_data; }
+    Imf::PixelType getPixelType() const  { return _pixel_type; }
 
 protected:
     std::vector<float> _pixel_data;
     std::vector<char> _name;
+
+    Imf::PixelType _pixel_type;
 };
 
 
@@ -78,7 +83,8 @@ public:
 
     void appendFramebuffer(
         const std::vector<float>& framenuffer,
-        const char* name);
+        const char* name,
+        Imf::PixelType save_as_type = Imf::PixelType::FLOAT);
 
     void write(const char* filename) const;
 

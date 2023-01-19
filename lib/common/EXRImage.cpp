@@ -44,14 +44,21 @@
 #include <OpenEXR/ImfHeader.h>
 
 #include "EXRArrayStream.h"
+#include "EXRUtils.h"
 
 
 EXRFramebuffer::EXRFramebuffer(
     uint32_t width, uint32_t height,
-    const char* name)
+    const char* name,
+    Imf::PixelType save_as_type)
     : _pixel_data(width * height)
     , _name(std::strlen(name) + 1)
+    , _pixel_type(save_as_type)
 {
+    if (save_as_type >= Imf::PixelType::NUM_PIXELTYPES) {
+        throw std::runtime_error("Invalid type provided");
+    }
+
     memcpy(_name.data(), name, std::strlen(name));
     _name[strlen(name)] = 0;
 }
@@ -59,10 +66,16 @@ EXRFramebuffer::EXRFramebuffer(
 
 EXRFramebuffer::EXRFramebuffer(
     const std::vector<float>& framebuffer,
-    const char* name)
+    const char* name,
+    Imf::PixelType save_as_type)
     : _pixel_data(framebuffer)
     , _name(std::strlen(name) + 1)
+    , _pixel_type(save_as_type)
 {
+    if (save_as_type >= Imf::PixelType::NUM_PIXELTYPES) {
+        throw std::runtime_error("Invalid type provided");
+    }
+
     memcpy(_name.data(), name, std::strlen(name));
     _name[strlen(name)] = 0;
 }
@@ -104,11 +117,16 @@ EXRImage::~EXRImage()
 
 void EXRImage::appendFramebuffer(
     const std::vector<float>& framebuffer,
-    const char* name)
+    const char* name,
+    Imf::PixelType save_as_type)
 {
     assert(framebuffer.size() == _width * _height);
 
-    EXRFramebuffer *fb = new EXRFramebuffer(framebuffer, name);
+    if (save_as_type >= Imf::PixelType::NUM_PIXELTYPES) {
+        throw std::runtime_error("Invalid type provided");
+    }
+
+    EXRFramebuffer *fb = new EXRFramebuffer(framebuffer, name, save_as_type);
 
     _framebuffers.push_back(fb);
 }
@@ -159,17 +177,31 @@ void EXRImage::write(const char* filename) const
     }
 
     // Write framebuffers
-    const size_t x_stride = sizeof(float);
-    const size_t y_stride = x_stride * _width;
+    std::vector<std::vector<half>> half_fb_data;
+    std::vector<std::vector<uint32_t>> int_fb_data;
+    std::vector<std::vector<float>> rgb_images;
 
-    for (EXRFramebuffer* fb: _framebuffers) {
+    for (const EXRFramebuffer* fb: _framebuffers) {
         exr_channels.insert(fb->getName(), Imf::Channel(Imf::FLOAT));
+
+        size_t type_stride;
+
+        char* fb_data = condition_framebuffers(
+            fb->getPixelDataConst(),
+            fb->getPixelType(),
+            type_stride,
+            int_fb_data,
+            half_fb_data
+            );
+
+        const size_t x_stride = type_stride;
+        const size_t y_stride = x_stride * _width;
 
         exr_framebuffer.insert(
             fb->getName(),
             Imf::Slice(
-                Imf::FLOAT,
-                (char*)fb->getPixelData().data(),
+                fb->getPixelType(),
+                fb_data,
                 x_stride, y_stride)
         );
     }
@@ -233,7 +265,7 @@ void EXRImage::load(const char* filename)
     for (Imf::ChannelList::ConstIterator channel = exr_channels.begin();
         channel != exr_channels.end();
         channel++) {
-        EXRFramebuffer *fb = new EXRFramebuffer(_width, _height, channel.name());
+        EXRFramebuffer *fb = new EXRFramebuffer(_width, _height, channel.name(), channel.channel().type);
 
         Imf::Slice slice = Imf::Slice::Make(
             Imf::FLOAT,
