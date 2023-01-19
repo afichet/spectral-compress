@@ -120,7 +120,7 @@ int main(int argc, char* argv[]) {
             } else if (pixelTypeArg.getValue() == "float") {
                 change_pixel_type = true;
                 pixel_type = Imf::PixelType::FLOAT;
-            } else if (pixelTypeArg.getValue() == "uint") {
+            } else if (pixelTypeArg.getValue() == "uint32") {
                 change_pixel_type = true;
                 pixel_type = Imf::PixelType::UINT;
             }
