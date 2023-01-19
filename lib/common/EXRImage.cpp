@@ -86,9 +86,10 @@ EXRImage::EXRImage(const std::string& filename)
 }
 
 
-EXRImage::EXRImage(uint32_t width, uint32_t height)
+EXRImage::EXRImage(uint32_t width, uint32_t height, Imf::Compression compression)
     : _width(width)
     , _height(height)
+    , _compression(compression)
 {
 }
 
@@ -115,7 +116,7 @@ void EXRImage::appendFramebuffer(
 
 void EXRImage::write(const char* filename) const
 {
-    Imf::Header       exr_header(_width, _height);
+    Imf::Header       exr_header(_width, _height, 1, Imath::V2f(0, 0), 1, Imf::LineOrder::INCREASING_Y, _compression);
     Imf::ChannelList &exr_channels = exr_header.channels();
     Imf::FrameBuffer  exr_framebuffer;
 
@@ -195,6 +196,7 @@ void EXRImage::load(const char* filename)
 
     _width  = exr_datawindow.max.x - exr_datawindow.min.x + 1;
     _height = exr_datawindow.max.y - exr_datawindow.min.y + 1;
+    _compression = exr_header.compression();
 
     // Read attributes
     EXRArrayStream attr_stream;

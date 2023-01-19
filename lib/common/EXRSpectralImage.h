@@ -39,6 +39,7 @@
 #include <string>
 
 #include <OpenEXR/ImfPixelType.h>
+#include <OpenEXR/ImfCompression.h>
 
 
 struct SpectralFramebuffer
@@ -67,7 +68,7 @@ public:
 
     EXRSpectralImage(const std::string& filename);
 
-    EXRSpectralImage(uint32_t width, uint32_t height);
+    EXRSpectralImage(uint32_t width, uint32_t height, Imf::Compression compression = Imf::Compression::ZIP_COMPRESSION);
 
     virtual ~EXRSpectralImage();
 
@@ -131,6 +132,7 @@ protected:
     void load(const char* filename);
 
     uint32_t _width, _height;
+    Imf::Compression _compression;
 
     std::vector<SpectralFramebuffer*> _spectral_framebuffers;
     std::vector<GreyFramebuffer*> _extra_framebuffers;

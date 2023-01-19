@@ -39,6 +39,7 @@
 #include <string>
 
 #include <OpenEXR/ImfIO.h>
+#include <OpenEXR/ImfCompression.h>
 
 
 class EXRFramebuffer
@@ -71,7 +72,7 @@ public:
 
     EXRImage(const std::string& filename);
 
-    EXRImage(uint32_t width, uint32_t height);
+    EXRImage(uint32_t width, uint32_t height, Imf::Compression = Imf::Compression::ZIP_COMPRESSION);
 
     virtual ~EXRImage();
 
@@ -104,6 +105,7 @@ protected:
     void load(const char* filename);
 
     uint32_t _width, _height;
+    Imf::Compression _compression;
     std::vector<EXRFramebuffer*> _framebuffers;
 
     std::vector<uint8_t> _attributes_data;

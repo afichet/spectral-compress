@@ -135,9 +135,10 @@ EXRSpectralImage::EXRSpectralImage(const std::string& filename)
 }
 
 
-EXRSpectralImage::EXRSpectralImage(uint32_t width, uint32_t height)
+EXRSpectralImage::EXRSpectralImage(uint32_t width, uint32_t height, Imf::Compression compression)
     : _width(width)
     , _height(height)
+    , _compression(compression)
 {
 }
 
@@ -235,7 +236,7 @@ inline bool ends_with(std::string const & value, std::string const & ending)
 
 void EXRSpectralImage::write(const char* filename) const
 {
-    Imf::Header       exr_header(_width, _height);
+    Imf::Header       exr_header(_width, _height, 1, Imath::V2f(0, 0), 1, Imf::LineOrder::INCREASING_Y, _compression);
     Imf::ChannelList &exr_channels = exr_header.channels();
     Imf::FrameBuffer  exr_framebuffer;
 
@@ -527,6 +528,8 @@ void EXRSpectralImage::dump(const char* filename) const
     std::fwrite(&_width, sizeof(uint32_t), 1, f);
     std::fwrite(&_height, sizeof(uint32_t), 1, f);
 
+    std::fwrite(&_compression, sizeof(Imf::Compression), 1, f);
+
     const uint32_t n_spectral_fb    = _spectral_framebuffers.size();
     const uint32_t n_gray_fb        = _extra_framebuffers.size();
     const uint32_t n_attribute_data = _attributes_data.size();
@@ -581,6 +584,8 @@ EXRSpectralImage* EXRSpectralImage::read_dump(const char* filename)
 
     std::fread(&(exr->_width), sizeof(uint32_t), 1, f);
     std::fread(&(exr->_height), sizeof(uint32_t), 1, f);
+
+    std::fread(&(exr->_compression), sizeof(Imf::Compression), 1, f);
 
     uint32_t n_spectral_fb;
     uint32_t n_gray_fb;
@@ -649,6 +654,8 @@ void EXRSpectralImage::load(const char* filename)
 
     _width  = exr_datawindow.max.x - exr_datawindow.min.x + 1;
     _height = exr_datawindow.max.y - exr_datawindow.min.y + 1;
+
+    _compression = exr_header.compression();
 
     // =======================================================================
     // Read attributes
