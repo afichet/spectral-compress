@@ -93,8 +93,8 @@ def run_converter_exr_png(input_file: str, output_file: str, exposure: float):
 
 
 def run_diff(file_a: str, file_b: str, max_err: float, output_file: str, diff_error_file: str):
-    if os.path.exists(output_file):
-        return
+    # if os.path.exists(output_file):
+    #     return
 
     fp, fn = os.path.split(output_file)
     os.makedirs(fp, exist_ok=True)
@@ -136,6 +136,16 @@ def get_path_cave_out(
     )
 
 
+def get_path_cave_out_partial(
+    start: str, downsampling_ratio_ac: int,
+    dataset_name: str):
+
+    return os.path.join(
+        '{}_{}'.format(start, downsampling_ratio_ac),
+        dataset_name
+    )
+
+
 def get_path_bonn_in(folder: str, dataset_name: str, type: str):
     return os.path.join(
         folder,
@@ -164,6 +174,15 @@ def get_path_bonn_out(
     )
 
 
+def get_path_bonn_out_partial(start: str, downsampling_ratio_ac: int,
+    dataset_name: str, variant: str):
+    return os.path.join(
+        '{}_{}'.format(start, downsampling_ratio_ac),
+        dataset_name,
+        variant
+    )
+
+
 ###############################################################################
 # Parse output files for report
 ###############################################################################
@@ -180,9 +199,18 @@ def get_err_from_bin_log(path: str):
 def get_avg_rmse_from_diff_bin(path: str):
     with open(path, 'rb') as f:
         data = f.read()
-        err = struct.unpack_from('d', data)
+        err = struct.unpack_from('2d', data)
 
         return err[0]
+
+
+def get_five_percentile_from_diff_bin(path: str):
+    with open(path, 'rb') as f:
+        data = f.read()
+        err = struct.unpack_from('2d', data)
+
+        return err[1]
+
 
 # Get quantization curve saved in the text log
 def get_q_curve_from_txt_log(path: str):

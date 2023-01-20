@@ -168,6 +168,7 @@ def main():
             common.run_converter_exr_png(org_exr_file, org_png_file, exposure_bonn)
 
             for downsampling in subsampling_ratios_ac:
+                curr_max_err = 0
                 for tech in techniques:
                     for bits in start_bits:
                         for c_dc, c_ac in framedistances:
@@ -215,6 +216,9 @@ def main():
                                     c_curve  = common.get_c_curve_from_txt_log(log_file)
                                     duration = common.get_duration_from_txt_log(log_file)
 
+                                    # Dynamically compute max bound
+                                    curr_max_err = max(curr_max_err, common.get_five_percentile_from_diff_bin(diff_error_file))
+
                                     stats[d][v][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['width']    = width
                                     stats[d][v][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['height']   = height
                                     stats[d][v][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['size']     = size
@@ -226,6 +230,36 @@ def main():
 
                                     with open(meta_file_size_file, 'w') as f:
                                         f.write('{:.2f} MiB'.format(size / (1000 * 1000)))
+
+                # Run diff a second time with the dynamically computed max bound value
+                path_curr_out_partial = common.get_path_bonn_out_partial(path_report, downsampling, d, v)
+                meta_file_max_diff_file = os.path.join(path_curr_out_partial, d + '_max_err.txt')
+
+                with open(meta_file_max_diff_file, 'w') as f:
+                    a, b = '{:.1E}'.format(curr_max_err).split('E')
+                    string_err = '{}\\cdot 10^{{{}}}'.format(float(a), int(b))
+                    # string_err = string_err.replace('1.0\cdot', '')
+                    f.write(string_err)
+
+                for tech in techniques:
+                    for bits in start_bits:
+                        for c_dc, c_ac in framedistances:
+                            for q_flat in flat_quantization:
+                                for c_flat in flat_compression:
+                                    path_curr_out = common.get_path_bonn_out(
+                                        path_report, downsampling,
+                                        d,
+                                        v,
+                                        tech,
+                                        bits,
+                                        c_dc, c_ac,
+                                        q_flat, c_flat)
+
+                                    decompressed_exr_file   = os.path.join(path_curr_out, d + '.exr')
+                                    diff_png_file           = os.path.join(path_curr_out, d + '_diff.png')
+                                    diff_error_file         = os.path.join(path_curr_out, d + '_err.bin')
+
+                                    common.run_diff(org_exr_file, decompressed_exr_file, curr_max_err, diff_png_file, diff_error_file)
 
             plot_curve_rmse_file     = os.path.join(path_report, d, v, d + '_error.pgf')
             plot_curve_size_file     = os.path.join(path_report, d, v, d + '_size.pgf')
@@ -239,7 +273,6 @@ def main():
             meta_wl_range_file      = os.path.join(path_report, d, v, d + '_wl_range.txt')
             meta_n_bands_file       = os.path.join(path_report, d, v, d + '_n_bands.txt')
             meta_spectrum_type_file = os.path.join(path_report, d, v, d + '_spectrum_type.txt')
-            meta_max_error_file     = os.path.join(path_report, d, v, d + '_max_err.txt')
 
             common.plot_mode_curve_avg_rmse(plot_curve_rmse_file    , stats[d][v], 'linavg', 16, subsampling_ratios_ac, framedistances, flat_compression)
             common.plot_mode_curve_size (plot_curve_size_file       , stats[d][v], 'linavg', 16, subsampling_ratios_ac, framedistances, flat_compression)
@@ -262,12 +295,6 @@ def main():
 
             with open(meta_org_file_dim_file, 'w') as f:
                 f.write('{}x{} px'.format(width, height))
-
-            with open(meta_max_error_file, 'w') as f:
-                a, b = '{:.1E}'.format(curr_max_err).split('E')
-                string_err = '{}\\cdot 10^{{{}}}'.format(float(a), int(b))
-                string_err = string_err.replace('1.0\cdot', '')
-                f.write(string_err)
 
             # Populate LaTeX stream
             tex_stream += get_tex_stream(subpath_report, d, v)

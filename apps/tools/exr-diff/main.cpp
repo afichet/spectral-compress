@@ -39,6 +39,7 @@
 #include <cstddef>
 #include <cassert>
 #include <stdexcept>
+#include <algorithm>
 
 #include <EXRSpectralImage.h>
 #include <Util.h>
@@ -55,7 +56,8 @@ void rmse_spectral_images(
     size_t width, size_t height,
     std::vector<double>& rmse_image,
     double& min_val, double& max_val,
-    double& avg_err)
+    double& avg_err,
+    double& five_higher_percentile)
 {
     // Check if dimensions match
     if (img_a->wavelengths_nm.size() != img_b->wavelengths_nm.size()) {
@@ -105,11 +107,19 @@ void rmse_spectral_images(
 
     avg_err /= (double)(width * height);
 
+    // Calculate 5% higher
+    std::vector<double> rmses(rmse_image);
+    std::sort(rmses.begin(), rmses.end());
+
+    size_t idx = std::round((float)rmses.size() * 95.f / 100.f);
+    five_higher_percentile = rmses[idx];
+
     std::cout << "average rmse / pixel: " << avg_err << std::endl;
     std::cout << "    max rmse / pixel: " << max_val << std::endl;
-    std::cout << "         rmse global: " << Util::rmse_images(data_a, data_b, width * height, n_bands) << std::endl;
-    std::cout << "        rrmse global: " << Util::rrmse_images(data_a, data_b, width * height, n_bands) << std::endl;
-    std::cout << "          max / band: " << Util::max_error_images(data_a, data_b, width * height, n_bands) << std::endl;
+    // std::cout << "         rmse global: " << Util::rmse_images(data_a, data_b, width * height, n_bands) << std::endl;
+    // std::cout << "        rrmse global: " << Util::rrmse_images(data_a, data_b, width * height, n_bands) << std::endl;
+    // std::cout << "          max / band: " << Util::max_error_images(data_a, data_b, width * height, n_bands) << std::endl;
+    std::cout << "    5 percent higher: " << five_higher_percentile << std::endl;
 }
 
 
@@ -277,7 +287,7 @@ int main(int argc, char* argv[])
 
                     // Do the comparison
                     std::vector<double> framebuffer_error;
-                    double min_err, max_err, avg_err;
+                    double min_err, max_err, avg_err, five_higher_percentile;
 
                     std::cout << "Statistics for " << fb_a->root_name << std::endl;
 
@@ -286,11 +296,13 @@ int main(int argc, char* argv[])
                         width, height,
                         framebuffer_error,
                         min_err, max_err,
-                        avg_err
+                        avg_err,
+                        five_higher_percentile
                     );
 
                     if (error_output_is_set) {
                         fwrite(&avg_err, sizeof(double), 1, f_err);
+                        fwrite(&five_higher_percentile, sizeof(double), 1, f_err);
                     }
 
                     float lower, upper;
