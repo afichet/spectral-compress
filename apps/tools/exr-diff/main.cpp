@@ -257,8 +257,8 @@ int main(int argc, char* argv[])
             f_err = fopen(error_output.c_str(), "wb");
         }
 
-        EXRSpectralImage exr_in_a(filename_a);
-        EXRSpectralImage exr_in_b(filename_b);
+        const EXRSpectralImage exr_in_a(filename_a);
+        const EXRSpectralImage exr_in_b(filename_b);
 
         const size_t width  = exr_in_a.width();
         const size_t height = exr_in_a.height();
@@ -268,8 +268,8 @@ int main(int argc, char* argv[])
             return 1;
         }
 
-        const std::vector<SpectralFramebuffer*>& spectral_framebuffers_a = exr_in_a.getSpectralFramebuffers();
-        const std::vector<SpectralFramebuffer*>& spectral_framebuffers_b = exr_in_b.getSpectralFramebuffers();
+        const std::vector<SpectralFramebuffer*>& spectral_framebuffers_a = exr_in_a.getSpectralFramebuffersConst();
+        const std::vector<SpectralFramebuffer*>& spectral_framebuffers_b = exr_in_b.getSpectralFramebuffersConst();
 
         const bool has_multiple_framebuffers = spectral_framebuffers_a.size() > 1;
 

@@ -429,7 +429,19 @@ std::vector<SpectralFramebuffer*>& EXRSpectralImage::getSpectralFramebuffers()
 }
 
 
+const std::vector<SpectralFramebuffer*>& EXRSpectralImage::getSpectralFramebuffersConst() const
+{
+    return _spectral_framebuffers;
+}
+
+
 std::vector<GreyFramebuffer*>& EXRSpectralImage::getExtraFramebuffers()
+{
+    return _extra_framebuffers;
+}
+
+
+const std::vector<GreyFramebuffer*>& EXRSpectralImage::getExtraFramebuffersConst() const
 {
     return _extra_framebuffers;
 }

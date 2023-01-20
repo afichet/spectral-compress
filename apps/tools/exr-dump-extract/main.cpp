@@ -52,9 +52,9 @@ int main(int argc, char* argv[])
     const float exposure = 5.f;
     const float gamma = 1.f/2.2f;
 
-    EXRSpectralImage* img = EXRSpectralImage::read_dump(argv[1]);
+    const EXRSpectralImage* img = EXRSpectralImage::read_dump(argv[1]);
 
-    for(const SpectralFramebuffer* fb: img->getSpectralFramebuffers()) {
+    for(const SpectralFramebuffer* fb: img->getSpectralFramebuffersConst()) {
         for (size_t i = 0; i < fb->wavelengths_nm.size(); i++) {
             std::stringstream filename;
             filename << fb->root_name << "." << fb->wavelengths_nm[i] << ".png";

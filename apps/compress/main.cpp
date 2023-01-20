@@ -472,10 +472,10 @@ int main(int argc, char *argv[])
     clock_start = std::chrono::steady_clock::now();
 
     // Load input file
-    EXRSpectralImage exr_in(filename_in);
+    const EXRSpectralImage exr_in(filename_in);
 
-    const std::vector<SpectralFramebuffer*>& spectral_framebuffers = exr_in.getSpectralFramebuffers();
-    const std::vector<GreyFramebuffer*>& extra_framebuffers = exr_in.getExtraFramebuffers();
+    const std::vector<SpectralFramebuffer*>& spectral_framebuffers = exr_in.getSpectralFramebuffersConst();
+    const std::vector<GreyFramebuffer*>& extra_framebuffers        = exr_in.getExtraFramebuffersConst();
 
     // Create output file
     JXLImage jxl_out(exr_in.width(), exr_in.height());

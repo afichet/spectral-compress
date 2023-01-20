@@ -102,8 +102,10 @@ public:
     uint32_t height() const;
 
     std::vector<SpectralFramebuffer*>& getSpectralFramebuffers();
+    const std::vector<SpectralFramebuffer*>& getSpectralFramebuffersConst() const;
 
     std::vector<GreyFramebuffer*>& getExtraFramebuffers();
+    const std::vector<GreyFramebuffer*>& getExtraFramebuffersConst() const;
 
     void setAttributesData(const std::vector<uint8_t>& data);
 
