@@ -21,7 +21,10 @@ add_subdirectory(envi-exr)
 add_subdirectory(exr-png)
 add_subdirectory(exr-pfm)
 
+# Image visualization tools
 add_subdirectory(exr-diff)
+add_subdirectory(decompress-chroma)
 
+# Image manipulation tools
 add_subdirectory(exr-strip-rgb)
 add_subdirectory(exr-change-compression)
