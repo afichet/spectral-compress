@@ -9,7 +9,7 @@ start_bits             = [16]
 flat_quantization      = [True] #[True, False]
 flat_compression       = [True, False]
 framedistances         = [(0, 1), (0.5, 2)]
-downsampling_ratios_ac = [1, 2]
+subsampling_ratios_ac = [1, 2]
 
 path_data      = '/home/afichet/spectral_images/EXRs/CAVE/'
 path_bin       = '/home/afichet/Repositories/spectral-compress/build/bin/compress'
@@ -36,13 +36,13 @@ def get_avg_stats(
     dataset: list,
     techniques: list,
     bits: list,
-    downsampling_ratios_ac: list,
+    subsampling_ratios_ac: list,
     framedistances: list,
     flat_quantization: list,
     flat_compression: list):
     # Initialize all fields
     avg_stats = {}
-    for downsampling in downsampling_ratios_ac:
+    for downsampling in subsampling_ratios_ac:
         avg_stats[downsampling] = {}
         for tech in techniques:
             avg_stats[downsampling][tech] = {}
@@ -72,7 +72,7 @@ def get_avg_stats(
     div = 1 / len(dataset)
 
     for d in dataset:
-        for downsampling in downsampling_ratios_ac:
+        for downsampling in subsampling_ratios_ac:
             for tech in techniques:
                 for bits in start_bits:
                     for c_dc, c_ac in framedistances:
@@ -99,7 +99,7 @@ def main():
     stats = {}
     for d in db:
         stats[d] = {}
-        for downsampling in downsampling_ratios_ac:
+        for downsampling in subsampling_ratios_ac:
             stats[d][downsampling] = {}
             for tech in techniques:
                 stats[d][downsampling][tech] = {}
@@ -149,7 +149,7 @@ def main():
 
         common.run_converter_exr_png(org_exr_file, org_png_file, exposure_cave)
 
-        for downsampling in downsampling_ratios_ac:
+        for downsampling in subsampling_ratios_ac:
             for tech in techniques:
                 for bits in start_bits:
                     for c_dc, c_ac in framedistances:
@@ -221,12 +221,12 @@ def main():
         meta_spectrum_type_file = os.path.join(path_report, d, d + '_spectrum_type.txt')
         meta_max_error_file     = os.path.join(path_report, d, d + '_max_err.txt')
 
-        common.plot_mode_curve_error(plot_curve_error_file      , stats[d], 'linavg', 16, downsampling_ratios_ac, framedistances, flat_compression)
-        common.plot_mode_curve_size (plot_curve_size_file       , stats[d], 'linavg', 16, downsampling_ratios_ac, framedistances, flat_compression)
-        common.plot_mode_curve_ratio(plot_curve_ratio_file      , stats[d], 'linavg', 16, downsampling_ratios_ac, framedistances, flat_compression)
-        common.plot_mode_curve_duration(plot_curve_duration_file, stats[d], 'linavg', 16, downsampling_ratios_ac, framedistances, flat_compression)
-        common.plot_c_curves(plot_c_curve_file                  , stats[d], 'linavg', 16, downsampling_ratios_ac, framedistances)
-        common.plot_legend(plot_legend, downsampling_ratios_ac, framedistances)
+        common.plot_mode_curve_error(plot_curve_error_file      , stats[d], 'linavg', 16, subsampling_ratios_ac, framedistances, flat_compression)
+        common.plot_mode_curve_size (plot_curve_size_file       , stats[d], 'linavg', 16, subsampling_ratios_ac, framedistances, flat_compression)
+        common.plot_mode_curve_ratio(plot_curve_ratio_file      , stats[d], 'linavg', 16, subsampling_ratios_ac, framedistances, flat_compression)
+        common.plot_mode_curve_duration(plot_curve_duration_file, stats[d], 'linavg', 16, subsampling_ratios_ac, framedistances, flat_compression)
+        common.plot_c_curves(plot_c_curve_file                  , stats[d], 'linavg', 16, subsampling_ratios_ac, framedistances)
+        common.plot_legend(plot_legend, subsampling_ratios_ac, framedistances)
 
         with open(meta_org_file_size_file, 'w') as f:
             f.write('{:.2f} MiB'.format(org_file_size / (1000 * 1000)))
@@ -259,13 +259,13 @@ def main():
     plot_avg_c_curve_file        = os.path.join(path_report, 'avg_c_curve.pgf')
     plot_avg_legend              = os.path.join(path_report, 'avg_legend.pgf')
 
-    avg_stats = get_avg_stats(stats, db, techniques, start_bits, downsampling_ratios_ac, framedistances, flat_quantization, flat_compression)
+    avg_stats = get_avg_stats(stats, db, techniques, start_bits, subsampling_ratios_ac, framedistances, flat_quantization, flat_compression)
 
-    common.plot_mode_curve_error(plot_avg_curve_error_file                , avg_stats, 'linavg', 16, downsampling_ratios_ac, framedistances, flat_compression)
-    common.plot_mode_curve_ratio(plot_avg_curve_ratio_file                , avg_stats, 'linavg', 16, downsampling_ratios_ac, framedistances, flat_compression)
-    common.plot_mode_curve_duration_per_pixel(plot_avg_curve_duration_file, avg_stats, 'linavg', 16, downsampling_ratios_ac, framedistances, flat_compression)
-    common.plot_c_curves(plot_avg_c_curve_file                            , avg_stats, 'linavg', 16, downsampling_ratios_ac, framedistances)
-    common.plot_legend(plot_avg_legend, downsampling_ratios_ac, framedistances)
+    common.plot_mode_curve_error(plot_avg_curve_error_file                , avg_stats, 'linavg', 16, subsampling_ratios_ac, framedistances, flat_compression)
+    common.plot_mode_curve_ratio(plot_avg_curve_ratio_file                , avg_stats, 'linavg', 16, subsampling_ratios_ac, framedistances, flat_compression)
+    common.plot_mode_curve_duration_per_pixel(plot_avg_curve_duration_file, avg_stats, 'linavg', 16, subsampling_ratios_ac, framedistances, flat_compression)
+    common.plot_c_curves(plot_avg_c_curve_file                            , avg_stats, 'linavg', 16, subsampling_ratios_ac, framedistances)
+    common.plot_legend(plot_avg_legend, subsampling_ratios_ac, framedistances)
 
     with open(os.path.join(path_report + '.tex'), 'w') as f:
         f.write(tex_stream)
