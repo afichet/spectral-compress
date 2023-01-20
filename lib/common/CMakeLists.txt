@@ -27,6 +27,7 @@ add_library(common STATIC
     SGEGBox.cpp
     SpectrumConverter.cpp
     Util.cpp
+    EXRUtils.cpp
 )
 
 set_target_properties(common PROPERTIES PUBLIC_HEADER "${PUBLIC_HEADERS}")
