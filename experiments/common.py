@@ -177,7 +177,7 @@ def get_err_from_bin_log(path: str):
         return err # RMSE
 
 
-def get_err_from_diff_bin(path: str):
+def get_avg_rmse_from_diff_bin(path: str):
     with open(path, 'rb') as f:
         data = f.read()
         err = struct.unpack_from('d', data)
@@ -287,8 +287,8 @@ def plot_mode_curves_param(
         plt.show()
 
 
-def plot_mode_curve_error(output_filename:str, stats:dict, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
-    plot_mode_curves_param(output_filename, stats, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'error', 'Error')
+def plot_mode_curve_avg_rmse(output_filename:str, stats:dict, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
+    plot_mode_curves_param(output_filename, stats, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'avg_rmse', 'Error (Average RMSE)')
 
 
 def plot_mode_curve_size(output_filename:str, stats:dict, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list):

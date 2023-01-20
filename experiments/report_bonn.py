@@ -18,6 +18,7 @@ subpath_report = 'bonn'
 path_report    = os.path.join('export', subpath_report)
 variants       = ['diffuse', 'specular']
 db             = [ d for d in os.listdir(path_data) ]
+db.sort()
 
 exposure_bonn = 0
 
@@ -60,7 +61,7 @@ def get_avg_stats(
                         for c_flat in flat_compression:
                             avg_stats[downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat] = {}
 
-                            avg_stats[downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['error'] = 0
+                            avg_stats[downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['avg_rmse'] = 0
                             avg_stats[downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['ratio'] = 0
                             avg_stats[downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['duration'] = 0
 
@@ -91,7 +92,7 @@ def get_avg_stats(
                                     height   = stats[d][v][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['height']
                                     n_pixels = width * height
 
-                                    avg_stats[downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['error']    += div * stats[d][v][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['error']
+                                    avg_stats[downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['avg_rmse']    += div * stats[d][v][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['avg_rmse']
                                     avg_stats[downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['ratio']    += div * stats[d][v][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['ratio']
                                     avg_stats[downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['duration'] += div * stats[d][v][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['duration'] / n_pixels
 
@@ -209,7 +210,7 @@ def main():
 
                                     size     = common.get_jxl_dir_size(path_curr_in)
                                     ratio    = org_file_size / size
-                                    error    = common.get_err_from_diff_bin(diff_error_file)
+                                    avg_rmse = common.get_avg_rmse_from_diff_bin(diff_error_file)
                                     q_curve  = common.get_q_curve_from_txt_log(log_file)
                                     c_curve  = common.get_c_curve_from_txt_log(log_file)
                                     duration = common.get_duration_from_txt_log(log_file)
@@ -218,7 +219,7 @@ def main():
                                     stats[d][v][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['height']   = height
                                     stats[d][v][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['size']     = size
                                     stats[d][v][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['ratio']    = ratio
-                                    stats[d][v][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['error']    = error
+                                    stats[d][v][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['avg_rmse'] = avg_rmse
                                     stats[d][v][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['q_curve']  = q_curve
                                     stats[d][v][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['c_curve']  = c_curve
                                     stats[d][v][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['duration'] = duration
@@ -226,7 +227,7 @@ def main():
                                     with open(meta_file_size_file, 'w') as f:
                                         f.write('{:.2f} MiB'.format(size / (1000 * 1000)))
 
-            plot_curve_error_file    = os.path.join(path_report, d, v, d + '_error.pgf')
+            plot_curve_rmse_file     = os.path.join(path_report, d, v, d + '_error.pgf')
             plot_curve_size_file     = os.path.join(path_report, d, v, d + '_size.pgf')
             plot_curve_ratio_file    = os.path.join(path_report, d, v, d + '_ratio.pgf')
             plot_curve_duration_file = os.path.join(path_report, d, v, d + '_duration.pgf')
@@ -240,7 +241,7 @@ def main():
             meta_spectrum_type_file = os.path.join(path_report, d, v, d + '_spectrum_type.txt')
             meta_max_error_file     = os.path.join(path_report, d, v, d + '_max_err.txt')
 
-            common.plot_mode_curve_error(plot_curve_error_file      , stats[d][v], 'linavg', 16, subsampling_ratios_ac, framedistances, flat_compression)
+            common.plot_mode_curve_avg_rmse(plot_curve_rmse_file    , stats[d][v], 'linavg', 16, subsampling_ratios_ac, framedistances, flat_compression)
             common.plot_mode_curve_size (plot_curve_size_file       , stats[d][v], 'linavg', 16, subsampling_ratios_ac, framedistances, flat_compression)
             common.plot_mode_curve_ratio(plot_curve_ratio_file      , stats[d][v], 'linavg', 16, subsampling_ratios_ac, framedistances, flat_compression)
             common.plot_mode_curve_duration(plot_curve_duration_file, stats[d][v], 'linavg', 16, subsampling_ratios_ac, framedistances, flat_compression)
@@ -280,7 +281,7 @@ def main():
 
     avg_stats = get_avg_stats(stats, db, variants, techniques, start_bits, subsampling_ratios_ac, framedistances, flat_quantization, flat_compression)
 
-    common.plot_mode_curve_error(plot_avg_curve_error_file                , avg_stats, 'linavg', 16, subsampling_ratios_ac, framedistances, flat_compression)
+    common.plot_mode_curve_avg_rmse(plot_avg_curve_error_file                , avg_stats, 'linavg', 16, subsampling_ratios_ac, framedistances, flat_compression)
     common.plot_mode_curve_ratio(plot_avg_curve_ratio_file                , avg_stats, 'linavg', 16, subsampling_ratios_ac, framedistances, flat_compression)
     common.plot_mode_curve_duration_per_pixel(plot_avg_curve_duration_file, avg_stats, 'linavg', 16, subsampling_ratios_ac, framedistances, flat_compression)
     common.plot_c_curves(plot_avg_c_curve_file                            , avg_stats, 'linavg', 16, subsampling_ratios_ac, framedistances)

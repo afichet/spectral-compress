@@ -49,11 +49,11 @@
 #include <lodepng.h>
 
 
-void compare_spectral_images(
+void rmse_spectral_images(
     const SpectralFramebuffer* img_a,
     const SpectralFramebuffer* img_b,
     size_t width, size_t height,
-    std::vector<double>& diff_image,
+    std::vector<double>& rmse_image,
     double& min_val, double& max_val,
     double& avg_err)
 {
@@ -69,11 +69,11 @@ void compare_spectral_images(
     const std::vector<float>& data_b = img_b->image_data;
 
     assert(data_a.size() == data_b.size());
-    diff_image.resize(width * height);
+    rmse_image.resize(width * height);
 
     #pragma omp parallel for
     for (size_t px = 0; px < width * height; px++) {
-        diff_image[px] = 0;
+        rmse_image[px] = 0;
 
         double diff = 0;
 
@@ -85,31 +85,31 @@ void compare_spectral_images(
             diff += d*d;
         }
 
-        diff_image[px] = std::sqrt(diff) / (double)n_bands;
+        rmse_image[px] = std::sqrt(diff / (double)n_bands);
     }
 
     // Compute min max (cannot be multi-threaded)
-    min_val = diff_image[0];
-    max_val = diff_image[0];
+    min_val = rmse_image[0];
+    max_val = rmse_image[0];
 
     for (size_t i = 1; i < width * height; i++) {
-        min_val = std::min(min_val, diff_image[i]);
-        max_val = std::max(max_val, diff_image[i]);
+        min_val = std::min(min_val, rmse_image[i]);
+        max_val = std::max(max_val, rmse_image[i]);
     }
 
     avg_err = 0;
 
     for (size_t px = 0; px < width * height; px++) {
-        avg_err += diff_image[px];
+        avg_err += rmse_image[px];
     }
 
     avg_err /= (double)(width * height);
 
-    std::cout << "    average: " << avg_err << std::endl;
-    std::cout << "    max avg: " << max_val << std::endl;
-    std::cout << "       rmse: " << Util::rmse_images(data_a, data_b, width * height, n_bands) << std::endl;
-    std::cout << "      rrmse: " << Util::rrmse_images(data_a, data_b, width * height, n_bands) << std::endl;
-    std::cout << " max / band: " << Util::max_error_images(data_a, data_b, width * height, n_bands) << std::endl;
+    std::cout << "average rmse / pixel: " << avg_err << std::endl;
+    std::cout << "    max rmse / pixel: " << max_val << std::endl;
+    std::cout << "         rmse global: " << Util::rmse_images(data_a, data_b, width * height, n_bands) << std::endl;
+    std::cout << "        rrmse global: " << Util::rrmse_images(data_a, data_b, width * height, n_bands) << std::endl;
+    std::cout << "          max / band: " << Util::max_error_images(data_a, data_b, width * height, n_bands) << std::endl;
 }
 
 
@@ -158,7 +158,7 @@ int main(int argc, char* argv[])
 
     // Parse arguments
     try {
-        TCLAP::CmdLine cmd("Compares two Spectral OpenEXR images");
+        TCLAP::CmdLine cmd("Compares two Spectral OpenEXR images showing an heatmap of the RMSE per pixel");
 
         TCLAP::UnlabeledValueArg<std::string> inputAFileArg("FileA", "Specifies reference image (input).", true, "reference.exr", "path");
         TCLAP::UnlabeledValueArg<std::string> inputBFileArg("FileB", "Specifies image to compare with (input).", true, "comparison.jxl", "path");
@@ -281,7 +281,7 @@ int main(int argc, char* argv[])
 
                     std::cout << "Statistics for " << fb_a->root_name << std::endl;
 
-                    compare_spectral_images(
+                    rmse_spectral_images(
                         fb_a, fb_b,
                         width, height,
                         framebuffer_error,
