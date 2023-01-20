@@ -54,10 +54,12 @@ void rmse_spectral_images(
     const SpectralFramebuffer* img_a,
     const SpectralFramebuffer* img_b,
     size_t width, size_t height,
-    std::vector<double>& rmse_image,
-    double& min_val, double& max_val,
-    double& avg_err,
-    double& five_higher_percentile)
+    std::vector<double>& rmse_pixel_image,
+    double& rmse_global,
+    double& max_rmse_pixel,
+    double  percentile,
+    double& percentile_rmse_pixels,
+    size_t& n_pixels_above_percentile)
 {
     // Check if dimensions match
     if (img_a->wavelengths_nm.size() != img_b->wavelengths_nm.size()) {
@@ -71,11 +73,11 @@ void rmse_spectral_images(
     const std::vector<float>& data_b = img_b->image_data;
 
     assert(data_a.size() == data_b.size());
-    rmse_image.resize(width * height);
+    rmse_pixel_image.resize(width * height);
 
     #pragma omp parallel for
     for (size_t px = 0; px < width * height; px++) {
-        rmse_image[px] = 0;
+        rmse_pixel_image[px] = 0;
 
         double diff = 0;
 
@@ -87,39 +89,26 @@ void rmse_spectral_images(
             diff += d*d;
         }
 
-        rmse_image[px] = std::sqrt(diff / (double)n_bands);
+        rmse_pixel_image[px] = std::sqrt(diff / (double)n_bands);
     }
 
-    // Compute min max (cannot be multi-threaded)
-    min_val = rmse_image[0];
-    max_val = rmse_image[0];
+    // Compute max (cannot be multi-threaded)
+    max_rmse_pixel = rmse_pixel_image[0];
 
     for (size_t i = 1; i < width * height; i++) {
-        min_val = std::min(min_val, rmse_image[i]);
-        max_val = std::max(max_val, rmse_image[i]);
+        max_rmse_pixel = std::max(max_rmse_pixel, rmse_pixel_image[i]);
     }
 
-    avg_err = 0;
-
-    for (size_t px = 0; px < width * height; px++) {
-        avg_err += rmse_image[px];
-    }
-
-    avg_err /= (double)(width * height);
-
-    // Calculate 5% higher
-    std::vector<double> rmses(rmse_image);
+    // Compute percentile higher
+    std::vector<double> rmses(rmse_pixel_image);
     std::sort(rmses.begin(), rmses.end());
 
-    size_t idx = std::round((float)rmses.size() * 95.f / 100.f);
-    five_higher_percentile = rmses[idx];
+    size_t idx = std::round((float)rmses.size() * (100.f - percentile) / 100.f);
+    percentile_rmse_pixels = rmses[idx];
+    n_pixels_above_percentile = rmses.size() - idx - 1;
 
-    std::cout << "average rmse / pixel: " << avg_err << std::endl;
-    std::cout << "    max rmse / pixel: " << max_val << std::endl;
-    // std::cout << "         rmse global: " << Util::rmse_images(data_a, data_b, width * height, n_bands) << std::endl;
-    // std::cout << "        rrmse global: " << Util::rrmse_images(data_a, data_b, width * height, n_bands) << std::endl;
-    // std::cout << "          max / band: " << Util::max_error_images(data_a, data_b, width * height, n_bands) << std::endl;
-    std::cout << "    5 percent higher: " << five_higher_percentile << std::endl;
+    // Compute global rmse
+    rmse_global = Util::rmse_images(data_a, data_b, width * height, n_bands);
 }
 
 
@@ -166,6 +155,9 @@ int main(int argc, char* argv[])
     bool generate_scale = false;
     uint32_t scale_width, scale_height;
 
+    bool verbose = false;
+    double percentile = 1.;
+
     // Parse arguments
     try {
         TCLAP::CmdLine cmd("Compares two Spectral OpenEXR images showing an heatmap of the RMSE per pixel");
@@ -179,14 +171,23 @@ int main(int argc, char* argv[])
         cmd.add(outputFileArg);
 
         TCLAP::ValueArg<double> lowerBoundArg("l", "lower", "Sets the lower bound for the colormap.", false, 0.f, "min");
-        TCLAP::ValueArg<double> upperBoundArg("u", "upper", "Sets the upper bouind for the colormap.", false, 1.f, "max");
+        TCLAP::ValueArg<double> upperBoundArg("u", "upper", "Sets the upper bound for the colormap.", false, 1.f, "max");
 
         cmd.add(lowerBoundArg);
         cmd.add(upperBoundArg);
 
-        TCLAP::ValueArg<std::string> errorFileArg("e", "error", "Sets a file where to write error log.", false, "error.bin", "path");
+        TCLAP::ValueArg<std::string> errorFileArg("e", "error", "Sets a file where to write binary error log (writes 2 doubles per spectral image: rmse_global and percentile_rmse_pixels).", false, "error.bin", "path");
 
         cmd.add(errorFileArg);
+
+        TCLAP::ValueArg<double> percentileArg("p", "percentile", "Sets the percentile to use to extract the upper percentile value of the RMSE across all pixels.", false, 1., "percent");
+
+        cmd.add(percentileArg);
+
+        TCLAP::SwitchArg verboseArg("v", "verbose", "Displays on the console the computed statistics per spectral image.", false);
+
+        cmd.add(verboseArg);
+
 
         TCLAP::SwitchArg generateScaleArg("g", "generate", "Generate a scale instead of comparing the images.", false);
         TCLAP::ValueArg<uint32_t> generateScaleWArg("x", "width", "Scale width. Works with -g parameter", false, 30, "width");
@@ -213,6 +214,10 @@ int main(int argc, char* argv[])
 
         error_output_is_set = errorFileArg.isSet();
         error_output = errorFileArg.getValue();
+
+        percentile = percentileArg.getValue();
+
+        verbose = verboseArg.getValue();
 
         generate_scale = generateScaleArg.getValue();
 
@@ -286,25 +291,37 @@ int main(int argc, char* argv[])
                     }
 
                     // Do the comparison
-                    std::vector<double> framebuffer_error;
-                    double min_err, max_err, avg_err, five_higher_percentile;
-
-                    std::cout << "Statistics for " << fb_a->root_name << std::endl;
+                    std::vector<double> rmse_pixel_image;
+                    double rmse_global, max_rmse_pixel, percentile_rmse_pixels;
+                    size_t n_pixels_above_percentile;
 
                     rmse_spectral_images(
                         fb_a, fb_b,
                         width, height,
-                        framebuffer_error,
-                        min_err, max_err,
-                        avg_err,
-                        five_higher_percentile
+                        rmse_pixel_image,
+                        rmse_global,
+                        max_rmse_pixel,
+                        percentile,
+                        percentile_rmse_pixels,
+                        n_pixels_above_percentile
                     );
 
-                    if (error_output_is_set) {
-                        fwrite(&avg_err, sizeof(double), 1, f_err);
-                        fwrite(&five_higher_percentile, sizeof(double), 1, f_err);
+                    if (verbose) {
+                        std::cout << "- Statistics for " << fb_a->root_name << std::endl;
+                        std::cout << "                              rmse: " << rmse_global << std::endl;
+                        std::cout << "                  max rmse / pixel: " << max_rmse_pixel << std::endl;
+                        std::cout << "                  upper percentile: " << percentile << " %" << std::endl;
+                        std::cout << "                    percent higher: " << percentile_rmse_pixels << std::endl;
+                        std::cout << " number of pixels above percentile: " << n_pixels_above_percentile << std::endl;
                     }
 
+                    if (error_output_is_set) {
+                        fwrite(&rmse_global, sizeof(double), 1, f_err);
+                        fwrite(&percentile_rmse_pixels, sizeof(double), 1, f_err);
+                    }
+
+                    // Creates an RGB visualisation
+                    std::vector<uint8_t> framebuffer_rgba;
                     float lower, upper;
 
                     if (custom_lower_bound_is_set) {
@@ -316,14 +333,11 @@ int main(int argc, char* argv[])
                     if (custom_upper_bound_is_set) {
                         upper = custom_upper_bound;
                     } else {
-                        upper = max_err;
+                        upper = max_rmse_pixel;
                     }
 
-                    // Creates an RGB visualisation
-                    std::vector<uint8_t> framebuffer_rgba;
-
                     diff_to_rgba(
-                        framebuffer_error,
+                        rmse_pixel_image,
                         lower, upper,
                         turbo_colormap_data,
                         sizeof(turbo_colormap_data) / (3 * sizeof(float)),
