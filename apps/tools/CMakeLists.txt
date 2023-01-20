@@ -24,6 +24,7 @@ add_subdirectory(exr-pfm)
 # Image visualization tools
 add_subdirectory(exr-diff)
 add_subdirectory(decompress-chrominance)
+add_subdirectory(exr-peek-spectrum)
 
 # Image manipulation tools
 add_subdirectory(exr-strip-rgb)
