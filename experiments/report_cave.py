@@ -43,55 +43,55 @@ def get_avg_stats(
     flat_compression: list):
     # Initialize all fields
     avg_stats = {}
-    for downsampling in subsampling_ratios_ac:
-        avg_stats[downsampling] = {}
+    for subsampling in subsampling_ratios_ac:
+        avg_stats[subsampling] = {}
         for tech in techniques:
-            avg_stats[downsampling][tech] = {}
+            avg_stats[subsampling][tech] = {}
             for bits in start_bits:
-                avg_stats[downsampling][tech][bits] = {}
+                avg_stats[subsampling][tech][bits] = {}
                 for c_dc, c_ac in framedistances:
-                    if not c_dc in avg_stats[downsampling][tech][bits]:
-                        avg_stats[downsampling][tech][bits][c_dc] = {}
-                    avg_stats[downsampling][tech][bits][c_dc][c_ac] = {}
+                    if not c_dc in avg_stats[subsampling][tech][bits]:
+                        avg_stats[subsampling][tech][bits][c_dc] = {}
+                    avg_stats[subsampling][tech][bits][c_dc][c_ac] = {}
                     for q_flat in flat_quantization:
-                        avg_stats[downsampling][tech][bits][c_dc][c_ac][q_flat] = {}
+                        avg_stats[subsampling][tech][bits][c_dc][c_ac][q_flat] = {}
                         for c_flat in flat_compression:
-                            avg_stats[downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat] = {}
+                            avg_stats[subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat] = {}
 
-                            avg_stats[downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['avg_rmse'] = 0
-                            avg_stats[downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['ratio'] = 0
-                            avg_stats[downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['duration'] = 0
+                            avg_stats[subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['avg_rmse'] = 0
+                            avg_stats[subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['ratio'] = 0
+                            avg_stats[subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['duration'] = 0
 
-                            avg_stats[downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['q_curve'] = []
-                            for i in range(len(stats[dataset[0]][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['q_curve'])):
-                                avg_stats[downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['q_curve'].append(0)
+                            avg_stats[subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['q_curve'] = []
+                            for i in range(len(stats[dataset[0]][subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['q_curve'])):
+                                avg_stats[subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['q_curve'].append(0)
 
-                            avg_stats[downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['c_curve'] = []
-                            for i in range(len(stats[dataset[0]][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['c_curve'])):
-                                avg_stats[downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['c_curve'].append(0)
+                            avg_stats[subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['c_curve'] = []
+                            for i in range(len(stats[dataset[0]][subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['c_curve'])):
+                                avg_stats[subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['c_curve'].append(0)
 
     div = 1 / len(dataset)
 
     for d in dataset:
-        for downsampling in subsampling_ratios_ac:
+        for subsampling in subsampling_ratios_ac:
             for tech in techniques:
                 for bits in start_bits:
                     for c_dc, c_ac in framedistances:
                         for q_flat in flat_quantization:
                             for c_flat in flat_compression:
-                                width    = stats[d][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['width']
-                                height   = stats[d][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['height']
+                                width    = stats[d][subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['width']
+                                height   = stats[d][subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['height']
                                 n_pixels = width * height
 
-                                avg_stats[downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['avg_rmse']    += div * stats[d][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['avg_rmse']
-                                avg_stats[downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['ratio']    += div * stats[d][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['ratio']
-                                avg_stats[downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['duration'] += div * stats[d][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['duration'] / n_pixels
+                                avg_stats[subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['avg_rmse']    += div * stats[d][subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['avg_rmse']
+                                avg_stats[subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['ratio']    += div * stats[d][subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['ratio']
+                                avg_stats[subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['duration'] += div * stats[d][subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['duration'] / n_pixels
 
-                                for i in range(len(stats[d][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['q_curve'])):
-                                    avg_stats[downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['q_curve'][i] += div * stats[d][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['q_curve'][i]
+                                for i in range(len(stats[d][subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['q_curve'])):
+                                    avg_stats[subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['q_curve'][i] += div * stats[d][subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['q_curve'][i]
 
-                                for i in range(len(stats[d][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['c_curve'])):
-                                    avg_stats[downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['c_curve'][i] += div * stats[d][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['c_curve'][i]
+                                for i in range(len(stats[d][subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['c_curve'])):
+                                    avg_stats[subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['c_curve'][i] += div * stats[d][subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['c_curve'][i]
 
     return avg_stats
 
@@ -100,20 +100,20 @@ def main():
     stats = {}
     for d in db:
         stats[d] = {}
-        for downsampling in subsampling_ratios_ac:
-            stats[d][downsampling] = {}
+        for subsampling in subsampling_ratios_ac:
+            stats[d][subsampling] = {}
             for tech in techniques:
-                stats[d][downsampling][tech] = {}
+                stats[d][subsampling][tech] = {}
                 for bits in start_bits:
-                    stats[d][downsampling][tech][bits] = {}
+                    stats[d][subsampling][tech][bits] = {}
                     for c_dc, c_ac in framedistances:
-                        if not c_dc in stats[d][downsampling][tech][bits]:
-                            stats[d][downsampling][tech][bits][c_dc] = {}
-                        stats[d][downsampling][tech][bits][c_dc][c_ac] = {}
+                        if not c_dc in stats[d][subsampling][tech][bits]:
+                            stats[d][subsampling][tech][bits][c_dc] = {}
+                        stats[d][subsampling][tech][bits][c_dc][c_ac] = {}
                         for q_flat in flat_quantization:
-                            stats[d][downsampling][tech][bits][c_dc][c_ac][q_flat] = {}
+                            stats[d][subsampling][tech][bits][c_dc][c_ac][q_flat] = {}
                             for c_flat in flat_compression:
-                                stats[d][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat] = {}
+                                stats[d][subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat] = {}
 
     tex_stream = ''
 
@@ -149,7 +149,7 @@ def main():
 
         common.run_converter_exr_png(org_exr_file, org_png_file, exposure_cave)
 
-        for downsampling in subsampling_ratios_ac:
+        for subsampling in subsampling_ratios_ac:
             curr_max_err = 0
             for tech in techniques:
                 for bits in start_bits:
@@ -157,7 +157,7 @@ def main():
                         for q_flat in flat_quantization:
                             for c_flat in flat_compression:
                                 path_curr_in = common.get_path_cave_out(
-                                    path_out, downsampling,
+                                    path_out, subsampling,
                                     d,
                                     tech,
                                     bits,
@@ -165,7 +165,7 @@ def main():
                                     q_flat, c_flat)
 
                                 path_curr_out = common.get_path_cave_out(
-                                    path_report, downsampling,
+                                    path_report, subsampling,
                                     d,
                                     tech,
                                     bits,
@@ -199,20 +199,20 @@ def main():
                                 # Dynamically compute max bound
                                 curr_max_err = max(curr_max_err, common.get_five_percentile_from_diff_bin(diff_error_file))
 
-                                stats[d][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['width']    = width
-                                stats[d][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['height']   = height
-                                stats[d][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['size']     = size
-                                stats[d][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['ratio']    = ratio
-                                stats[d][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['avg_rmse'] = avg_rmse
-                                stats[d][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['q_curve']  = q_curve
-                                stats[d][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['c_curve']  = c_curve
-                                stats[d][downsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['duration'] = duration
+                                stats[d][subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['width']    = width
+                                stats[d][subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['height']   = height
+                                stats[d][subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['size']     = size
+                                stats[d][subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['ratio']    = ratio
+                                stats[d][subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['avg_rmse'] = avg_rmse
+                                stats[d][subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['q_curve']  = q_curve
+                                stats[d][subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['c_curve']  = c_curve
+                                stats[d][subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['duration'] = duration
 
                                 with open(meta_file_size_file, 'w') as f:
                                     f.write('{:.2f} MiB'.format(size / (1000 * 1000)))
 
             # Run diff a second time with the dynamically computed max bound value
-            path_curr_out_partial = common.get_path_cave_out_partial(path_report, downsampling, d)
+            path_curr_out_partial = common.get_path_cave_out_partial(path_report, subsampling, d)
             meta_file_max_diff_file = os.path.join(path_curr_out_partial, d + '_max_err.txt')
 
             with open(meta_file_max_diff_file, 'w') as f:
@@ -227,7 +227,7 @@ def main():
                         for q_flat in flat_quantization:
                             for c_flat in flat_compression:
                                 path_curr_out = common.get_path_cave_out(
-                                    path_report, downsampling,
+                                    path_report, subsampling,
                                     d,
                                     tech,
                                     bits,
