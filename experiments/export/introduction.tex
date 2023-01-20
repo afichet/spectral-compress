@@ -3,33 +3,33 @@
 In this supplemental, we benchmark our compression technique when used with different parameters with two spectral image databases. Our compression pipeline uses spectral EXR files as the input and outputs a collection of JPEG-XL files.
 
 
-\subsection{Databse spectral OpenEXR conversion}
+\subsection{Spectral OpenEXR Conversion}
 
-To have a consistent pipeline across the two database, we use spectral OpenEXR as input of our compression pipeline. Prior to the compression all images are first converted to spectral OpenEXR.
+To have a consistent pipeline across the two databases, we use spectral OpenEXR as input of our compression pipeline. Prior to the compression, all images are first converted to spectral OpenEXR.
 
-The CAVE database is provided as a set of grayscale PNGs 16~bits unsigned integer for each spectral band. To keep the full possible range of 16~bits unsigned integer values, we use a 32~bits float framebuffer per band in our spectral EXR conversion. To perform this conversion, we use the program \verb?cave-exr? from with the script \verb?experiment/cave_to_exr.py?.
+The CAVE database is provided as a set of grayscale PNGs 16~bits unsigned integers for each spectral band. To keep the full possible range of 16~bits unsigned integers values, we use a 32~bits float frame buffer per band in our spectral EXR conversion. To perform this conversion, we use the program \verb?cave-exr? from with the script \verb?experiment/cave_to_exr.py?.
 
-The Bonn database is provided in \verb?.npz? Numpy format. We export the diffuse and specular maps in spectral EXR using a 32~bits float framebuffer per band. To perform this conversion, we use the script \verb?experiment/bonn_to_exr.py?.
+The Bonn database is provided in \verb?.npz? Numpy format. We export the diffuse and specular maps in spectral EXR using a 32~bits float frame buffer per band. To perform this conversion, we use the script \verb?experiment/bonn_to_exr.py?.
 
-All OpenEXR files uses ZIP compression. We also remove the "\verb?R?", "\verb?G?", "\verb?B?" layers to better compare the lossless compressed OpenEXR file with our proposed lossy compression scheme.
+All OpenEXR files use ZIP compression. We also remove the ``\verb?R?'', ``\verb?G?'', ``\verb?B?'' layers to better compare the lossless compressed OpenEXR file with our proposed lossy compression scheme.
 
 
-\subsection{Compression parameters}
+\subsection{Compression Parameters}
 
 In this document we mainly compare the following parameters:
 
 \begin{itemize}
-    \item Frame distance. It is a compression parameter of JPEG-XL. When set to 0, we use the JPEG-XL lossless compression mode. This parameter can be set from 0 to 15, with higher number decreasing image quality in favor of file size. We use two frame distance parameters. One for the zeroth moment (DC) component and a second one for the first moment (AC) component. In this supplemental, we showcase two scenari,
+    \item Frame distance. It is a compression parameter of JPEG-XL. When set to 0, we use the JPEG-XL lossless compression mode. This parameter can be set from 0 to 15, with a higher number decreasing image quality in favor of file size. We use two frame distance parameters. One for the zeroth moment (DC) component and a second one for the first moment (AC) component. In this supplemental, we showcase two scenarios,
     \begin{itemize}
         \item DC with frame distance 0 (lossless) and first AC component with frame distance 1 (lossy).
         \item DC with frame distance 0.1 (lossy) and first AC component starting with frame distance 1 (lossy).
     \end{itemize}
-    \item Compression curve. We can generate a compression curve at runtime. The method for generating this curve is detailed in the article. When the compression curve is set to flat, all AC components use the same frame distance parameter. Otherwise, the frame distance is increased according to the error. In this supplemental, we showcase two scenari,
+    \item Compression curve. We can generate a compression curve at runtime. The method for generating this curve is detailed in the article. When the compression curve is set to flat, all AC components use the same frame distance parameter. Otherwise, the frame distance is increased according to the error. In this supplemental, we showcase two scenarios,
     \begin{itemize}
         \item Flat curve: all AC components use the same frame distance parameter.
         \item Dynamic curve: the curve is computed at runtime with the frame distance starting from the parameter set for the first AC component.
     \end{itemize}
-    \item Chroma subsampling. We allow the subsampling of AC components while keeping the DC component at full resolution. Since most of the chroma information is held by AC components, we name this "chroma subsampling". In this supplemental, we showcase two scenari,
+    \item Chroma subsampling. We allow the subsampling of AC components while keeping the DC component at full resolution. Since most of the chroma information is held by AC components, we name this ``chroma subsampling''. In this supplemental, we showcase two scenarios,
         \begin{itemize}
             \item No chroma subsampling (1:1), the DC component and all AC components are kept at full resolution.
             \item Chroma subsampling (1:2), the DC component is kept at full resolution while AC components are stored at half of their native resolution.
@@ -40,7 +40,7 @@ In this document we mainly compare the following parameters:
 \subsection{Metrics}
 
 \paragraph{Error}
-To compare the accuracy of the reconstructed spectral image after our compression, we use the RMSE per pixel and display an heatmap of the resulting values using the following formula:
+To compare the accuracy of the reconstructed spectral image after our compression, we use the RMSE per pixel and display a heatmap of the resulting values using the following formula:
 
 \begin{align}
     \mathrm{RMSE}(x, y) = \sqrt{\frac{\sum_{\lambda = 0}^{N_\mathrm{bands} - 1} \left(I_\mathrm{ref}(x, y, \lambda) - I_\mathrm{cmp}(x, y, \lambda) \right)^2}{N_\mathrm{bands}}}
@@ -68,3 +68,5 @@ The compression ratio
 \paragraph{Timings}
 
 All the computations were performed on an Intel Core i9-10980XE CPU with 128~Gb of RAM (Dell Precision 5820 Tower X-Series). On each image, we provide the timings for the whole image. Since images have a different size in the Bonn database, we instead provide the average timing per pixel.
+
+\clearpage
