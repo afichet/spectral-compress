@@ -314,7 +314,6 @@ int main(int argc, char* argv[])
         const size_t x_stride = n_bands * type_stride;
         const size_t y_stride = x_stride * width;
 
-
         for (size_t band = 0; band < n_bands; band++) {
             const std::string layer_name = "S0." + std::to_string(wavelengths_nm[band]) + "nm";
 
