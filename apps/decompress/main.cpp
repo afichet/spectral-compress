@@ -54,6 +54,7 @@ void decompress_spectral_framebuffer(
     std::vector<float>& spectral_framebuffer)
 {
     const size_t n_pixels = compressed_moments[0].size();
+    const size_t n_bands  = sg.wavelengths.size();
 
     size_t n_moments = 0;
 
@@ -114,7 +115,19 @@ void decompress_spectral_framebuffer(
         timing
     );
 
-    Util::cast_vector(spectral_framebuffer_d, spectral_framebuffer);
+    const std::string root_name(sg.root_name.data());
+
+    if (Util::ends_with(root_name, "S0") || Util::ends_with(root_name, "T")) {
+        spectral_framebuffer.resize(n_pixels * n_bands);
+
+        // Ensure positive values
+        #pragma omp parallel for
+        for (size_t i = 0; i < n_pixels * n_bands; i++) {
+            spectral_framebuffer[i] = (float)std::max(spectral_framebuffer_d[i], 0.);
+        }
+    } else {
+        Util::cast_vector(spectral_framebuffer_d, spectral_framebuffer);
+    }
 }
 
 
