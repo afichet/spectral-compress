@@ -35,6 +35,7 @@
 
 #include <JXLImage.h>
 #include <EXRSpectralImage.h>
+#include <EXRImage.h>
 #include <Util.h>
 #include <moments_image.h>
 #include <moments.h>
@@ -65,6 +66,7 @@ void decompress_spectral_framebuffer(
     Util::cast_vector(sg.mins, mins_d);
     Util::cast_vector(sg.maxs, maxs_d);
 
+    #pragma omp parallel for
     for (size_t px = 0; px < n_pixels; px++) {
         for (size_t m = 0; m < n_moments; m++) {
             compressed_moments_d[px * n_moments + m] = compressed_moments[m][px];
@@ -101,7 +103,8 @@ Imf::PixelType quantization_to_exr(size_t n_bits, size_t n_exponent_bits) {
 
 int main(int argc, char* argv[])
 {
-    std::string path_image_in, path_image_out;
+    std::string path_image_in, path_image_chrominance_out, path_image_luminance_out;
+    bool output_luminance = false;
 
     // Parse arguments
     try {
@@ -109,14 +112,23 @@ int main(int argc, char* argv[])
 
         TCLAP::UnlabeledValueArg<std::string> inputFileArg ("Input", "Path to the input compressed spectral JPEG-XL image.", true, "input.jxl", "path");
         TCLAP::UnlabeledValueArg<std::string> outputFileArg("Output", "Path to the output chrominance OpenEXR.", true, "output_chrominance.exr", "path");
+        TCLAP::ValueArg<std::string> outputLuminanceArg("l", "luminance", "Creates an additional EXR for luminance.", false, "luminance.exr", "path");
 
         cmd.add(inputFileArg);
         cmd.add(outputFileArg);
+        cmd.add(outputLuminanceArg);
 
         cmd.parse(argc, argv);
 
-        path_image_in  = inputFileArg.getValue();
-        path_image_out = outputFileArg.getValue();
+        path_image_in              = inputFileArg.getValue();
+        path_image_chrominance_out = outputFileArg.getValue();
+
+        output_luminance = outputLuminanceArg.isSet();
+
+        if (output_luminance) {
+            path_image_luminance_out = outputLuminanceArg.getValue();
+        }
+
     } catch (TCLAP::ArgException &e) {
         std::cerr << "Error: " << e.error() << " for argument " << e.argId() << std::endl;
         return 1;
@@ -128,9 +140,10 @@ int main(int argc, char* argv[])
     const size_t width  = jxl_image.width();
     const size_t height = jxl_image.height();
 
-    EXRSpectralImage exr_out(width, height);
+    // Handle chrominance
+    EXRSpectralImage exr_chrominance_out(width, height);
 
-    exr_out.setAttributesData(box.exr_attributes);
+    exr_chrominance_out.setAttributesData(box.exr_attributes);
 
     for (const SGEGSpectralGroup& sg: box.spectral_groups) {
         std::string root_name = sg.root_name.data();
@@ -156,7 +169,7 @@ int main(int argc, char* argv[])
         const size_t n_exponent_bits    = main_fb->getExponentBitsPerSample();
         const Imf::PixelType pixel_type = quantization_to_exr(n_bits, n_exponent_bits);
 
-        exr_out.appendSpectralFramebuffer(
+        exr_chrominance_out.appendSpectralFramebuffer(
             sg.wavelengths,
             spectral_framebuffer,
             root_name,
@@ -170,14 +183,35 @@ int main(int argc, char* argv[])
         const size_t n_exponent_bits    = main_fb->getExponentBitsPerSample();
         const Imf::PixelType pixel_type = quantization_to_exr(n_bits, n_exponent_bits);
 
-        exr_out.appendExtraFramebuffer(
+        exr_chrominance_out.appendExtraFramebuffer(
             jxl_image.getFramebufferDataConst(gg.layer_index),
             gg.layer_name.data(),
             pixel_type
         );
     }
 
-    exr_out.write(path_image_out);
+    exr_chrominance_out.write(path_image_chrominance_out);
+
+    // Handle luminance if required
+    if (output_luminance) {
+        EXRImage exr_luminance_out(width, height);
+
+        for (const SGEGSpectralGroup& sg: box.spectral_groups) {
+            std::string root_name = sg.root_name.data();
+
+            if (root_name == "S0" || root_name == "T") {
+                root_name = "Y";
+            } else {
+                root_name += ".Y";
+            }
+
+            const std::vector<float>& framebuffer = jxl_image.getFramebufferDataConst(sg.layer_indices[0]);
+
+            exr_luminance_out.appendFramebuffer(framebuffer, root_name.c_str());
+        }
+
+        exr_luminance_out.write(path_image_luminance_out);
+    }
 
     return 0;
 }
