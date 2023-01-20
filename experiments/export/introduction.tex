@@ -54,10 +54,19 @@ with:
     $I_\mathrm{cmd}$ & the OpenEXR image obtained after decompressing the image compressed with our pipeline. \\
 \end{tabularx}\\
 
-Then, we provide the averaged RMSE over all pixels in the plots:
+Then, we provide the RMSE over the whole image in the plots:
 
 \begin{align}
-    \mathrm{AvgRMSE} = \frac{\sum_{x = 0}^{\mathrm{width} - 1} \sum_{y = 0}^{\mathrm{height} - 1} \mathrm{RMSE}(x, y)}{\mathrm{width} \cdot \mathrm{height}}
+    \mathrm{RMSE} =
+        \sqrt{
+            \frac{
+                    \sum_{x = 0}^{\mathrm{width} - 1} \sum_{y = 0}^{\mathrm{height} - 1} \sum_{\lambda = 0}^{N_\mathrm{bands} - 1}
+                        \left(
+                            I_\mathrm{ref}(x, y, \lambda) - I_\mathrm{cmp}(x, y, \lambda)
+                        \right)^2
+                }
+                {\mathrm{width} \cdot \mathrm{height} \cdot N_\mathrm{bands}}
+        }
 \end{align}
 
 

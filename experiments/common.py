@@ -103,7 +103,9 @@ def run_diff(file_a: str, file_b: str, max_err: float, output_file: str, diff_er
         file_a, file_b,
         output_file,
         '-u', str(max_err),
-        '-e', diff_error_file
+        '-e', diff_error_file,
+        '-v',
+        '-p', '0.002'
         ]
 
     subprocess.run(args)
@@ -196,7 +198,7 @@ def get_err_from_bin_log(path: str):
         return err # RMSE
 
 
-def get_avg_rmse_from_diff_bin(path: str):
+def get_rmse_from_diff_bin(path: str):
     with open(path, 'rb') as f:
         data = f.read()
         err = struct.unpack_from('2d', data)
@@ -215,8 +217,6 @@ def get_five_percentile_from_diff_bin(path: str):
 # Get quantization curve saved in the text log
 def get_q_curve_from_txt_log(path: str):
     q_curve = []
-    c_curve = []
-    rmse = 0
 
     with open(path, 'r') as f:
         lines = f.readlines()
@@ -315,8 +315,8 @@ def plot_mode_curves_param(
         plt.show()
 
 
-def plot_mode_curve_avg_rmse(output_filename:str, stats:dict, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
-    plot_mode_curves_param(output_filename, stats, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'avg_rmse', 'Error (Average RMSE)')
+def plot_mode_curve_rmse(output_filename:str, stats:dict, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
+    plot_mode_curves_param(output_filename, stats, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'rmse', 'RMSE')
 
 
 def plot_mode_curve_size(output_filename:str, stats:dict, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
