@@ -61,7 +61,7 @@ int main(int argc, char* argv[])
 
     // Parse arguments
     try {
-        TCLAP::CmdLine cmd("Compares two Spectral OpenEXR images");
+        TCLAP::CmdLine cmd("Converts a spectral OpenEXR to PNG RGB.");
 
         TCLAP::UnlabeledValueArg<std::string> inputFileArg ("Input", "Specifies the EXR input image.", true, "input.exr", "path");
         TCLAP::UnlabeledValueArg<std::string> outputFileArg("Output", "Specifies the PNG output image.", true, "output.png", "path");
