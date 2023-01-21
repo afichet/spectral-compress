@@ -21,7 +21,7 @@ public:
     , _pos(0)
     {}
 
-    
+
     ArrayStream(const std::vector<uint8_t> data)
     : Imf::OStream("mem")
     , Imf::IStream("mem")
@@ -42,7 +42,7 @@ public:
         _pos += n;
     }
 
-    
+
     virtual bool read(char c[/*n*/], int n) {
         const uint64_t remaining_bytes = _data.size() - _pos;
 
@@ -57,22 +57,22 @@ public:
         return _pos == _data.size();
     }
 
-    
+
     virtual uint64_t tellp () {
         return _pos;
     }
 
-    
+
     virtual uint64_t tellg() {
         return _pos;
     }
 
-    
+
     virtual void seekp(uint64_t pos) {
         _pos = pos;
     }
 
-    
+
     virtual void seekg(uint64_t pos) {
         _pos = pos;
     }
@@ -109,12 +109,12 @@ int main(int argc, char* argv[]) {
 
         attr_stream.write(attribute_name, std::strlen(attribute_name) + 1);
         attr_stream.write(attribute_type, std::strlen(attribute_type) + 1);
-        
+
         it.attribute().writeValueTo(attr_stream, 1);
     }
 
     // Saving metadata
-    FILE *f = std::fopen("attr.dat", "wb");
+    std::FILE *f = std::fopen("attr.dat", "wb");
 
     if (f) {
         std::fwrite(attr_stream.data(), 1, attr_stream.size(), f);
@@ -142,7 +142,7 @@ int main(int argc, char* argv[]) {
             attr_stream.read(&c, 1);
             attribute_type_stream << c;
         } while (c != 0);
-        
+
         const std::string attribute_name = attribute_name_stream.str();
         const std::string attribute_type = attribute_type_stream.str();
 

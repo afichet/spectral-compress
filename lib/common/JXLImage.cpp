@@ -533,7 +533,7 @@ void JXLImage::write(const char* filename, int effort) const {
         std::FILE* file = std::fopen(curr_filename.data(), "wb");
 
         if (!file) {
-            throw std::runtime_error("Could not open file " + curr_filename + " for writting");
+            throw std::runtime_error("Could not open file " + curr_filename + " for writing.");
         }
 
         std::fwrite(compressed.data(), sizeof(uint8_t), compressed.size(), file);

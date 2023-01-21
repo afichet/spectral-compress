@@ -588,23 +588,28 @@ int main(int argc, char *argv[])
 
     // Saves log in binary form
     if (has_bin_log) {
-        FILE *f = fopen(binarylog_filepath.c_str(), "wb");
+        std::FILE *f = std::fopen(binarylog_filepath.c_str(), "wb");
+
+        if (!f) {
+            std::cerr << "Could not open " << binarylog_filepath << " for writing." << std::endl;
+            return 1;
+        }
 
         uint32_t n = quantization_errors.size();
 
-        fwrite(&n, sizeof(uint32_t), 1, f);
+        std::fwrite(&n, sizeof(uint32_t), 1, f);
 
         for (size_t i = 0; i < quantization_errors.size(); i++) {
-            fwrite(&quantization_errors[i].rmse_error, sizeof(double), 1, f);
-            fwrite(&quantization_errors[i].rrmse_error, sizeof(double), 1, f);
-            fwrite(&quantization_errors[i].max_error, sizeof(double), 1, f);
+            std::fwrite(&quantization_errors[i].rmse_error, sizeof(double), 1, f);
+            std::fwrite(&quantization_errors[i].rrmse_error, sizeof(double), 1, f);
+            std::fwrite(&quantization_errors[i].max_error, sizeof(double), 1, f);
 
-            fwrite(&compression_errors[i].rmse_error, sizeof(double), 1, f);
-            fwrite(&compression_errors[i].rrmse_error, sizeof(double), 1, f);
-            fwrite(&compression_errors[i].max_error, sizeof(double), 1, f);
+            std::fwrite(&compression_errors[i].rmse_error, sizeof(double), 1, f);
+            std::fwrite(&compression_errors[i].rrmse_error, sizeof(double), 1, f);
+            std::fwrite(&compression_errors[i].max_error, sizeof(double), 1, f);
         }
 
-        fclose(f);
+        std::fclose(f);
     }
 
     return 0;

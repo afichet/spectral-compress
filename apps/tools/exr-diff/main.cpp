@@ -251,10 +251,15 @@ int main(int argc, char* argv[])
 
         lodepng::encode(filename_output, scale_rgba, scale_width, scale_height);
     } else {
-        FILE* f_err = NULL;
+        std::FILE* f_err = NULL;
 
         if (error_output_is_set) {
-            f_err = fopen(error_output.c_str(), "wb");
+            f_err = std::fopen(error_output.c_str(), "wb");
+
+            if (!f_err) {
+                std::cerr << "Could not open " << error_output << " for writing." << std::endl;
+                error_output_is_set = false;
+            }
         }
 
         const EXRSpectralImage exr_in_a(filename_a);
@@ -316,8 +321,8 @@ int main(int argc, char* argv[])
                     }
 
                     if (error_output_is_set) {
-                        fwrite(&rmse_global, sizeof(double), 1, f_err);
-                        fwrite(&percentile_rmse_pixels, sizeof(double), 1, f_err);
+                        std::fwrite(&rmse_global, sizeof(double), 1, f_err);
+                        std::fwrite(&percentile_rmse_pixels, sizeof(double), 1, f_err);
                     }
 
                     // Creates an RGB visualisation
@@ -353,7 +358,7 @@ int main(int argc, char* argv[])
         }
 
         if (error_output_is_set) {
-            fclose(f_err);
+            std::fclose(f_err);
         }
     }
 

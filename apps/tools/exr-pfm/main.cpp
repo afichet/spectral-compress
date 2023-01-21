@@ -73,8 +73,8 @@ bool write_pfm(
 
     std::FILE* image_out = std::fopen(filename_out, "wb");
 
-    if (image_out == nullptr) {
-        std::cerr << "Could not open " << filename_out << " for writing" << std::endl;
+    if (!image_out) {
+        std::cerr << "Could not open " << filename_out << " for writing." << std::endl;
         return false;
     }
 
