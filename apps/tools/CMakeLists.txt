@@ -5,8 +5,8 @@ add_subdirectory(export-layers)
 add_subdirectory(validate-image)
 
 # Direct lossy compression without further processing to have a baseline
-add_subdirectory(stupid-compress)
-add_subdirectory(stupid-decompress)
+add_subdirectory(simple-compress)
+add_subdirectory(simple-decompress)
 
 # Image generation tool
 add_subdirectory(generate-macbeth-img)
