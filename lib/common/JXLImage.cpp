@@ -532,8 +532,8 @@ void JXLImage::write(const char* filename, int effort) const {
         // Write file
         std::FILE* file = std::fopen(curr_filename.data(), "wb");
 
-        if (file == NULL) {
-            throw std::runtime_error("Could not open file for writting");
+        if (!file) {
+            throw std::runtime_error("Could not open file " + curr_filename + " for writting");
         }
 
         std::fwrite(compressed.data(), sizeof(uint8_t), compressed.size(), file);
@@ -550,7 +550,7 @@ void JXLImage::write(const std::string& filename, int effort) const
 
 void JXLImage::dump(const char* filename) const
 {
-    FILE* f = std::fopen(filename, "wb");
+    std::FILE* f = std::fopen(filename, "wb");
 
     if (!f) {
         throw std::runtime_error("Could not create an JXLImage dump file");
@@ -585,7 +585,7 @@ void JXLImage::dump(const std::string& filename) const
 
 JXLImage* JXLImage::read_dump(const char* filename)
 {
-    FILE *f = std::fopen(filename, "rb");
+    std::FILE *f = std::fopen(filename, "rb");
 
     if (!f) {
         throw std::runtime_error("Could not read JXLImage dump file");
@@ -657,16 +657,20 @@ void JXLImage::load(const char* filename)
         JxlThreadParallelRunnerPtr runner;
 
         // Read file
-        FILE* file = fopen(curr_filename.data(), "rb");
+        std::FILE* file = fopen(curr_filename.data(), "rb");
 
-        fseek(file, 0, SEEK_END);
+        if (file == NULL) {
+            throw std::runtime_error("Could not open " + curr_filename);
+        }
+
+        std::fseek(file, 0, SEEK_END);
         const long file_size = ftell(file);
-        fseek(file, 0, SEEK_SET);
+        std::fseek(file, 0, SEEK_SET);
 
         jxl_data.resize(file_size);
 
-        fread(jxl_data.data(), 1, file_size, file);
-        fclose(file);
+        std::fread(jxl_data.data(), 1, file_size, file);
+        std::fclose(file);
 
         // Decode JXL stream
         dec = JxlDecoderMake(nullptr);
