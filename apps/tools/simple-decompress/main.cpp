@@ -32,6 +32,7 @@
  */
 
 #include <iostream>
+#include <exception>
 
 #include <EXRImage.h>
 #include <JXLImage.h>
@@ -49,26 +50,28 @@ int main(int argc, char* argv[])
     const char* filename_in  = argv[1];
     const char* filename_out = argv[2];
 
-    JXLImage jxl_in(filename_in);
-    EXRImage exr_out(jxl_in.width(), jxl_in.height());
-    const SGEGBox& box = jxl_in.getBox();
+    try {
+        const JXLImage jxl_in(filename_in);
+        const SGEGBox& box = jxl_in.getBox();
 
-    box.print();
+        EXRImage exr_out(jxl_in.width(), jxl_in.height());
 
-    for (size_t i = 0; i < box.gray_groups.size(); i++) {
-        const SGEGGrayGroup& gg = box.gray_groups[i];
+        for (size_t i = 0; i < box.gray_groups.size(); i++) {
+            const SGEGGrayGroup& gg = box.gray_groups[i];
 
-        exr_out.appendFramebuffer(
-            jxl_in.getFramebufferDataConst(gg.layer_index),
-            gg.layer_name.data()
-        );
+            exr_out.appendFramebuffer(
+                jxl_in.getFramebufferDataConst(gg.layer_index),
+                gg.layer_name.data()
+            );
+        }
+
+        exr_out.setAttributesData(box.exr_attributes);
+
+        exr_out.write(filename_out);
+    } catch (std::exception &e) {
+        std::cout << "Error: " << e.what() << std::endl;
+        return 1;
     }
-
-    exr_out.setAttributesData(box.exr_attributes);
-
-    std::cout << "Len ATTR: " << box.exr_attributes.size() << std::endl;
-
-    exr_out.write(filename_out);
 
     return 0;
 }

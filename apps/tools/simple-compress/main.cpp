@@ -32,51 +32,95 @@
  */
 
 #include <iostream>
-
+#include <string>
+#include <exception>
 #include <cstring>
 
 #include <EXRImage.h>
 #include <JXLImage.h>
 
+#include <tclap/CmdLine.h>
+
+
 int main(int argc, char* argv[])
 {
-    if (argc < 3) {
-        std::cout << "Usage:" << std::endl;
-        std::cout << "------" << std::endl;
-        std::cout << argv[0] << " <exr_in> <jxl_out> [<framedistance> = 0.1]" << std::endl;
+    std::string filename_in, filename_out;
+    float framedistance = 0.f;
 
-        exit(0);
+    try {
+        TCLAP::CmdLine cmd("Utility to compress all OpenEXR framebuffer in JPEG-XL.");
+
+        TCLAP::UnlabeledValueArg<std::string> inputFileArg ("Input", "Specifies the OpenEXR input image.", true, "input.exr", "path");
+        TCLAP::UnlabeledValueArg<std::string> outputFileArg("Output", "Specifies the JPEG-XL output image.", true, "output.jxl", "path");
+
+        cmd.add(inputFileArg);
+        cmd.add(outputFileArg);
+
+        TCLAP::ValueArg<float> framedistanceArg("d", "framedistance", "Specifies the frame distance to use (compression parameter).", false, 0.f, "float");
+
+        cmd.add(framedistanceArg);
+
+        cmd.parse(argc, argv);
+
+        filename_in  = inputFileArg.getValue();
+        filename_out = outputFileArg.getValue();
+
+        framedistance = framedistanceArg.getValue();
+    } catch (TCLAP::ArgException& e) {
+        std::cerr << "Error: " << e.error() << " for arguemnt " << e.argId() << std::endl;
+        return 1;
     }
 
-    const char* filename_in  = argv[1];
-    const char* filename_out = argv[2];
-    const float framedistance = (argc >= 4) ? std::stof(argv[3]) : 0.1f;
+    try {
+        const EXRImage exr_in(filename_in);
+        JXLImage jxl_out(exr_in.width(), exr_in.height());
+        SGEGBox box;
 
-    const EXRImage exr_in(filename_in);
-    JXLImage jxl_out(exr_in.width(), exr_in.height());
-    SGEGBox box;
+        box.exr_attributes = exr_in.getAttributesData();
 
-    box.exr_attributes = exr_in.getAttributesData();
+        const std::vector<EXRFramebuffer*>& framebuffers = exr_in.getFramebuffersConst();
 
-    const std::vector<EXRFramebuffer*>& framebuffers = exr_in.getFramebuffersConst();
+        for (const EXRFramebuffer* fb: framebuffers) {
+            SGEGGrayGroup gg;
+            const char* layer_name = fb->getName();
 
-    for (const EXRFramebuffer* fb: framebuffers) {
-        SGEGGrayGroup gg;
-        const char* layer_name = fb->getName();
+            std::pair<int, int> enc_bits;
+            switch (fb->getPixelType()) {
+                case Imf::PixelType::HALF:
+                    enc_bits = std::make_pair(16, 5);
+                    break;
+                case Imf::PixelType::FLOAT:
+                    enc_bits = std::make_pair(32, 8);
+                    break;
+                case Imf::PixelType::UINT:
+                    // TODO: A rescaling is most probably necessary there
+                    std::cout << "Warning: it is largely untested" << std::endl;
+                    enc_bits = std::make_pair(32, 0);
+                    break;
+                default:
+                    std::cerr << "Unknown OpenEXR type." << std::endl;
+                    return 1;
+            }
 
-        gg.layer_index = jxl_out.appendFramebuffer(fb->getPixelDataConst(), 1, std::make_pair(32, 8), 1, framedistance, fb->getName());
+            gg.layer_index = jxl_out.appendFramebuffer(
+                fb->getPixelDataConst(), 1,
+                std::make_pair(32, 8), 1,
+                framedistance,
+                fb->getName());
 
-        gg.layer_name.resize(std::strlen(layer_name) + 1);
-        std::memcpy(gg.layer_name.data(), layer_name, gg.layer_name.size() * sizeof(char));
+            gg.layer_name.resize(std::strlen(layer_name) + 1);
+            std::memcpy(gg.layer_name.data(), layer_name, gg.layer_name.size() * sizeof(char));
 
-        box.gray_groups.push_back(gg);
+            box.gray_groups.push_back(gg);
+        }
+
+        jxl_out.setBox(box);
+
+        jxl_out.write(filename_out);
+    } catch (std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return 1;
     }
-
-    jxl_out.setBox(box);
-
-    std::cout << "Len ATTR: " << box.exr_attributes.size() << std::endl;
-
-    jxl_out.write(filename_out);
 
     return 0;
 }
