@@ -24,12 +24,13 @@ exposure_bonn = 0
 
 
 def get_tex_stream(subpath_report: str, dataset: str, variant: str):
-    with open(os.path.join('export', 'mat_template_bonn.tex'), 'r') as f:
+    with open(os.path.join('export', 'mat_template.tex'), 'r') as f:
         stream = ''.join(f.readlines())
 
         stream = stream.replace('\\exportdir', subpath_report)
+        stream = stream.replace('\\database', 'bonn')
+        stream = stream.replace('\\matvariant', os.path.join(dataset, variant))
         stream = stream.replace('\\material', dataset)
-        stream = stream.replace('\\variant', variant)
 
         return stream
 

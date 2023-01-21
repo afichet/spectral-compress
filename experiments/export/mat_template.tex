@@ -1,0 +1,117 @@
+\begin{tabularx}{\textwidth}{cX}
+    \raisebox{-0.5\height}{\frame{\includegraphics[height=3cm]{\exportdir/\matvariant/\material.png}}}
+    &
+    \begin{tabular}{ll}
+        File size:&\input{\exportdir/\matvariant/\material_org_size.txt}\\
+        Spectrum type:&\input{\exportdir/\matvariant/\material_spectrum_type.txt}\\
+        Resolution:&\input{\exportdir/\matvariant/\material_dim.txt}\\
+        Spectral range:&\input{\exportdir/\matvariant/\material_wl_range.txt}\\
+        Spectral bands:&\input{\exportdir/\matvariant/\material_n_bands.txt}\\
+    \end{tabular}\\
+\end{tabularx}
+
+\vfill
+\begin{figure}[h]
+    \begin{subfigure}{.5\linewidth}
+        \resizebox*{\linewidth}{!}{\input{\exportdir/\matvariant/\material_rmse.pgf}}
+    \end{subfigure}\hfill%
+    \begin{subfigure}{.5\linewidth}
+        \resizebox*{\linewidth}{!}{\input{\exportdir/\matvariant/\material_ratio.pgf}}
+    \end{subfigure}
+% \end{figure}
+%
+% \begin{figure}[h]
+    \begin{subfigure}{.5\linewidth}
+        \resizebox*{\linewidth}{!}{\input{\exportdir/\matvariant/\material_c_curve.pgf}}
+    \end{subfigure}\hfill%
+    \begin{subfigure}{.5\linewidth}
+        \resizebox*{\linewidth}{!}{\input{\exportdir/\matvariant/\material_duration.pgf}}
+    \end{subfigure}
+% \end{figure}
+    \begin{subfigure}{\linewidth}
+        \centering
+        \resizebox*{.5\linewidth}{!}{\input{\exportdir/\matvariant/\material_legend.pgf}}
+    \end{subfigure}
+\end{figure}
+\vfill
+
+\pagebreak
+\hspace{0pt}
+\vfill
+
+\begin{tabularx}{\linewidth}{X@{\hskip 0pt}c c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}c@{\hskip 0pt}}
+    \toprule
+        \multicolumn{6}{c}{\thead{\textbf{No chroma subsampling (1:1)}}}
+    \\
+    \midrule
+        && \multicolumn{2}{c}{\thead{Flat compression curve}} & \multicolumn{2}{c}{\thead{Dynamic compression curve}}
+    \\
+    \midrule
+        \multicolumn{2}{l}{Distance level} & dc = 0, ac = 1 & dc = 0.5, ac = 2 & dc = 0, ac = 1 & dc = 0.5, ac = 2
+    \\
+    \midrule
+        \multicolumn{2}{l}{Compressed size}
+        & \input{\database_1/\matvariant/linavg/16/0/1/q_flat/c_flat/\material_size.txt}
+        & \input{\database_1/\matvariant/linavg/16/0.5/2/q_flat/c_flat/\material_size.txt}
+        & \input{\database_1/\matvariant/linavg/16/0/1/q_flat/c_dynamic/\material_size.txt}
+        & \input{\database_1/\matvariant/linavg/16/0.5/2/q_flat/c_dynamic/\material_size.txt}
+    \\
+    \midrule
+        \rotatebox[origin=c]{90}{RGB} &
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.2\linewidth]{\database_1/\matvariant/linavg/16/0/1/q_flat/c_flat/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.2\linewidth]{\database_1/\matvariant/linavg/16/0.5/2/q_flat/c_flat/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.2\linewidth]{\database_1/\matvariant/linavg/16/0/1/q_flat/c_dynamic/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.2\linewidth]{\database_1/\matvariant/linavg/16/0.5/2/q_flat/c_dynamic/\material.png}}}
+    \\
+        \rotatebox[origin=c]{90}{Error (RMSE / pixel)} &
+        \bgroup\def\arraystretch{0.4}\begin{tabular}{c}
+            \tiny{$\input{\database_1/\matvariant/\material_max_err.txt}$}\\
+            \frame{\includegraphics[angle=0,origin=c,height=.16\linewidth]{scale.png}}\\
+            \tiny{$0$}
+        \end{tabular}\egroup
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.2\linewidth]{\database_1/\matvariant/linavg/16/0/1/q_flat/c_flat/\material_diff.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.2\linewidth]{\database_1/\matvariant/linavg/16/0.5/2/q_flat/c_flat/\material_diff.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.2\linewidth]{\database_1/\matvariant/linavg/16/0/1/q_flat/c_dynamic/\material_diff.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.2\linewidth]{\database_1/\matvariant/linavg/16/0.5/2/q_flat/c_dynamic/\material_diff.png}}}
+    \\
+    \bottomrule
+    \toprule
+        \multicolumn{6}{c}{\thead{\textbf{Chroma subsampling (1:2)}}}
+    \\
+    \midrule
+        && \multicolumn{2}{c}{\thead{Flat compression curve}} & \multicolumn{2}{c}{\thead{Dynamic compression curve}}
+    \\
+    \midrule
+        \multicolumn{2}{l}{Distance level} & dc = 0, ac = 1 & dc = 0.5, ac = 2 & dc = 0, ac = 1 & dc = 0.5, ac = 2
+    \\
+    \midrule
+        \multicolumn{2}{l}{Compressed size}
+        & \input{\database_2/\matvariant/linavg/16/0/1/q_flat/c_flat/\material_size.txt}
+        & \input{\database_2/\matvariant/linavg/16/0.5/2/q_flat/c_flat/\material_size.txt}
+        & \input{\database_2/\matvariant/linavg/16/0/1/q_flat/c_dynamic/\material_size.txt}
+        & \input{\database_2/\matvariant/linavg/16/0.5/2/q_flat/c_dynamic/\material_size.txt}
+    \\
+    \midrule
+        \rotatebox[origin=c]{90}{RGB} &
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.2\linewidth]{\database_2/\matvariant/linavg/16/0/1/q_flat/c_flat/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.2\linewidth]{\database_2/\matvariant/linavg/16/0.5/2/q_flat/c_flat/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.2\linewidth]{\database_2/\matvariant/linavg/16/0/1/q_flat/c_dynamic/\material.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.2\linewidth]{\database_2/\matvariant/linavg/16/0.5/2/q_flat/c_dynamic/\material.png}}}
+    \\
+        \rotatebox[origin=c]{90}{Error (RMSE / pixel)} &
+        \bgroup\def\arraystretch{0.4}\begin{tabular}{c}
+            \tiny{$\input{\database_2/\matvariant/\material_max_err.txt}$}\\
+            \frame{\includegraphics[angle=0,origin=c,height=.16\linewidth]{scale.png}}\\
+            \tiny{$0$}
+        \end{tabular}\egroup
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.2\linewidth]{\database_2/\matvariant/linavg/16/0/1/q_flat/c_flat/\material_diff.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.2\linewidth]{\database_2/\matvariant/linavg/16/0.5/2/q_flat/c_flat/\material_diff.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.2\linewidth]{\database_2/\matvariant/linavg/16/0/1/q_flat/c_dynamic/\material_diff.png}}}
+        & \raisebox{-0.5\height}{\frame{\includegraphics[width=.2\linewidth]{\database_2/\matvariant/linavg/16/0.5/2/q_flat/c_dynamic/\material_diff.png}}}
+    \\
+    \bottomrule
+\end{tabularx}
+
+\vfill
+\hspace{0pt}
+\pagebreak

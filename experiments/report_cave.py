@@ -23,10 +23,12 @@ exposure_cave = -6.5
 
 
 def get_tex_stream(path_report, dataset):
-    with open(os.path.join('export', 'mat_template_cave.tex'), 'r') as f:
+    with open(os.path.join('export', 'mat_template.tex'), 'r') as f:
         stream = ''.join(f.readlines())
 
         stream = stream.replace('\\exportdir', path_report)
+        stream = stream.replace('\\database', 'cave')
+        stream = stream.replace('\\matvariant', dataset)
         stream = stream.replace('\\material', dataset)
 
         return stream
