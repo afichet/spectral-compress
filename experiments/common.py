@@ -28,7 +28,7 @@ def run_compressor(
     log_file: str, binlog_file: str, dump_file: str,
     technique: str,
     n_bits_start: int, n_exponent_bits: int, flat_quantization: bool,
-    compression_ac: float, compression_start_dc: float, flat_compression: bool,
+    compression_dc: float, compression_start_ac: float, flat_compression: bool,
     downsampling_ratio_ac: int = 1,
     effort: int = 7):
 
@@ -38,25 +38,31 @@ def run_compressor(
     fp, fn = os.path.split(log_file)
     os.makedirs(fp, exist_ok=True)
 
-    args = [os.path.join(path_bin, 'compress'),
-        input_file, output_file,
-        '-l', log_file,
-        '-k', binlog_file,
-        '-d', dump_file,
-        '-m', technique,
-        '-q', str(n_bits_start),
-        '-r', str(n_exponent_bits),
-        '-a', str(compression_ac),
-        '-b', str(compression_start_dc),
-        '-e', str(effort),
-        '-s', str(downsampling_ratio_ac)
+    if technique == 'simple':
+        args = [os.path.join(path_bin, 'simple-compress'),
+            input_file, output_file,
+            '-d', str(compression_dc)
         ]
+    else:
+        args = [os.path.join(path_bin, 'compress'),
+            input_file, output_file,
+            '-l', log_file,
+            '-k', binlog_file,
+            '-d', dump_file,
+            '-m', technique,
+            '-q', str(n_bits_start),
+            '-r', str(n_exponent_bits),
+            '-a', str(compression_dc),
+            '-b', str(compression_start_ac),
+            '-e', str(effort),
+            '-s', str(downsampling_ratio_ac)
+            ]
 
-    if flat_quantization:
-        args.append('--q_flat')
+        if flat_quantization:
+            args.append('--q_flat')
 
-    if flat_compression:
-        args.append('--c_flat')
+        if flat_compression:
+            args.append('--c_flat')
 
     subprocess.run(args)
 
@@ -120,7 +126,7 @@ def get_path_cave_in(folder: str, dataset_name: str):
 
 
 def get_path_cave_out(
-    start: str, downsampling_ratio_ac: int,
+    start: str, subsampling_ratio_ac: int,
     dataset_name: str,
     technique: str,
     n_bits_start: int,
@@ -128,7 +134,7 @@ def get_path_cave_out(
     flat_q: bool, flat_c: bool):
 
     return os.path.join(
-        '{}_{}'.format(start, downsampling_ratio_ac),
+        '{}_{}'.format(start, subsampling_ratio_ac),
         dataset_name,
         technique,
         str(n_bits_start),
