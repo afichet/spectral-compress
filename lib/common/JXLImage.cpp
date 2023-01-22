@@ -73,12 +73,12 @@ JXLFramebuffer::JXLFramebuffer(
     uint32_t width, uint32_t height,
     uint32_t n_color_channels,
     std::pair<int, int> n_bits_per_sample,
-    uint32_t downsampling_factor,
+    uint32_t subsampling_factor,
     float    framedistance,
     const char* name)
     : _name(nullptr)
     , _n_bits_per_sample(n_bits_per_sample)
-    , _downsampling_factor(downsampling_factor)
+    , _subsampling_factor(subsampling_factor)
     , _framedistance(framedistance)
     , _pixel_format(
         {
@@ -100,12 +100,12 @@ JXLFramebuffer::JXLFramebuffer(
     const std::vector<float>& framebuffer,
     uint32_t n_color_channels,
     std::pair<int, int> n_bits_per_sample,
-    uint32_t downsampling_factor,
+    uint32_t subsampling_factor,
     float    framedistance,
     const char* name)
     : _name(nullptr)
     , _n_bits_per_sample(n_bits_per_sample)
-    , _downsampling_factor(downsampling_factor)
+    , _subsampling_factor(subsampling_factor)
     , _framedistance(framedistance)
     , _pixel_format(
         {
@@ -151,7 +151,7 @@ void JXLFramebuffer::dump(FILE* stream) const
 
     std::fwrite(&_n_bits_per_sample.first, sizeof(uint32_t), 1, stream);
     std::fwrite(&_n_bits_per_sample.second, sizeof(uint32_t), 1, stream);
-    std::fwrite(&_downsampling_factor, sizeof(uint32_t), 1, stream);
+    std::fwrite(&_subsampling_factor, sizeof(uint32_t), 1, stream);
     std::fwrite(&_pixel_format, sizeof(JxlPixelFormat), 1, stream);
 
     const uint32_t n_pixels = _pixel_data.size();
@@ -178,7 +178,7 @@ JXLFramebuffer* JXLFramebuffer::read_dump(FILE* stream)
 
     std::fread(&(fb->_n_bits_per_sample.first), sizeof(uint32_t), 1, stream);
     std::fread(&(fb->_n_bits_per_sample.second), sizeof(uint32_t), 1, stream);
-    std::fread(&(fb->_downsampling_factor), sizeof(uint32_t), 1, stream);
+    std::fread(&(fb->_subsampling_factor), sizeof(uint32_t), 1, stream);
     std::fread(&(fb->_pixel_format), sizeof(JxlPixelFormat), 1, stream);
 
     uint32_t n_pixels;
@@ -234,7 +234,7 @@ size_t JXLImage::appendFramebuffer(
     const std::vector<float>& framebuffer,
     uint32_t n_channels,
     std::pair<int, int> enc_bits_per_sample,
-    uint32_t enc_downsampling_factor,
+    uint32_t enc_subsampling_factor,
     float    enc_framedistance,
     const char* name)
 {
@@ -244,7 +244,7 @@ size_t JXLImage::appendFramebuffer(
         framebuffer,
         n_channels,
         enc_bits_per_sample,
-        enc_downsampling_factor,
+        enc_subsampling_factor,
         enc_framedistance,
         name
     );
@@ -467,7 +467,7 @@ void JXLImage::write(const char* filename, int effort) const {
             // Set compression quality
             // FIXME: Not supported yet in the version of libjxl used (0.7)
             //        at the time of writing this code
-            // JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_EXTRA_CHANNEL_RESAMPLING, downsampling);
+            // JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_EXTRA_CHANNEL_RESAMPLING, subsampling);
             // status = JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_EXTRA_CHANNEL_RESAMPLING, 4);
             // CHECK_JXL_ENC_STATUS(status);
 

@@ -78,7 +78,7 @@ bool CompressionEffortConstraint::check(const int &value) const
 
 std::string DownsamplingFactorConstraint::description() const
 {
-    return "Sets the spatial downsampling ratio to apply to AC components.";
+    return "Sets the spatial subsampling ratio to apply to AC components.";
 }
 
 

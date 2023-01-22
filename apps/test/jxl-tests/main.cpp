@@ -75,7 +75,7 @@ void compress_framebuffer(
     uint32_t bits_per_sample,
     uint32_t exponent_bits_per_sample,
     float frame_distance,
-    uint32_t downsampling_ratio)
+    uint32_t subsampling_ratio)
 {
     assert(framebuffer_in.size() == width * height);
 
@@ -132,7 +132,7 @@ void compress_framebuffer(
     }
     CHECK_JXL_ENC_STATUS(status);
 
-    status = JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_RESAMPLING, downsampling_ratio);
+    status = JxlEncoderFrameSettingsSetOption(frame_settings, JXL_ENC_FRAME_SETTING_RESAMPLING, subsampling_ratio);
     CHECK_JXL_ENC_STATUS(status);
 
 
@@ -315,7 +315,7 @@ int main(int argc, char* argv[])
     }
 
     // ------------------------------------------------------------------------
-    // Generate lines of different heigth to check if the downsampling works
+    // Generate lines of different heigth to check if the subsampling works
     // as expected
     // ------------------------------------------------------------------------
 
@@ -342,18 +342,18 @@ int main(int argc, char* argv[])
         --remaining_lines;
     }
 
-    // It seems JXL supports this downsampling rates only
-    size_t downsampling_ratios[] = {1, 2, 4, 8};
+    // It seems JXL supports this subsampling rates only
+    size_t subsampling_ratios[] = {1, 2, 4, 8};
 
-    for (size_t downsampling: downsampling_ratios) {
+    for (size_t subsampling: subsampling_ratios) {
         std::stringstream ss;
-        ss << "downsampled_" << downsampling << ".jxl";
+        ss << "downsampled_" << subsampling << ".jxl";
 
         JXLImage jxl_out(width, height);
         jxl_out.appendFramebuffer(
             framebuffer, 1,
             std::make_pair(8, 0),
-            downsampling, 0.f
+            subsampling, 0.f
         );
 
         jxl_out.write(ss.str());

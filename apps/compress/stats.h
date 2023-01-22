@@ -205,7 +205,7 @@ stats_data stats_for_compression_curve(
     uint32_t width, uint32_t height,
     size_t n_moments,
     const std::vector<std::pair<int, int>>& quantization_curve,
-    const std::vector<uint32_t>& downsampling_factor_curve,
+    const std::vector<uint32_t>& subsampling_factor_curve,
     const std::vector<float>& compression_curve,
     const std::vector<double>& compressed_moments,
     const std::vector<double>& mins, const std::vector<double>& maxs,
@@ -223,7 +223,7 @@ stats_data linear_stats_for_compression_curve(
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
     const std::vector<std::pair<int, int>>& quantization_curve,
-    const std::vector<uint32_t>& downsampling_factor_curve,
+    const std::vector<uint32_t>& subsampling_factor_curve,
     const std::vector<float>& compression_curve,
     int effort);
 
@@ -237,7 +237,7 @@ stats_data linavg_stats_for_compression_curve(
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
     const std::vector<std::pair<int, int>>& quantization_curve,
-    const std::vector<uint32_t>& downsampling_factor_curve,
+    const std::vector<uint32_t>& subsampling_factor_curve,
     const std::vector<float>& compression_curve,
     int effort);
 
@@ -251,7 +251,7 @@ stats_data unbounded_stats_for_compression_curve(
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
     const std::vector<std::pair<int, int>>& quantization_curve,
-    const std::vector<uint32_t>& downsampling_factor_curve,
+    const std::vector<uint32_t>& subsampling_factor_curve,
     const std::vector<float>& compression_curve,
     int effort);
 
@@ -265,7 +265,7 @@ stats_data bounded_stats_for_compression_curve(
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
     const std::vector<std::pair<int, int>>& quantization_curve,
-    const std::vector<uint32_t>& downsampling_factor_curve,
+    const std::vector<uint32_t>& subsampling_factor_curve,
     const std::vector<float>& compression_curve,
     int effort);
 
@@ -279,7 +279,7 @@ stats_data unbounded_to_bounded_stats_for_compression_curve(
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
     const std::vector<std::pair<int, int>>& quantization_curve,
-    const std::vector<uint32_t>& downsampling_factor_curve,
+    const std::vector<uint32_t>& subsampling_factor_curve,
     const std::vector<float>& compression_curve,
     int effort);
 
@@ -295,7 +295,7 @@ stats_data upperbound_stats_for_compression_curve(
     const std::vector<uint8_t>& relative_scales,
     double global_max,
     const std::vector<std::pair<int, int>>& quantization_curve,
-    const std::vector<uint32_t>& downsampling_factor_curve,
+    const std::vector<uint32_t>& subsampling_factor_curve,
     const std::vector<float>& compression_curve,
     int effort);
 
@@ -312,6 +312,6 @@ stats_data twobounds_stats_for_compression_curve(
     double global_min,
     double global_max,
     const std::vector<std::pair<int, int>>& quantization_curve,
-    const std::vector<uint32_t>& downsampling_factor_curve,
+    const std::vector<uint32_t>& subsampling_factor_curve,
     const std::vector<float>& compression_curve,
     int effort);
