@@ -213,7 +213,7 @@ void compress_framebuffer(
 /**
  * Performs various tests on the JXL compressor
  * - Quantization: we expect progressively high banding
- * - Downsampling: we expect increasingly lower resolution
+ * - Subsampling: we expect increasingly lower resolution
  */
 int main(int argc, char* argv[])
 {
