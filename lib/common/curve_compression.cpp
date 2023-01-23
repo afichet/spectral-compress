@@ -428,115 +428,139 @@ void compute_compression_curve(
     size_t n_moments,
     const std::vector<std::pair<int, int>>& quantization_curve,
     bool normalize_moments,
-    const std::vector<uint32_t>& downsampling_factor_curve,
+    const std::vector<uint32_t>& subsampling_factor_curve,
     float compression_dc,
     float compression_ac1,
-    bool uses_constant_compression,
+    CompressionCurveType compression_curve_type,
     std::vector<float>& compression_curve,
     float effort,
     double& timing)
 {
-    if (uses_constant_compression) {
-        compression_curve.resize(n_moments);
-        compression_curve[0] = compression_dc;
+    switch (compression_curve_type) {
+        case COMPRESSION_FLAT:
+            compression_curve.resize(n_moments);
+            compression_curve[0] = compression_dc;
 
-        for (size_t i = 1; i < n_moments; i++) {
-            compression_curve[i] = compression_ac1;
-        }
+            for (size_t i = 1; i < n_moments; i++) {
+                compression_curve[i] = compression_ac1;
+            }
 
-        timing = 0;
-    } else {
-        auto clock_start = std::chrono::steady_clock::now();
+            timing = 0;
+            break;
+        case COMPRESSION_DYNAMIC:
+            {
+                auto clock_start = std::chrono::steady_clock::now();
 
-        switch (method) {
-            case LINEAR:
-                linear_compute_compression_curve(
-                    wavelengths, spectral_image,
-                    width, height, n_moments,
-                    quantization_curve,
-                    normalize_moments,
-                    downsampling_factor_curve,
-                    compression_dc, compression_ac1,
-                    compression_curve,
-                    effort
-                );
-                break;
-            case LINAVG:
-                linavg_compute_compression_curve(
-                    wavelengths, spectral_image,
-                    width, height, n_moments,
-                    quantization_curve,
-                    normalize_moments,
-                    downsampling_factor_curve,
-                    compression_dc, compression_ac1,
-                    compression_curve,
-                    effort
-                );
-                break;
-            case BOUNDED:
-                bounded_compute_compression_curve(
-                    wavelengths, spectral_image,
-                    width, height, n_moments,
-                    quantization_curve,
-                    normalize_moments,
-                    downsampling_factor_curve,
-                    compression_dc, compression_ac1,
-                    compression_curve,
-                    effort
-                );
-                break;
-            case UNBOUNDED:
-                unbounded_compute_compression_curve(
-                    wavelengths, spectral_image,
-                    width, height, n_moments,
-                    quantization_curve,
-                    normalize_moments,
-                    downsampling_factor_curve,
-                    compression_dc, compression_ac1,
-                    compression_curve,
-                    effort
-                );
-                break;
-            case UNBOUNDED_TO_BOUNDED:
-                unbounded_to_bounded_compute_compression_curve(
-                    wavelengths, spectral_image,
-                    width, height, n_moments,
-                    quantization_curve,
-                    normalize_moments,
-                    downsampling_factor_curve,
-                    compression_dc, compression_ac1,
-                    compression_curve,
-                    effort
-                );
-                break;
-            case UPPERBOUND:
-                upperbound_compute_compression_curve(
-                    wavelengths, spectral_image,
-                    width, height, n_moments,
-                    quantization_curve,
-                    normalize_moments,
-                    downsampling_factor_curve,
-                    compression_dc, compression_ac1,
-                    compression_curve,
-                    effort
-                );
-                break;
-            case TWOBOUNDS:
-                twobounds_compute_compression_curve(
-                    wavelengths, spectral_image,
-                    width, height, n_moments,
-                    quantization_curve,
-                    normalize_moments,
-                    downsampling_factor_curve,
-                    compression_dc, compression_ac1,
-                    compression_curve,
-                    effort
-                );
-                break;
-        }
+                switch (method) {
+                    case LINEAR:
+                        linear_compute_compression_curve(
+                            wavelengths, spectral_image,
+                            width, height, n_moments,
+                            quantization_curve,
+                            normalize_moments,
+                            subsampling_factor_curve,
+                            compression_dc, compression_ac1,
+                            compression_curve,
+                            effort
+                        );
+                        break;
+                    case LINAVG:
+                        linavg_compute_compression_curve(
+                            wavelengths, spectral_image,
+                            width, height, n_moments,
+                            quantization_curve,
+                            normalize_moments,
+                            subsampling_factor_curve,
+                            compression_dc, compression_ac1,
+                            compression_curve,
+                            effort
+                        );
+                        break;
+                    case BOUNDED:
+                        bounded_compute_compression_curve(
+                            wavelengths, spectral_image,
+                            width, height, n_moments,
+                            quantization_curve,
+                            normalize_moments,
+                            subsampling_factor_curve,
+                            compression_dc, compression_ac1,
+                            compression_curve,
+                            effort
+                        );
+                        break;
+                    case UNBOUNDED:
+                        unbounded_compute_compression_curve(
+                            wavelengths, spectral_image,
+                            width, height, n_moments,
+                            quantization_curve,
+                            normalize_moments,
+                            subsampling_factor_curve,
+                            compression_dc, compression_ac1,
+                            compression_curve,
+                            effort
+                        );
+                        break;
+                    case UNBOUNDED_TO_BOUNDED:
+                        unbounded_to_bounded_compute_compression_curve(
+                            wavelengths, spectral_image,
+                            width, height, n_moments,
+                            quantization_curve,
+                            normalize_moments,
+                            subsampling_factor_curve,
+                            compression_dc, compression_ac1,
+                            compression_curve,
+                            effort
+                        );
+                        break;
+                    case UPPERBOUND:
+                        upperbound_compute_compression_curve(
+                            wavelengths, spectral_image,
+                            width, height, n_moments,
+                            quantization_curve,
+                            normalize_moments,
+                            subsampling_factor_curve,
+                            compression_dc, compression_ac1,
+                            compression_curve,
+                            effort
+                        );
+                        break;
+                    case TWOBOUNDS:
+                        twobounds_compute_compression_curve(
+                            wavelengths, spectral_image,
+                            width, height, n_moments,
+                            quantization_curve,
+                            normalize_moments,
+                            subsampling_factor_curve,
+                            compression_dc, compression_ac1,
+                            compression_curve,
+                            effort
+                        );
+                        break;
+                }
 
-        auto clock_end = std::chrono::steady_clock::now();
-        timing = std::chrono::duration<double, std::milli>(clock_end - clock_start).count();
+                auto clock_end = std::chrono::steady_clock::now();
+                timing = std::chrono::duration<double, std::milli>(clock_end - clock_start).count();
+            }
+            break;
+
+        case COMPRESSION_DETERMINISTIC:
+            const float ac_end = 15.f;
+            const float k = 1.f;
+
+            compression_curve.resize(n_moments);
+            compression_curve[0] = compression_dc;
+
+            for (size_t i = 1; i < n_moments; i++) {
+                compression_curve[i] =
+                    compression_ac1 + (ac_end - compression_ac1)
+                                    / (1.f + std::exp(-k * (10 * (2 * float(i)/float(n_moments) - 1) - 1)));
+
+            }
+
+            timing = 0;
+            break;
+
+            break;
     }
 
     assert(compression_curve.size() == n_moments);

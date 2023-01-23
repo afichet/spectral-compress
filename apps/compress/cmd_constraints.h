@@ -55,7 +55,7 @@ public:
 };
 
 
-class DownsamplingFactorConstraint: public TCLAP::Constraint<int>
+class SubsamplingFactorConstraint: public TCLAP::Constraint<int>
 {
 public:
     virtual std::string description() const;

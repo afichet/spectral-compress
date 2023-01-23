@@ -54,13 +54,6 @@
 #include <cassert>
 #include <cstring>
 
-/**
- * TODO:
- * - Add an argument
- *    - to control spatial downsampling (needs as well serious work in the JXL class)
- * - RGB layers are only computed on the root (maybe a desirable behaviour though...)
- */
-
 
 void compress_spectral_framebuffer(
     SpectralCompressionType method,
@@ -76,12 +69,12 @@ void compress_spectral_framebuffer(
     // Compression
     float compression_dc,
     float compression_ac1,
-    bool uses_constant_compression,
+    CompressionCurveType compression_curve_type,
     std::vector<float>& compression_curve,
     int effort,
-    // Downsampling
-    uint32_t downsampling_factor_ac1,
-    std::vector<uint32_t>& downsampling_factor_curve,
+    // Subsampling
+    uint32_t subsampling_factor_ac1,
+    std::vector<uint32_t>& subsampling_factor_curve,
     // Result of compression
     std::vector<std::vector<float>>& compressed_moments,
     SGEGSpectralGroup& sg,
@@ -148,12 +141,12 @@ void compress_spectral_framebuffer(
         quantization_curve_timing
     );
 
-    // TODO: We don't automatically compute the downsampling curves yet
-    downsampling_factor_curve.resize(n_moments);
-    downsampling_factor_curve[0] = 1;
+    // TODO: We don't automatically compute the subsampling curves yet
+    subsampling_factor_curve.resize(n_moments);
+    subsampling_factor_curve[0] = 1;
 
     for (size_t i = 1; i < n_moments; i++) {
-        downsampling_factor_curve[i] = downsampling_factor_ac1;
+        subsampling_factor_curve[i] = subsampling_factor_ac1;
     }
 
     compute_compression_curve(
@@ -162,9 +155,9 @@ void compress_spectral_framebuffer(
         width, height, n_moments,
         quantization_curve,
         normalize_moments,
-        downsampling_factor_curve,
+        subsampling_factor_curve,
         compression_dc, compression_ac1,
-        uses_constant_compression,
+        compression_curve_type,
         compression_curve,
         effort,
         compression_curve_timing
@@ -199,7 +192,7 @@ void compress_spectral_framebuffer(
         wavelengths, spectral_image,
         width, height, n_moments,
         quantization_curve,
-        downsampling_factor_curve,
+        subsampling_factor_curve,
         compression_curve,
         compressed_moments_d, mins_d, maxs_d,
         relative_scales, global_min_d, global_max_d,
@@ -235,7 +228,7 @@ void compress_spectral_framebuffer(
         // Extend by 1 for the extra scaling framebuffer
         quantization_curve.push_back(std::make_pair(8, 0));
         compression_curve.push_back(compression_dc);
-        downsampling_factor_curve.push_back(1);
+        subsampling_factor_curve.push_back(1);
 
         compressed_moments.resize(n_moments + 1);
         compressed_moments[n_moments].resize(n_pixels);
@@ -343,14 +336,14 @@ int main(int argc, char *argv[])
 
     float compression_dc = .1f;
     float compression_ac1 = .1f;
-    bool use_flat_compression = false;
+    CompressionCurveType compression_curve_type = COMPRESSION_DETERMINISTIC;
     int compression_effort = 7;
 
     std::pair<int, int> n_bits_ac1;
     bool use_flat_quantization = false;
     bool normalize_moments = true;
 
-    int downsampling_factor_ac1 = 1;
+    int subsampling_factor_ac1 = 1;
 
     SpectralCompressionType method = TWOBOUNDS;
 
@@ -372,19 +365,6 @@ int main(int argc, char *argv[])
         cmd.add(binarylogFileArg);
         cmd.add(dumpFileArg);
 
-        // Compresion tweaking
-        FrameDistanceConstraint frameDistanceConstraint;
-        CompressionEffortConstraint compressionEffortConstraint;
-
-        TCLAP::ValueArg<float> frameDistanceDCArg("a", "frame_distance_dc", "Sets the distance level for lossy compression (compression rate) on the DC component.", false, .1f, &frameDistanceConstraint);
-        TCLAP::ValueArg<float> frameDistanceACArg("b", "frame_distance_ac", "Sets the distance level for lossy compression (compression rate) on the first AC component. The program uses the same compression ratio for the remaining components when `--c_flat` is set. Otherwise, the program generates a compression curve starting with the distance parameter for the first AC component using the provided value based on the image data (can be slow).", false, .1f, &frameDistanceConstraint);
-        TCLAP::SwitchArg useFlatCompressionArg("c", "c_flat", "Sets a flat compression curve. All AC components use the same distance level as the first AC component set by `--frame_distance_ac` while the DC components uses the distance level provided by `--frame_distance_dc` parameter.");
-        TCLAP::ValueArg<int> compressionEffortArg("e", "effort", "Sets the compression effort: 1 = fast, 9 = slow.", false, 7, &compressionEffortConstraint);
-        cmd.add(frameDistanceDCArg);
-        cmd.add(frameDistanceACArg);
-        cmd.add(useFlatCompressionArg);
-        cmd.add(compressionEffortArg);
-
         // Quantization tweaking
         TCLAP::ValueArg<int> quantizationMainStartArg("q", "quantization_bits", "Sets the starting number of bits for quantizing the first AC component. The program use the same number of bits for the remaining components when `--q_flat` is set. Otherwise, the program generates a custom quantization curve starting with the number of bits for the first AC component using the provided value based on the image data (can be slow).", false, 8, "integer");
         TCLAP::ValueArg<int> quantizationExpoStartArg("r", "quantization_exp", "Sets the starting number of bits for quantizing the first AC component. The program use the same number of bits for the remaining components when `--q_flat` is set. Otherwise, the program generates a custom quantization curve starting with the number of bits for the first AC component using the provided value based on the image data (can be slow).", false, 0, "integer");
@@ -395,11 +375,30 @@ int main(int argc, char *argv[])
         cmd.add(useFlatQuantizationArg);
         cmd.add(normalizeMomentsArg);
 
-        // Downsampling tweaking
-        DownsamplingFactorConstraint downsamplingFactorConstraint;
+        // Compresion tweaking
+        FrameDistanceConstraint frameDistanceConstraint;
+        CompressionEffortConstraint compressionEffortConstraint;
 
-        TCLAP::ValueArg<int> downsamplingFactorArg("s", "downsampling", "Sets the downsampling ratio to apply to AC components.", false, 1, &downsamplingFactorConstraint);
-        cmd.add(downsamplingFactorArg);
+        std::vector<std::string> allowedCompressionCurveTypes;
+        allowedCompressionCurveTypes.push_back("flat");
+        allowedCompressionCurveTypes.push_back("dynamic");
+        allowedCompressionCurveTypes.push_back("deterministic");
+        TCLAP::ValuesConstraint<std::string> allowedCompressionCurveTypesVals(allowedCompressionCurveTypes);
+
+        TCLAP::ValueArg<std::string> compressionCurveTypeArg("c", "c_type", "Sets the types of curves for AC JPEG-XL frame distance parameter.", false, "deterministic", &allowedCompressionCurveTypesVals);
+        TCLAP::ValueArg<float> frameDistanceDCArg("a", "frame_distance_dc", "Sets the distance level for lossy compression (compression rate) on the DC component.", false, .1f, &frameDistanceConstraint);
+        TCLAP::ValueArg<float> frameDistanceACArg("b", "frame_distance_ac", "Sets the distance level for lossy compression (compression rate) on the first AC component. The program uses the same compression ratio for the remaining components when `--c_flat` is set. Otherwise, the program generates a compression curve starting with the distance parameter for the first AC component using the provided value based on the image data (can be slow).", false, .1f, &frameDistanceConstraint);
+        TCLAP::ValueArg<int> compressionEffortArg("e", "effort", "Sets the compression effort: 1 = fast, 9 = slow.", false, 7, &compressionEffortConstraint);
+        cmd.add(compressionCurveTypeArg);
+        cmd.add(frameDistanceDCArg);
+        cmd.add(frameDistanceACArg);
+        cmd.add(compressionEffortArg);
+
+        // Subsampling tweaking
+        SubsamplingFactorConstraint subsamplingFactorConstraint;
+
+        TCLAP::ValueArg<int> subsamplingFactorArg("s", "subsampling", "Sets the subsampling ratio to apply to AC components.", false, 1, &subsamplingFactorConstraint);
+        cmd.add(subsamplingFactorArg);
 
         // Moment storage method tweaking
         std::vector<std::string> allowedCompressionMethods;
@@ -435,17 +434,26 @@ int main(int argc, char *argv[])
             filename_dump = dumpFileArg.getValue();
         }
 
-        compression_dc       = frameDistanceDCArg.getValue();
-        compression_ac1      = frameDistanceACArg.getValue();
-        use_flat_compression = useFlatCompressionArg.getValue();
-        compression_effort   = compressionEffortArg.getValue();
-
+        // Quantization curve
         n_bits_ac1.first      = quantizationMainStartArg.getValue();
         n_bits_ac1.second     = quantizationExpoStartArg.getValue();
         use_flat_quantization = useFlatQuantizationArg.getValue();
-        // normalize_moments     = !normalizeMomentsArg.getValue();
 
-        downsampling_factor_ac1 = downsamplingFactorArg.getValue();
+        // Compression curve
+        if (compressionCurveTypeArg.getValue() == "flat") {
+            compression_curve_type = COMPRESSION_FLAT;
+        } else if (compressionCurveTypeArg.getValue() == "dynamic") {
+            compression_curve_type = COMPRESSION_DYNAMIC;
+        } else if (compressionCurveTypeArg.getValue() == "deterministic") {
+            compression_curve_type = COMPRESSION_DETERMINISTIC;
+        }
+
+        compression_dc       = frameDistanceDCArg.getValue();
+        compression_ac1      = frameDistanceACArg.getValue();
+        compression_effort   = compressionEffortArg.getValue();
+
+        // Subsampling
+        subsampling_factor_ac1 = subsamplingFactorArg.getValue();
 
         if (momentCompressionMethodArg.getValue() == "linear") {
             method = LINEAR;
@@ -501,7 +509,7 @@ int main(int argc, char *argv[])
         std::vector<std::vector<float>> compressed_moments;
         std::vector<uint8_t> relative_scales;
         std::vector<std::pair<int, int>> quantization_curve;
-        std::vector<uint32_t> downsampling_factor_curve;
+        std::vector<uint32_t> subsampling_factor_curve;
         std::vector<float> compression_curve;
 
         stats_data quantization_error, compression_error;
@@ -512,8 +520,8 @@ int main(int argc, char *argv[])
             exr_in.width(), exr_in.height(),
             n_bits_dc,      n_bits_ac1,      use_flat_quantization, quantization_curve,
             normalize_moments,
-            compression_dc, compression_ac1, use_flat_compression,  compression_curve, compression_effort,
-            downsampling_factor_ac1, downsampling_factor_curve,
+            compression_dc, compression_ac1, compression_curve_type,  compression_curve, compression_effort,
+            subsampling_factor_ac1, subsampling_factor_curve,
             compressed_moments,
             sg,
             log_is_active,
@@ -534,7 +542,7 @@ int main(int argc, char *argv[])
                 compressed_moments[m],
                 1,
                 quantization_curve[m],
-                downsampling_factor_curve[m],
+                subsampling_factor_curve[m],
                 compression_curve[m],
                 fb->root_name.c_str());
 

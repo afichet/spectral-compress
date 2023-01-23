@@ -40,6 +40,12 @@
 #include <cstdint>
 #include <cstddef>
 
+enum CompressionCurveType {
+    COMPRESSION_FLAT,
+    COMPRESSION_DYNAMIC,
+    COMPRESSION_DETERMINISTIC
+};
+
 /*****************************************************************************/
 /* Utility functions                                                         */
 /*****************************************************************************/
@@ -88,10 +94,10 @@ void compute_compression_curve(
     size_t n_moments,
     const std::vector<std::pair<int, int>>& quantization_curve,
     bool normalize_moments,
-    const std::vector<uint32_t>& downsampling_factor_curve,
+    const std::vector<uint32_t>& subsampling_factor_curve,
     float compression_dc,
     float compression_ac1,
-    bool uses_constant_compression,
+    CompressionCurveType compression_curve_type,
     std::vector<float>& compression_curve,
     float effort,
     double& timing);

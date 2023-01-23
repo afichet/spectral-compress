@@ -76,19 +76,19 @@ bool CompressionEffortConstraint::check(const int &value) const
 // ----------------------------------------------------------------------------
 
 
-std::string DownsamplingFactorConstraint::description() const
+std::string SubsamplingFactorConstraint::description() const
 {
     return "Sets the spatial subsampling ratio to apply to AC components.";
 }
 
 
-std::string DownsamplingFactorConstraint::shortID() const
+std::string SubsamplingFactorConstraint::shortID() const
 {
     return "1, 2, 4, or 8";
 }
 
 
-bool DownsamplingFactorConstraint::check(const int &value) const
+bool SubsamplingFactorConstraint::check(const int &value) const
 {
     return value == 1
         || value == 2
