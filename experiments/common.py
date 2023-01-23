@@ -28,7 +28,7 @@ def run_compressor(
     log_file: str, binlog_file: str, dump_file: str,
     technique: str,
     n_bits_start: int, n_exponent_bits: int, flat_quantization: bool,
-    compression_dc: float, compression_start_ac: float, flat_compression: bool,
+    compression_dc: float, compression_start_ac: float, compression_curve_type: str,
     downsampling_ratio_ac: int = 1,
     effort: int = 7):
 
@@ -61,26 +61,35 @@ def run_compressor(
         if flat_quantization:
             args.append('--q_flat')
 
-        if flat_compression:
-            args.append('--c_flat')
+        compression_param = 'invalid'
+        if compression_curve_type == 'c_flat':
+            compression_param = 'flat'
+        elif compression_curve_type == 'c_dynamic':
+            compression_param = 'dynamic'
+        elif compression_curve_type == 'c_deterministic':
+            compression_param = 'deterministic'
+
+        args.append('-c')
+        args.append(compression_param)
 
     subprocess.run(args)
 
 
-def run_decompressor(input_file: str, output_file: str):
+def run_decompressor(input_file: str, output_file: str, technique: str):
     if os.path.exists(output_file):
         return
 
     fp, fn = os.path.split(output_file)
     os.makedirs(fp, exist_ok=True)
 
-    args = [os.path.join(path_bin, 'decompress'),
-        input_file, output_file
-        ]
+    if technique == 'simple':
+        exec_path = os.path.join(path_bin, 'simple-decompress')
+    else:
+        exec_path = os.path.join(path_bin, 'decompress')
+
+    args = [exec_path, input_file, output_file]
 
     subprocess.run(args)
-
-    ' '.join(args)
 
 
 def run_converter_exr_png(input_file: str, output_file: str, exposure: float):
@@ -110,7 +119,7 @@ def run_diff(file_a: str, file_b: str, max_err: float, output_file: str, diff_er
         output_file,
         '-u', str(max_err),
         '-e', diff_error_file,
-        '-v',
+        # '-v',
         '-p', '0.002'
         ]
 
@@ -131,7 +140,7 @@ def get_path_cave_out(
     technique: str,
     n_bits_start: int,
     c_dc: float, c_ac: float,
-    flat_q: bool, flat_c: bool):
+    q_flat: bool, c_type: str):
 
     return os.path.join(
         '{}_{}'.format(start, subsampling_ratio_ac),
@@ -139,19 +148,25 @@ def get_path_cave_out(
         technique,
         str(n_bits_start),
         str(c_dc), str(c_ac),
-        'q_flat' if flat_q else 'q_dynamic',
-        'c_flat' if flat_c else 'c_dynamic'
+        'q_flat' if q_flat else 'q_dynamic',
+        c_type
     )
 
 
 def get_path_cave_out_partial(
     start: str, downsampling_ratio_ac: int,
-    dataset_name: str):
+    dataset_name: str,
+    technique: str):
 
-    return os.path.join(
+    p = os.path.join(
         '{}_{}'.format(start, downsampling_ratio_ac),
-        dataset_name
+        dataset_name,
+        technique
     )
+
+    os.makedirs(p, exist_ok=True)
+
+    return p
 
 
 def get_path_bonn_in(folder: str, dataset_name: str, type: str):
@@ -168,7 +183,7 @@ def get_path_bonn_out(
     technique: str,
     n_bits_start: int,
     c_dc: float, c_ac: float,
-    flat_q: bool, flat_c: bool):
+    q_flat: bool, c_type: bool):
 
     return os.path.join(
         '{}_{}'.format(start, downsampling_ratio_ac),
@@ -177,18 +192,25 @@ def get_path_bonn_out(
         technique,
         str(n_bits_start),
         str(c_dc), str(c_ac),
-        'q_flat' if flat_q else 'q_dynamic',
-        'c_flat' if flat_c else 'c_dynamic'
+        'q_flat' if q_flat else 'q_dynamic',
+        c_type
     )
 
 
-def get_path_bonn_out_partial(start: str, downsampling_ratio_ac: int,
-    dataset_name: str, variant: str):
-    return os.path.join(
+def get_path_bonn_out_partial(
+    start: str, downsampling_ratio_ac: int,
+    dataset_name: str, variant: str, technique: str):
+
+    p = os.path.join(
         '{}_{}'.format(start, downsampling_ratio_ac),
         dataset_name,
-        variant
+        variant,
+        technique
     )
+
+    os.makedirs(p, exist_ok=True)
+
+    return p
 
 
 ###############################################################################
@@ -290,8 +312,9 @@ def plot_mode_curves_param(
     for ratio, i in zip(subsampling_ratios_ac, range(n_downsampling_ratio_ac)):
         for (dc, ac), j  in zip(framedistances, range(n_framedistances)):
             y = [
-                stats[ratio][technique][n_bits][dc][ac][True][True][key],
-                stats[ratio][technique][n_bits][dc][ac][True][False][key],
+                stats[ratio][technique][n_bits][dc][ac][True]['c_flat'][key],
+                stats[ratio][technique][n_bits][dc][ac][True]['c_deterministic'][key],
+                stats[ratio][technique][n_bits][dc][ac][True]['c_dynamic'][key],
             ]
 
             x_offset = (i * n_framedistances + j) - n_el_per_group / 2 + .5
@@ -304,7 +327,8 @@ def plot_mode_curves_param(
 
     ax.set_xticks(x, [
         'Flat',
-        'Dynamic',
+        'Deterministic',
+        'Dynamic'
         ]
     )
     ax.set_xlabel('Distance level (compression parameter)')
@@ -341,31 +365,31 @@ def plot_mode_curve_duration_per_pixel(output_filename:str, stats:dict, techniqu
    plot_mode_curves_param(output_filename, stats, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'duration', 'Computation time per pixel (ms)')
 
 
-def plot_q_curves(output_filename, stats, techniques, n_bits):
-    fig, ax = plt.subplots(1, 1, figsize=(5, 4))
+# def plot_q_curves(output_filename, stats, techniques, n_bits):
+#     fig, ax = plt.subplots(1, 1, figsize=(5, 4))
 
-    for tech in techniques:
-        if tech == 'upperbound' or tech == 'twobounds':
-            x = np.arange(len(stats[tech][n_bits][True][False]['q_curve'][1:-1])) + 1
-            y =               stats[tech][n_bits][True][False]['q_curve'][1:-1]
-        else:
-            x = np.arange(len(stats[tech][n_bits][True][False]['q_curve'][1:])) + 1
-            y =               stats[tech][n_bits][True][False]['q_curve'][1:]
+#     for tech in techniques:
+#         if tech == 'upperbound' or tech == 'twobounds':
+#             x = np.arange(len(stats[tech][n_bits][True][False]['q_curve'][1:-1])) + 1
+#             y =               stats[tech][n_bits][True][False]['q_curve'][1:-1]
+#         else:
+#             x = np.arange(len(stats[tech][n_bits][True][False]['q_curve'][1:])) + 1
+#             y =               stats[tech][n_bits][True][False]['q_curve'][1:]
 
-        ax.plot(x, y, label=tech.replace('_', ' '))
+#         ax.plot(x, y, label=tech.replace('_', ' '))
 
-    # ax.legend()
-    ax.set_title('Dynamic compression curves')
-    ax.set_xlabel('Moment order')
-    ax.set_ylabel('Number of bits')
+#     # ax.legend()
+#     ax.set_title('Dynamic compression curves')
+#     ax.set_xlabel('Moment order')
+#     ax.set_ylabel('Number of bits')
 
-    fig.tight_layout()
+#     fig.tight_layout()
 
-    if (save_tex):
-        plt.savefig(output_filename)
-        plt.close()
-    else:
-        plt.show()
+#     if (save_tex):
+#         plt.savefig(output_filename)
+#         plt.close()
+#     else:
+#         plt.show()
 
 
 def plot_c_curves(
@@ -379,7 +403,7 @@ def plot_c_curves(
 
     for ratio in subsampling_ratios_ac:
         for (c_dc, c_ac) in framedistances:
-            y = stats[ratio][technique][n_bits][c_dc][c_ac][True][False]['c_curve'][1:]
+            y = stats[ratio][technique][n_bits][c_dc][c_ac][True]['c_dynamic']['c_curve'][1:]
             x = np.arange(len(y)) + 1
             ax.plot(x, y, label='dc = {}, ac = {}, chroma subsampling = 1:{}'.format(c_dc, c_ac, ratio))
 
