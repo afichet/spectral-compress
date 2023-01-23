@@ -34,6 +34,8 @@
 #include <iostream>
 #include <string>
 #include <exception>
+#include <chrono>
+#include <fstream>
 #include <cstring>
 
 #include <EXRImage.h>
@@ -46,6 +48,9 @@ int main(int argc, char* argv[])
 {
     std::string filename_in, filename_out;
     float framedistance = 0.f;
+
+    bool save_timing = false;
+    std::string filename_timing;
 
     try {
         TCLAP::CmdLine cmd("Utility to compress all OpenEXR framebuffer in JPEG-XL.");
@@ -60,18 +65,30 @@ int main(int argc, char* argv[])
 
         cmd.add(framedistanceArg);
 
+        TCLAP::ValueArg<std::string> timingLogArg("l", "log", "Set file to save execution timing", false, "timing.txt", "path");
+
+        cmd.add(timingLogArg);
+
         cmd.parse(argc, argv);
 
         filename_in  = inputFileArg.getValue();
         filename_out = outputFileArg.getValue();
 
         framedistance = framedistanceArg.getValue();
+
+        save_timing = timingLogArg.isSet();
+
+        if (save_timing) {
+            filename_timing = timingLogArg.getValue();
+        }
     } catch (TCLAP::ArgException& e) {
         std::cerr << "Error: " << e.error() << " for arguemnt " << e.argId() << std::endl;
         return 1;
     }
 
     try {
+        auto clock_start = std::chrono::steady_clock::now();
+
         const EXRImage exr_in(filename_in);
         JXLImage jxl_out(exr_in.width(), exr_in.height());
         SGEGBox box;
@@ -117,6 +134,15 @@ int main(int argc, char* argv[])
         jxl_out.setBox(box);
 
         jxl_out.write(filename_out);
+
+        auto clock_end = std::chrono::steady_clock::now();
+
+        if (save_timing) {
+            auto diff = clock_end - clock_start;
+
+            std::ofstream logfile(filename_timing);
+            logfile << "Total duration: " << std::chrono::duration<double, std::milli>(diff).count() << " ms" << std::endl;
+        }
     } catch (std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
         return 1;
