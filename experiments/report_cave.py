@@ -170,9 +170,15 @@ def run_for(
     diff_error_file       = os.path.join(path_curr_out, dataset + '_diff.bin')
     meta_file_size_file   = os.path.join(path_curr_out, dataset + '_size.txt')
 
+    cropped_decompressed_png_file = os.path.join(path_curr_out, dataset + '_cropped.png')
+    cropped_diff_png_file         = os.path.join(path_curr_out, dataset + '_diff_cropped.png')
+
     common.run_decompressor(compressed_file, decompressed_exr_file, technique)
     common.run_converter_exr_png(decompressed_exr_file, decompressed_png_file, exposure_cave)
     common.run_diff(spectral_image, decompressed_exr_file, curr_max_err, diff_png_file, diff_error_file)
+
+    common.crop_png(decompressed_png_file, cropped_decompressed_png_file, 50)
+    common.crop_png(diff_png_file, cropped_diff_png_file, 50)
 
     org_file_size = os.path.getsize(spectral_image)
 

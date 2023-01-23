@@ -4,6 +4,7 @@ import os, subprocess, struct
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+from PIL import Image
 
 path_bin  = '/home/afichet/Repositories/spectral-compress/build/bin/'
 
@@ -41,7 +42,8 @@ def run_compressor(
     if technique == 'simple':
         args = [os.path.join(path_bin, 'simple-compress'),
             input_file, output_file,
-            '-d', str(compression_dc)
+            '-d', str(compression_dc),
+            '-l', log_file
         ]
     else:
         args = [os.path.join(path_bin, 'compress'),
@@ -266,14 +268,22 @@ def get_c_curve_from_txt_log(path: str):
     return c_curve
 
 
-def get_duration_from_txt_log(path: str):
+# The timing log is not at the same position depending on the compression
+# utility used, so a parameter is added
+def get_duration_from_txt_log(path: str, technique: str):
     duration = 0
+
+    if technique == 'simple':
+        idx = 0
+    else:
+        idx = 18
 
     with open(path, 'r') as f:
         lines = f.readlines()
-        duration = lines[18].split()[2]
+        duration = lines[idx].split()[2]
 
     return float(duration)
+
 
 def get_jxl_dir_size(path: str):
     size = 0
@@ -500,3 +510,17 @@ def plot_legend(
         plt.close()
     else:
         plt.show()
+
+
+def crop_png(png_filename_in: str, png_filename_out: str, cropped_size: int):
+    img = Image.open(png_filename_in)
+
+    left  = (img.width - cropped_size) / 2
+    right = (img.width + cropped_size) / 2
+
+    top    = (img.height - cropped_size) / 2
+    bottom = (img.height + cropped_size) / 2
+
+    img_cropped = img.crop((left, top, right, bottom))
+
+    img_cropped.save(png_filename_out)
