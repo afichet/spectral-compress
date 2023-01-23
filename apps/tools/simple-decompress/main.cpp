@@ -59,8 +59,16 @@ int main(int argc, char* argv[])
         for (size_t i = 0; i < box.gray_groups.size(); i++) {
             const SGEGGrayGroup& gg = box.gray_groups[i];
 
+            // Ensure positive values, TODO: this is flawed for polarisation!
+            std::vector<float> framebuffer(jxl_in.getFramebufferDataConst(gg.layer_index));
+            #pragma omp parallel for
+            for (size_t i = 0; i < jxl_in.width() * jxl_in.height(); i++) {
+                framebuffer[i] = std::max(0.f, framebuffer[i]);
+            }
+
             exr_out.appendFramebuffer(
-                jxl_in.getFramebufferDataConst(gg.layer_index),
+                framebuffer,
+                //jxl_in.getFramebufferDataConst(gg.layer_index),
                 gg.layer_name.data()
             );
         }
