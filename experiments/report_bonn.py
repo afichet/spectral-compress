@@ -179,7 +179,7 @@ def run_for(
     diff_error_file       = os.path.join(path_curr_out, dataset + '_diff.bin')
     meta_file_size_file   = os.path.join(path_curr_out, dataset + '_size.txt')
 
-    cropped_decompressed_png_file = os.path.join(path_curr_out, dataset = '_cropped.png')
+    cropped_decompressed_png_file = os.path.join(path_curr_out, dataset + '_cropped.png')
     cropped_diff_png_file         = os.path.join(path_curr_out, dataset + '_diff_cropped.png')
 
     common.run_decompressor(compressed_file, decompressed_exr_file, technique)
