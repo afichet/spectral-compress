@@ -17,7 +17,7 @@ prefix_path_out  = 'cave'
 
 
 def run_for(
-    spectral_image,
+    spectral_image: str,
     prefix_path_out: str, subsampling: int,
     dataset_name: str,
     technique: str,

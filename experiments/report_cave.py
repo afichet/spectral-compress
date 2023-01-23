@@ -132,22 +132,22 @@ def get_avg_stats(
 
 def run_for(
     stats: dict,
-    spectral_image, width, height,
+    spectral_image:str, width: int, height: int,
     path_out:str, path_report:str,
     subsampling: int,
     dataset:str,
     technique: str,
     bits: int,
     c_dc: float, c_ac: float,
-    q_flat, c_flat,
-    curr_max_err):
+    q_flat: bool, c_type: str,
+    curr_max_err: float):
     path_curr_in = common.get_path_cave_out(
         path_out, subsampling,
         dataset,
         technique,
         bits,
         c_dc, c_ac,
-        q_flat, c_flat)
+        q_flat, c_type)
 
     path_curr_out = common.get_path_cave_out(
         path_report, subsampling,
@@ -155,7 +155,7 @@ def run_for(
         technique,
         bits,
         c_dc, c_ac,
-        q_flat, c_flat)
+        q_flat, c_type)
 
     # Inputs
     compressed_file = os.path.join(path_curr_in, dataset + '.jxl')
@@ -179,26 +179,26 @@ def run_for(
     size     = common.get_jxl_dir_size(path_curr_in)
     ratio    = org_file_size / size
     rmse     = common.get_rmse_from_diff_bin(diff_error_file)
+    duration = common.get_duration_from_txt_log(log_file, technique)
+
     if technique != 'simple':
         q_curve  = common.get_q_curve_from_txt_log(log_file)
         c_curve  = common.get_c_curve_from_txt_log(log_file)
-        duration = common.get_duration_from_txt_log(log_file)
     else:
         q_curve = [0]
         c_curve = [0]
-        duration = 0
 
     # Dynamically compute max bound
     curr_max_err = max(curr_max_err, common.get_five_percentile_from_diff_bin(diff_error_file))
 
-    stats[dataset][subsampling][technique][bits][c_dc][c_ac][q_flat][c_flat]['width']    = width
-    stats[dataset][subsampling][technique][bits][c_dc][c_ac][q_flat][c_flat]['height']   = height
-    stats[dataset][subsampling][technique][bits][c_dc][c_ac][q_flat][c_flat]['size']     = size
-    stats[dataset][subsampling][technique][bits][c_dc][c_ac][q_flat][c_flat]['ratio']    = ratio
-    stats[dataset][subsampling][technique][bits][c_dc][c_ac][q_flat][c_flat]['rmse']     = rmse
-    stats[dataset][subsampling][technique][bits][c_dc][c_ac][q_flat][c_flat]['q_curve']  = q_curve
-    stats[dataset][subsampling][technique][bits][c_dc][c_ac][q_flat][c_flat]['c_curve']  = c_curve
-    stats[dataset][subsampling][technique][bits][c_dc][c_ac][q_flat][c_flat]['duration'] = duration
+    stats[dataset][subsampling][technique][bits][c_dc][c_ac][q_flat][c_type]['width']    = width
+    stats[dataset][subsampling][technique][bits][c_dc][c_ac][q_flat][c_type]['height']   = height
+    stats[dataset][subsampling][technique][bits][c_dc][c_ac][q_flat][c_type]['size']     = size
+    stats[dataset][subsampling][technique][bits][c_dc][c_ac][q_flat][c_type]['ratio']    = ratio
+    stats[dataset][subsampling][technique][bits][c_dc][c_ac][q_flat][c_type]['rmse']     = rmse
+    stats[dataset][subsampling][technique][bits][c_dc][c_ac][q_flat][c_type]['q_curve']  = q_curve
+    stats[dataset][subsampling][technique][bits][c_dc][c_ac][q_flat][c_type]['c_curve']  = c_curve
+    stats[dataset][subsampling][technique][bits][c_dc][c_ac][q_flat][c_type]['duration'] = duration
 
     with open(meta_file_size_file, 'w') as f:
         f.write('{:.2f} MiB'.format(size / (1000 * 1000)))
