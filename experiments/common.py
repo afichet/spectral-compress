@@ -299,10 +299,10 @@ def plot_mode_curves_param(
     flat_compression: list,
     key: str,
     y_label: str):
-    w = 0.8
+    w = 0.9
     fig, ax = plt.subplots(1, 1, figsize=(5, 4))
 
-    x = np.arange(len(flat_compression))
+    x = np.arange(len(flat_compression) + 1)
 
     n_downsampling_ratio_ac = len(subsampling_ratios_ac)
     n_framedistances        = len(framedistances)
@@ -312,6 +312,7 @@ def plot_mode_curves_param(
     for ratio, i in zip(subsampling_ratios_ac, range(n_downsampling_ratio_ac)):
         for (dc, ac), j  in zip(framedistances, range(n_framedistances)):
             y = [
+                0, # Ugly harcoded: baseline placeholder
                 stats[ratio][technique][n_bits][dc][ac][True]['c_flat'][key],
                 stats[ratio][technique][n_bits][dc][ac][True]['c_deterministic'][key],
                 stats[ratio][technique][n_bits][dc][ac][True]['c_dynamic'][key],
@@ -323,15 +324,35 @@ def plot_mode_curves_param(
                 x + x_offset * w/n_el_per_group,
                 y,
                 width=w/n_el_per_group,
-                label="dc = {}, ac = {}, chroma subsampling: 1:{}".format(dc, ac, ratio))
+                label='dc = {}, ac = {}, chroma subsampling: 1:{}'.format(dc, ac, ratio))
+
+    # Ugly hardcoded: baseline values
+    frame_distances_base = [0.1, 1, 1.5, 2, 3, 4]
+    n_framedistances_base = len(frame_distances_base)
+
+    for f_distance, ij in zip(frame_distances_base, range(n_framedistances_base)):
+        y = [
+            stats[1]['simple'][32][f_distance][0][True]['c_flat'][key],
+            0, 0, 0
+        ]
+
+        x_offset = ij - n_framedistances_base / 2 + .5
+
+        ax.bar(
+            x + x_offset * w/n_framedistances_base,
+            y,
+            width=w/n_framedistances_base,
+            label='simple - frame distance {}'.format(f_distance)
+        )
 
     ax.set_xticks(x, [
+        'Simple', # Ugly hardcoded: label baseline
         'Flat',
         'Deterministic',
         'Dynamic'
         ]
     )
-    ax.set_xlabel('Distance level (compression parameter)')
+    # ax.set_xlabel('Distance level (compression parameter)')
     ax.set_ylabel(y_label)
 
     # ax.legend()
@@ -400,14 +421,24 @@ def plot_c_curves(
     subsampling_ratios_ac: list,
     framedistances: list):
     fig, ax = plt.subplots(1, 1, figsize=(5, 4))
+    default_cols = plt.rcParams['axes.prop_cycle'].by_key()['color']
+    idx = 0
 
     for ratio in subsampling_ratios_ac:
         for (c_dc, c_ac) in framedistances:
-            y = stats[ratio][technique][n_bits][c_dc][c_ac][True]['c_dynamic']['c_curve'][1:]
-            x = np.arange(len(y)) + 1
-            ax.plot(x, y, label='dc = {}, ac = {}, chroma subsampling = 1:{}'.format(c_dc, c_ac, ratio))
+            y_dyn = stats[ratio][technique][n_bits][c_dc][c_ac][True]['c_dynamic']['c_curve'][1:]
+            x = np.arange(len(y_dyn)) + 1
+            ax.plot(x, y_dyn, color=default_cols[idx]) #, label='dc = {}, ac = {}, chroma subsampling = 1:{}'.format(c_dc, c_ac, ratio))
 
-    # ax.legend()
+            idx += 1
+
+    # WARN: Hardcoded to avoid color clash with the other plots...
+    ax.plot([], [], color='black', label='dynamic')
+    for (c_dc, c_ac), i in zip(framedistances, range(len(framedistances))):
+        y_det = stats[1][technique][n_bits][c_dc][c_ac][True]['c_deterministic']['c_curve'][1:]
+        ax.plot(x, y_det, color=default_cols[-i - 1], linestyle='dotted', label='deterministic ac = {}'.format(c_ac))
+
+    ax.legend()
     ax.set_xlabel('Moment order')
     ax.set_ylabel('Distance level (compression parameter)')
 
@@ -425,13 +456,36 @@ def plot_legend(
     subsampling_ratios_ac: list,
     framedistances: list):
 
+    # This function is hardcoded in seval places to have a nicer layout...
+    default_cols = plt.rcParams['axes.prop_cycle'].by_key()['color']
+    idx = 0
+
     fig, ax = plt.subplots(1, 1)
+
+    # Dirty hack to align all other types on the same column
+    ax.plot([], [], label=' ', color='white')
 
     for ratio in subsampling_ratios_ac:
         for (c_dc, c_ac) in framedistances:
-            ax.plot([], [], marker='s', ls="none", label='chroma subsampling = 1:{}, dc = {}, ac = {}'.format(ratio, c_dc, c_ac))
+            ax.plot(
+                [], [],
+                marker='s', ls='none', color=default_cols[idx],
+                label='chroma subsampling = 1:{}, dc = {}, ac = {}'.format(ratio, c_dc, c_ac))
+            idx += 1
+    # Ugly hardcoded
+    frame_distances_base = [0.1, 1, 1.5, 2, 3, 4]
 
-    legend = ax.legend()
+    # Dirty hack to align all other types on the same column
+    ax.plot([], [], label=' ', color='white')
+
+    for f in frame_distances_base:
+        ax.plot(
+            [], [],
+            marker='s', ls='none', color=default_cols[idx],
+            label='simple - frame distance {}'.format(f))
+        idx += 1
+
+    legend = ax.legend(ncol=2, bbox_to_anchor=(1.05, 1), loc='upper left')
 
     expand=[-5,-5,5,5]
 
