@@ -469,12 +469,22 @@ def plot_legend(
 
     # This function is hardcoded in seval places to have a nicer layout...
     default_cols = plt.rcParams['axes.prop_cycle'].by_key()['color']
-    idx = 0
 
     fig, ax = plt.subplots(1, 1)
 
+    idx = len(subsampling_ratios_ac) * len(frame_distances)
+
+    for (f, _) in frame_distances_base:
+        ax.plot(
+            [], [],
+            marker='s', ls='none', color=default_cols[idx],
+            label='simple - frame distance {}'.format(f))
+        idx += 1
+
     # Dirty hack to align all other types on the same column
     ax.plot([], [], label=' ', color='white')
+
+    idx = 0
 
     for ratio in subsampling_ratios_ac:
         for (c_dc, c_ac) in frame_distances:
@@ -486,13 +496,6 @@ def plot_legend(
 
     # Dirty hack to align all other types on the same column
     ax.plot([], [], label=' ', color='white')
-
-    for (f, _) in frame_distances_base:
-        ax.plot(
-            [], [],
-            marker='s', ls='none', color=default_cols[idx],
-            label='simple - frame distance {}'.format(f))
-        idx += 1
 
     legend = ax.legend(ncol=2, bbox_to_anchor=(1.05, 1), loc='upper left')
 
