@@ -122,7 +122,7 @@ def run_diff(file_a: str, file_b: str, max_err: float, output_file: str, diff_er
         '-u', str(max_err),
         '-e', diff_error_file,
         # '-v',
-        '-p', '0.002'
+        '-p', '0.005'
         ]
 
     subprocess.run(args)
@@ -282,7 +282,7 @@ def get_duration_from_txt_log(path: str, technique: str):
         lines = f.readlines()
         duration = lines[idx].split()[2]
 
-    return float(duration)
+    return float(duration) / 1000
 
 
 def get_jxl_dir_size(path: str):
@@ -302,10 +302,11 @@ def get_jxl_dir_size(path: str):
 def plot_mode_curves_param(
     output_filename: str,
     stats: dict,
+    frame_distances_base: list,
     technique: str,
     n_bits: int,
     subsampling_ratios_ac: list,
-    framedistances: list,
+    frame_distances: list,
     flat_compression: list,
     key: str,
     y_label: str):
@@ -315,12 +316,12 @@ def plot_mode_curves_param(
     x = np.arange(len(flat_compression) + 1)
 
     n_downsampling_ratio_ac = len(subsampling_ratios_ac)
-    n_framedistances        = len(framedistances)
+    n_framedistances        = len(frame_distances)
     n_el_per_group = n_downsampling_ratio_ac * n_framedistances
     x_offset = n_el_per_group / 2 - n_el_per_group
 
     for ratio, i in zip(subsampling_ratios_ac, range(n_downsampling_ratio_ac)):
-        for (dc, ac), j  in zip(framedistances, range(n_framedistances)):
+        for (dc, ac), j  in zip(frame_distances, range(n_framedistances)):
             y = [
                 0, # Ugly harcoded: baseline placeholder
                 stats[ratio][technique][n_bits][dc][ac][True]['c_flat'][key],
@@ -337,10 +338,9 @@ def plot_mode_curves_param(
                 label='dc = {}, ac = {}, chroma subsampling: 1:{}'.format(dc, ac, ratio))
 
     # Ugly hardcoded: baseline values
-    frame_distances_base = [0.1, 1, 1.5, 2, 3, 4]
     n_framedistances_base = len(frame_distances_base)
 
-    for f_distance, ij in zip(frame_distances_base, range(n_framedistances_base)):
+    for (f_distance, _), ij in zip(frame_distances_base, range(n_framedistances_base)):
         y = [
             stats[1]['simple'][32][f_distance][0][True]['c_flat'][key],
             0, 0, 0
@@ -376,24 +376,24 @@ def plot_mode_curves_param(
         plt.show()
 
 
-def plot_mode_curve_rmse(output_filename:str, stats:dict, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
-    plot_mode_curves_param(output_filename, stats, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'rmse', 'RMSE')
+def plot_mode_curve_rmse(output_filename:str, stats:dict, frame_distances_base: list, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
+    plot_mode_curves_param(output_filename, stats, frame_distances_base, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'rmse', 'RMSE')
 
 
-def plot_mode_curve_size(output_filename:str, stats:dict, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
-   plot_mode_curves_param(output_filename, stats, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'size', 'File size')
+def plot_mode_curve_size(output_filename:str, stats:dict, frame_distances_base: list, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
+   plot_mode_curves_param(output_filename, stats, frame_distances_base, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'size', 'File size')
 
 
-def plot_mode_curve_ratio(output_filename:str, stats:dict, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
-   plot_mode_curves_param(output_filename, stats, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'ratio', 'Compression ratio')
+def plot_mode_curve_ratio(output_filename:str, stats:dict, frame_distances_base: list, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
+   plot_mode_curves_param(output_filename, stats, frame_distances_base, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'ratio', 'Compression ratio')
 
 
-def plot_mode_curve_duration(output_filename:str, stats:dict, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
-   plot_mode_curves_param(output_filename, stats, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'duration', 'Computation time (ms)')
+def plot_mode_curve_duration(output_filename:str, stats:dict, frame_distances_base: list, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
+   plot_mode_curves_param(output_filename, stats, frame_distances_base, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'duration', 'Computation time (s)')
 
 
-def plot_mode_curve_duration_per_pixel(output_filename:str, stats:dict, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
-   plot_mode_curves_param(output_filename, stats, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'duration', 'Computation time per pixel (ms)')
+def plot_mode_curve_duration_per_pixel(output_filename:str, stats:dict, frame_distances_base: list, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
+   plot_mode_curves_param(output_filename, stats, frame_distances_base, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'duration', 'Computation time per pixel (ms)')
 
 
 # def plot_q_curves(output_filename, stats, techniques, n_bits):
@@ -463,8 +463,9 @@ def plot_c_curves(
 
 def plot_legend(
     output_filename: str,
+    frame_distances_base: list,
     subsampling_ratios_ac: list,
-    framedistances: list):
+    frame_distances: list):
 
     # This function is hardcoded in seval places to have a nicer layout...
     default_cols = plt.rcParams['axes.prop_cycle'].by_key()['color']
@@ -476,19 +477,17 @@ def plot_legend(
     ax.plot([], [], label=' ', color='white')
 
     for ratio in subsampling_ratios_ac:
-        for (c_dc, c_ac) in framedistances:
+        for (c_dc, c_ac) in frame_distances:
             ax.plot(
                 [], [],
                 marker='s', ls='none', color=default_cols[idx],
                 label='chroma subsampling = 1:{}, dc = {}, ac = {}'.format(ratio, c_dc, c_ac))
             idx += 1
-    # Ugly hardcoded
-    frame_distances_base = [0.1, 1, 1.5, 2, 3, 4]
 
     # Dirty hack to align all other types on the same column
     ax.plot([], [], label=' ', color='white')
 
-    for f in frame_distances_base:
+    for (f, _) in frame_distances_base:
         ax.plot(
             [], [],
             marker='s', ls='none', color=default_cols[idx],

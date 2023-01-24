@@ -9,7 +9,7 @@ start_bits             = [16]
 flat_quantization      = [True] #[True, False]
 flat_compression       = ['c_flat', 'c_dynamic', 'c_deterministic']
 frame_distances        = [(0, 1), (0.5, 2)]
-frame_distances_simple = [(0.1, 0), (1, 0), (1.5, 0), (2, 0), (3, 0), (4, 0)]
+frame_distances_simple = [(0.1, 0), (0.5, 0), (1, 0), (1.5, 0), (2, 0), (2.5, 0)]
 subsampling_ratios_ac  = [1, 2]
 
 path_data      = '/home/afichet/spectral_images/EXRs/CAVE/'
@@ -119,7 +119,8 @@ def get_avg_stats(
 
                                 avg_stats[subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['rmse']     += div * stats[d][subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['rmse']
                                 avg_stats[subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['ratio']    += div * stats[d][subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['ratio']
-                                avg_stats[subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['duration'] += div * stats[d][subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['duration'] / n_pixels
+                                # I want miliseconds for this one
+                                avg_stats[subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['duration'] += 1000 * div * stats[d][subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['duration'] / n_pixels
 
                                 for i in range(len(stats[d][subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['q_curve'])):
                                     avg_stats[subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['q_curve'][i] += div * stats[d][subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['q_curve'][i]
@@ -166,12 +167,12 @@ def run_for(
     # Outputs
     decompressed_exr_file = os.path.join(path_curr_out, dataset + '.exr')
     decompressed_png_file = os.path.join(path_curr_out, dataset + '.png')
-    diff_png_file         = os.path.join(path_curr_out, dataset + '_diff.png')
+    diff_png_file         = os.path.join(path_curr_out, dataset + '_null_diff.png')
     diff_error_file       = os.path.join(path_curr_out, dataset + '_diff.bin')
     meta_file_size_file   = os.path.join(path_curr_out, dataset + '_size.txt')
 
     cropped_decompressed_png_file = os.path.join(path_curr_out, dataset + '_cropped.png')
-    cropped_diff_png_file         = os.path.join(path_curr_out, dataset + '_diff_cropped.png')
+    cropped_diff_png_file         = os.path.join(path_curr_out, dataset + '_null_diff_cropped.png')
 
     common.run_decompressor(compressed_file, decompressed_exr_file, technique)
     common.run_converter_exr_png(decompressed_exr_file, decompressed_png_file, exposure_cave)
@@ -348,8 +349,11 @@ def main():
                                 decompressed_exr_file   = os.path.join(path_curr_out, d + '.exr')
                                 diff_png_file           = os.path.join(path_curr_out, d + '_diff.png')
                                 diff_error_file         = os.path.join(path_curr_out, d + '_diff.bin')
+                                cropped_diff_png_file   = os.path.join(path_curr_out, d + '_diff_cropped.png')
 
                                 common.run_diff(org_exr_file, decompressed_exr_file, curr_max_err, diff_png_file, diff_error_file)
+                                common.crop_png(diff_png_file, cropped_diff_png_file, 50)
+
 
         plot_curve_rmse_file     = os.path.join(path_report, d, d + '_rmse.pgf')
         plot_curve_size_file     = os.path.join(path_report, d, d + '_size.pgf')
@@ -364,12 +368,12 @@ def main():
         meta_n_bands_file       = os.path.join(path_report, d, d + '_n_bands.txt')
         meta_spectrum_type_file = os.path.join(path_report, d, d + '_spectrum_type.txt')
 
-        common.plot_mode_curve_rmse(plot_curve_rmse_file        , stats[d], 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
-        common.plot_mode_curve_size (plot_curve_size_file       , stats[d], 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
-        common.plot_mode_curve_ratio(plot_curve_ratio_file      , stats[d], 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
-        common.plot_mode_curve_duration(plot_curve_duration_file, stats[d], 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
-        common.plot_c_curves(plot_c_curve_file                  , stats[d], 'linavg', 16, subsampling_ratios_ac, frame_distances)
-        common.plot_legend(plot_legend, subsampling_ratios_ac, frame_distances)
+        common.plot_mode_curve_rmse(plot_curve_rmse_file        , stats[d], frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
+        common.plot_mode_curve_size (plot_curve_size_file       , stats[d], frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
+        common.plot_mode_curve_ratio(plot_curve_ratio_file      , stats[d], frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
+        common.plot_mode_curve_duration(plot_curve_duration_file, stats[d], frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
+        common.plot_c_curves(plot_c_curve_file                  , stats[d],                         'linavg', 16, subsampling_ratios_ac, frame_distances)
+        common.plot_legend(plot_legend, frame_distances_simple, subsampling_ratios_ac, frame_distances)
 
         with open(meta_org_file_size_file, 'w') as f:
             f.write('{:.2f} MiB'.format(org_file_size / (1000 * 1000)))
@@ -398,11 +402,11 @@ def main():
 
     avg_stats = get_avg_stats(stats, db, techniques, start_bits, subsampling_ratios_ac, frame_distances, flat_quantization, flat_compression)
 
-    common.plot_mode_curve_rmse(plot_avg_curve_error_file                 , avg_stats, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
-    common.plot_mode_curve_ratio(plot_avg_curve_ratio_file                , avg_stats, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
-    common.plot_mode_curve_duration_per_pixel(plot_avg_curve_duration_file, avg_stats, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
-    common.plot_c_curves(plot_avg_c_curve_file                            , avg_stats, 'linavg', 16, subsampling_ratios_ac, frame_distances)
-    common.plot_legend(plot_avg_legend, subsampling_ratios_ac, frame_distances)
+    common.plot_mode_curve_rmse(plot_avg_curve_error_file                 , avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
+    common.plot_mode_curve_ratio(plot_avg_curve_ratio_file                , avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
+    common.plot_mode_curve_duration_per_pixel(plot_avg_curve_duration_file, avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
+    common.plot_c_curves(plot_avg_c_curve_file                            , avg_stats,                         'linavg', 16, subsampling_ratios_ac, frame_distances)
+    common.plot_legend(plot_avg_legend, frame_distances_simple, subsampling_ratios_ac, frame_distances)
 
     with open(os.path.join(path_report + '.tex'), 'w') as f:
         f.write(tex_stream)

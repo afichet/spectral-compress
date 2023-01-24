@@ -9,7 +9,7 @@ start_bits             = [16]
 flat_quantization      = [True] #[True, False]
 flat_compression       = ['c_flat', 'c_dynamic', 'c_deterministic']
 frame_distances        = [(0, 1), (0.5, 2)]
-frame_distances_simple = [(0.1, 0), (1, 0), (1.5, 0), (2, 0), (3, 0), (4, 0)]
+frame_distances_simple = [(0.1, 0), (0.5, 0), (1, 0), (1.5, 0), (2, 0), (2.5, 0)]
 subsampling_ratio_ac   = [1, 2]
 
 path_data = '/home/afichet/spectral_images/EXRs/Bonn/'
