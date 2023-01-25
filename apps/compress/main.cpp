@@ -366,7 +366,7 @@ int main(int argc, char *argv[])
         cmd.add(dumpFileArg);
 
         // Quantization tweaking
-        TCLAP::ValueArg<int> quantizationMainStartArg("q", "quantization_bits", "Sets the starting number of bits for quantizing the first AC component. The program use the same number of bits for the remaining components when `--q_flat` is set. Otherwise, the program generates a custom quantization curve starting with the number of bits for the first AC component using the provided value based on the image data (can be slow).", false, 8, "integer");
+        TCLAP::ValueArg<int> quantizationMainStartArg("q", "quantization_bits", "Sets the starting number of bits for quantizing the first AC component. The program use the same number of bits for the remaining components when `--q_flat` is set. Otherwise, the program generates a custom quantization curve starting with the number of bits for the first AC component using the provided value based on the image data (can be slow).", false, 16, "integer");
         TCLAP::ValueArg<int> quantizationExpoStartArg("r", "quantization_exp", "Sets the starting number of bits for quantizing the first AC component. The program use the same number of bits for the remaining components when `--q_flat` is set. Otherwise, the program generates a custom quantization curve starting with the number of bits for the first AC component using the provided value based on the image data (can be slow).", false, 0, "integer");
         TCLAP::SwitchArg useFlatQuantizationArg("u", "q_flat", "Sets a flat quantization curve. The DC component uses the same quantization as the one used for all spectral data in the OpenEXR file while the remaining AC components use the number of bits provided in `--quantization parameter`.");
         TCLAP::SwitchArg normalizeMomentsArg("z", "kill_normalize", "Do not normalize the moment images. May cause problem when using integer framebuffer for storing moments.", false);
@@ -386,8 +386,8 @@ int main(int argc, char *argv[])
         TCLAP::ValuesConstraint<std::string> allowedCompressionCurveTypesVals(allowedCompressionCurveTypes);
 
         TCLAP::ValueArg<std::string> compressionCurveTypeArg("c", "c_type", "Sets the types of curves for AC JPEG-XL frame distance parameter.", false, "deterministic", &allowedCompressionCurveTypesVals);
-        TCLAP::ValueArg<float> frameDistanceDCArg("a", "frame_distance_dc", "Sets the distance level for lossy compression (compression rate) on the DC component.", false, .1f, &frameDistanceConstraint);
-        TCLAP::ValueArg<float> frameDistanceACArg("b", "frame_distance_ac", "Sets the distance level for lossy compression (compression rate) on the first AC component. The program uses the same compression ratio for the remaining components when `--c_flat` is set. Otherwise, the program generates a compression curve starting with the distance parameter for the first AC component using the provided value based on the image data (can be slow).", false, .1f, &frameDistanceConstraint);
+        TCLAP::ValueArg<float> frameDistanceDCArg("a", "frame_distance_dc", "Sets the distance level for lossy compression (compression rate) on the DC component.", false, 0, &frameDistanceConstraint);
+        TCLAP::ValueArg<float> frameDistanceACArg("b", "frame_distance_ac", "Sets the distance level for lossy compression (compression rate) on the first AC component. The program uses the same compression ratio for the remaining components when `--c_flat` is set. Otherwise, the program generates a compression curve starting with the distance parameter for the first AC component using the provided value based on the image data (can be slow).", false, 1.f, &frameDistanceConstraint);
         TCLAP::ValueArg<int> compressionEffortArg("e", "effort", "Sets the compression effort: 1 = fast, 9 = slow.", false, 7, &compressionEffortConstraint);
         cmd.add(compressionCurveTypeArg);
         cmd.add(frameDistanceDCArg);
@@ -410,7 +410,7 @@ int main(int argc, char *argv[])
         allowedCompressionMethods.push_back("upperbound");
         allowedCompressionMethods.push_back("twobounds");
         TCLAP::ValuesConstraint<std::string> allowedCompressionMethodsVals(allowedCompressionMethods);
-        TCLAP::ValueArg<std::string> momentCompressionMethodArg("m", "method", "Representation of moments to use.", false, "twobounds", &allowedCompressionMethodsVals);
+        TCLAP::ValueArg<std::string> momentCompressionMethodArg("m", "method", "Representation of moments to use.", false, "linavg", &allowedCompressionMethodsVals);
         cmd.add(momentCompressionMethodArg);
 
         cmd.parse(argc, argv);
