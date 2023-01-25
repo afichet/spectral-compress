@@ -420,6 +420,24 @@ void compress_decompress_image(
 /* Create compression curves                                                 */
 /*****************************************************************************/
 
+float sigmoid(float x)
+{
+    return 1.f / (1.f + std::exp(-x));
+}
+
+
+float deterministic_compression(float fd_start, float fd_end, size_t n_moments, float x)
+{
+    const float n = (float) n_moments;
+    const float s_0 = sigmoid(10.f * (2.f - n)/n - 1.f);
+
+    return fd_start
+        + (fd_end - fd_start) *
+             (sigmoid(10.f * (2.f *     x     - n) / n - 1.f) - s_0)
+           / (sigmoid(10.f * (2.f * (n - 1.f) - n) / n - 1.f) - s_0);
+}
+
+
 void compute_compression_curve(
     SpectralCompressionType method,
     const std::vector<double>& wavelengths,
@@ -545,16 +563,12 @@ void compute_compression_curve(
 
         case COMPRESSION_DETERMINISTIC:
             const float ac_end = 15.f;
-            const float k = 1.f;
 
             compression_curve.resize(n_moments);
             compression_curve[0] = compression_dc;
 
             for (size_t i = 1; i < n_moments; i++) {
-                compression_curve[i] =
-                    compression_ac1 + (ac_end - compression_ac1)
-                                    / (1.f + std::exp(-k * (10 * (2 * float(i)/float(n_moments) - 1) - 1)));
-
+                compression_curve[i] = deterministic_compression(compression_ac1, ac_end, n_moments, i);
             }
 
             timing = 0;
