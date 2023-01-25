@@ -388,11 +388,11 @@ def main():
                                     common.run_diff(org_exr_file, decompressed_exr_file, curr_max_err, diff_png_file, diff_error_file)
                                     common.crop_png(diff_png_file, cropped_diff_png_file, crop_size)
 
-            plot_curve_rmse_file     = os.path.join(path_report, d, v, d + '_rmse.pgf')
-            plot_curve_size_file     = os.path.join(path_report, d, v, d + '_size.pgf')
-            plot_curve_ratio_file    = os.path.join(path_report, d, v, d + '_ratio.pgf')
-            plot_curve_time_c_file   = os.path.join(path_report, d, v, d + '_time_c.pgf')
-            plot_curve_time_d_file   = os.path.join(path_report, d, v, d + '_time_d.pgf')
+            plot_rmse_file           = os.path.join(path_report, d, v, d + '_rmse.pgf')
+            plot_size_file           = os.path.join(path_report, d, v, d + '_size.pgf')
+            plot_ratio_file          = os.path.join(path_report, d, v, d + '_ratio.pgf')
+            plot_time_c_file         = os.path.join(path_report, d, v, d + '_time_c.pgf')
+            plot_time_d_file         = os.path.join(path_report, d, v, d + '_time_d.pgf')
             plot_min_max_file        = os.path.join(path_report, d, v, d + '_min_max.pgf')
             plot_xy_ratio_error_file = os.path.join(path_report, d, v, d + '_xy_ratio_err.pgf')
             plot_c_curve_file        = os.path.join(path_report, d, v, d + '_c_curve.pgf')
@@ -404,15 +404,15 @@ def main():
             meta_n_bands_file       = os.path.join(path_report, d, v, d + '_n_bands.txt')
             meta_spectrum_type_file = os.path.join(path_report, d, v, d + '_spectrum_type.txt')
 
-            common.plot_mode_curve_rmse(plot_curve_rmse_file        , stats[d][v], frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
-            common.plot_mode_curve_size (plot_curve_size_file       , stats[d][v], frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
-            common.plot_mode_curve_ratio(plot_curve_ratio_file      , stats[d][v], frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
-            common.plot_duration_compression(plot_curve_time_c_file  , stats[d][v], frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
-            common.plot_duration_decompression(plot_curve_time_d_file, stats[d][v], frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
-            common.plot_min_max(plot_min_max_file                   , stats[d][v], frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
+            common.plot_rmse(                  plot_rmse_file   , stats[d][v], frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
+            common.plot_size (                 plot_size_file   , stats[d][v], frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
+            common.plot_compression_ratio(     plot_ratio_file  , stats[d][v], frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
+            common.plot_duration_compression(  plot_time_c_file , stats[d][v], frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
+            common.plot_duration_decompression(plot_time_d_file , stats[d][v], frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
+            common.plot_min_max(               plot_min_max_file, stats[d][v], frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
 
             common.plot_xy_ratio_error_curves(plot_xy_ratio_error_file, stats, [d], [v], frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, 30)
-            common.plot_c_curves(plot_c_curve_file                  , stats[d][v],                         'linavg', 16, subsampling_ratios_ac, frame_distances)
+            common.plot_c_curves(             plot_c_curve_file       , stats[d][v]                            , 'linavg', 16, subsampling_ratios_ac, frame_distances)
 
             common.plot_legend(plot_legend, frame_distances_simple, subsampling_ratios_ac, frame_distances)
 
@@ -435,10 +435,10 @@ def main():
             tex_stream += get_tex_stream(subpath_report, d, v)
             tex_stream += '\n\\clearpage\n'
 
-    plot_avg_curve_rmse_file     = os.path.join(path_report, 'avg_rmse.pgf')
-    plot_avg_curve_ratio_file    = os.path.join(path_report, 'avg_ratio.pgf')
-    plot_avg_time_c_file   = os.path.join(path_report, 'avg_time_c.pgf')
-    plot_avg_time_d_file   = os.path.join(path_report, 'avg_time_d.pgf')
+    plot_avg_rmse_file           = os.path.join(path_report, 'avg_rmse.pgf')
+    plot_avg_ratio_file          = os.path.join(path_report, 'avg_ratio.pgf')
+    plot_avg_time_c_file         = os.path.join(path_report, 'avg_time_c.pgf')
+    plot_avg_time_d_file         = os.path.join(path_report, 'avg_time_d.pgf')
     plot_avg_min_max_file        = os.path.join(path_report, 'min_max.pgf')
     plot_avg_xy_ratio_error_file = os.path.join(path_report, 'avg_xy_ratio_err.pgf')
     plot_avg_c_curve_file        = os.path.join(path_report, 'avg_c_curve.pgf')
@@ -446,14 +446,14 @@ def main():
 
     avg_stats = get_avg_stats(stats, db, variants, techniques, start_bits, subsampling_ratios_ac, frame_distances, flat_quantization, flat_compression)
 
-    common.plot_mode_curve_rmse(plot_avg_curve_rmse_file                  , avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
-    common.plot_mode_curve_ratio(plot_avg_curve_ratio_file                , avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
-    common.plot_duration_compression_per_pixel(plot_avg_time_c_file  , avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
-    common.plot_duration_decompression_per_pixel(plot_avg_time_d_file, avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
-    common.plot_min_max(plot_avg_min_max_file                             , avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
+    common.plot_rmse(                            plot_avg_rmse_file   , avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
+    common.plot_compression_ratio(               plot_avg_ratio_file  , avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
+    common.plot_duration_compression_per_pixel(  plot_avg_time_c_file , avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
+    common.plot_duration_decompression_per_pixel(plot_avg_time_d_file , avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
+    common.plot_min_max(                         plot_avg_min_max_file, avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
 
     common.plot_xy_ratio_error_curves(plot_avg_xy_ratio_error_file, stats, db, variants, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, 15)
-    common.plot_c_curves(plot_avg_c_curve_file, avg_stats, 'linavg', 16, subsampling_ratios_ac, frame_distances)
+    common.plot_c_curves(             plot_avg_c_curve_file       , avg_stats                                  , 'linavg', 16, subsampling_ratios_ac, frame_distances)
 
     common.plot_legend(plot_avg_legend, frame_distances_simple, subsampling_ratios_ac, frame_distances)
 

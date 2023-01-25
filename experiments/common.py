@@ -412,15 +412,15 @@ def plot_mode_curves_param(
         plt.show()
 
 
-def plot_mode_curve_rmse(output_filename:str, stats:dict, frame_distances_base: list, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
+def plot_rmse(output_filename:str, stats:dict, frame_distances_base: list, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
     plot_mode_curves_param(output_filename, stats, frame_distances_base, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'rmse', 'RMSE')
 
 
-def plot_mode_curve_size(output_filename:str, stats:dict, frame_distances_base: list, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
+def plot_size(output_filename:str, stats:dict, frame_distances_base: list, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
    plot_mode_curves_param(output_filename, stats, frame_distances_base, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'size', 'File size')
 
 
-def plot_mode_curve_ratio(output_filename:str, stats:dict, frame_distances_base: list, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
+def plot_compression_ratio(output_filename:str, stats:dict, frame_distances_base: list, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
    plot_mode_curves_param(output_filename, stats, frame_distances_base, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'ratio', 'Compression ratio')
 
 
