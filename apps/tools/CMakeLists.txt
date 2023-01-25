@@ -3,6 +3,7 @@ add_subdirectory(exr-dump-extract)
 add_subdirectory(jxl-dump-extract)
 add_subdirectory(export-layers)
 add_subdirectory(validate-image)
+add_subdirectory(sgeg-min-max)
 
 # Direct lossy compression without further processing to have a baseline
 add_subdirectory(simple-compress)
