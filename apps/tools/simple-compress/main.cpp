@@ -46,7 +46,9 @@
 
 int main(int argc, char* argv[])
 {
-    std::string filename_in, filename_out;
+    std::string filename_in;
+    std::string filename_out;
+
     float framedistance = 0.f;
 
     bool save_timing = false;

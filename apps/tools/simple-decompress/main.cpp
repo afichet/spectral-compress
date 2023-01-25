@@ -33,24 +33,54 @@
 
 #include <iostream>
 #include <exception>
+#include <chrono>
+#include <fstream>
 
 #include <EXRImage.h>
 #include <JXLImage.h>
 
+#include <tclap/CmdLine.h>
+
+
 int main(int argc, char* argv[])
 {
-    if (argc < 3) {
-        std::cout << "Usage:" << std::endl;
-        std::cout << "------" << std::endl;
-        std::cout << argv[0] << "<jxl_in> <exr_out>" << std::endl;
+    std::string filename_in;
+    std::string filename_out;
 
-        exit(0);
-    }
-
-    const char* filename_in  = argv[1];
-    const char* filename_out = argv[2];
+    bool save_timing = false;
+    std::string filename_timing;
 
     try {
+        TCLAP::CmdLine cmd("Utility to decompress JPEG-XL compressed with the simple-compress utility to OpenEXR.");
+
+        TCLAP::UnlabeledValueArg<std::string> inputFileArg ("Input", "Specifies the JPEG-XL first input image.", true, "input.jxl", "path");
+        TCLAP::UnlabeledValueArg<std::string> outputFileArg("Output", "Specifies the OpenEXR output image.", true, "output.exr", "path");
+
+        cmd.add(inputFileArg);
+        cmd.add(outputFileArg);
+
+        TCLAP::ValueArg<std::string> timingLogArg("l", "log", "Set file to save execution timing", false, "timing.txt", "path");
+
+        cmd.add(timingLogArg);
+
+        cmd.parse(argc, argv);
+
+        filename_in  = inputFileArg.getValue();
+        filename_out = outputFileArg.getValue();
+
+        save_timing = timingLogArg.isSet();
+
+        if (save_timing) {
+            filename_timing = timingLogArg.getValue();
+        }
+    } catch (TCLAP::ArgException& e) {
+        std::cerr << "Error: " << e.error() << " for arguemnt " << e.argId() << std::endl;
+        return 1;
+    }
+
+    try {
+        auto clock_start = std::chrono::steady_clock::now();
+
         const JXLImage jxl_in(filename_in);
         const SGEGBox& box = jxl_in.getBox();
 
@@ -59,16 +89,8 @@ int main(int argc, char* argv[])
         for (size_t i = 0; i < box.gray_groups.size(); i++) {
             const SGEGGrayGroup& gg = box.gray_groups[i];
 
-            // Ensure positive values, TODO: this is flawed for polarisation!
-            std::vector<float> framebuffer(jxl_in.getFramebufferDataConst(gg.layer_index));
-            #pragma omp parallel for
-            for (size_t i = 0; i < jxl_in.width() * jxl_in.height(); i++) {
-                framebuffer[i] = std::max(0.f, framebuffer[i]);
-            }
-
             exr_out.appendFramebuffer(
-                framebuffer,
-                //jxl_in.getFramebufferDataConst(gg.layer_index),
+                jxl_in.getFramebufferDataConst(gg.layer_index),
                 gg.layer_name.data()
             );
         }
@@ -76,6 +98,15 @@ int main(int argc, char* argv[])
         exr_out.setAttributesData(box.exr_attributes);
 
         exr_out.write(filename_out);
+
+        auto clock_end = std::chrono::steady_clock::now();
+
+        if (save_timing) {
+            auto diff = clock_end - clock_start;
+
+            std::ofstream logfile(filename_timing);
+            logfile << "Total duration: " << std::chrono::duration<double, std::milli>(diff).count() << " ms" << std::endl;
+        }
     } catch (std::exception &e) {
         std::cout << "Error: " << e.what() << std::endl;
         return 1;

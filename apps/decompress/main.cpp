@@ -34,18 +34,15 @@
 #include <iostream>
 #include <cassert>
 #include <algorithm>
+#include <chrono>
+#include <fstream>
 
 #include <JXLImage.h>
 #include <EXRSpectralImage.h>
 #include <Util.h>
 #include <moments_image.h>
-#include <moments.h>
 
-#include <OpenEXR/ImfOutputFile.h>
-#include <OpenEXR/ImfChannelList.h>
-#include <OpenEXR/ImfStringAttribute.h>
-#include <OpenEXR/ImfFrameBuffer.h>
-#include <OpenEXR/ImfHeader.h>
+#include <tclap/CmdLine.h>
 
 
 void decompress_spectral_framebuffer(
@@ -146,72 +143,112 @@ Imf::PixelType quantization_to_exr(size_t n_bits, size_t n_exponent_bits) {
 
 int main(int argc, char* argv[])
 {
-    if (argc < 3) {
-        std::cout << "Usage:" << std::endl
-                  << "------" << std::endl
-                  << argv[0] << " <jxl_in> <exr_out>" << std::endl;
-        exit(0);
+    std::string filename_in;
+    std::string filename_out;
+
+    bool save_timing = false;
+    std::string filename_timing;
+
+    try {
+        TCLAP::CmdLine cmd("Utility to decompress JPEG-XL compressed with the compress utility to OpenEXR.");
+
+        TCLAP::UnlabeledValueArg<std::string> inputFileArg ("Input", "Specifies the JPEG-XL first input image.", true, "input.jxl", "path");
+        TCLAP::UnlabeledValueArg<std::string> outputFileArg("Output", "Specifies the OpenEXR output image.", true, "output.exr", "path");
+
+        cmd.add(inputFileArg);
+        cmd.add(outputFileArg);
+
+        TCLAP::ValueArg<std::string> timingLogArg("l", "log", "Set file to save execution timing", false, "timing.txt", "path");
+
+        cmd.add(timingLogArg);
+
+        cmd.parse(argc, argv);
+
+        filename_in  = inputFileArg.getValue();
+        filename_out = outputFileArg.getValue();
+
+        save_timing = timingLogArg.isSet();
+
+        if (save_timing) {
+            filename_timing = timingLogArg.getValue();
+        }
+    } catch (TCLAP::ArgException& e) {
+        std::cerr << "Error: " << e.error() << " for arguemnt " << e.argId() << std::endl;
+        return 1;
     }
 
-    const char* filename_in  = argv[1];
-    const char* filename_out = argv[2];
+    try {
+        auto clock_start = std::chrono::steady_clock::now();
 
-    const JXLImage jxl_image(filename_in);
+        const JXLImage jxl_image(filename_in);
 
-    const SGEGBox box   = jxl_image.getBox();
-    const size_t width  = jxl_image.width();
-    const size_t height = jxl_image.height();
+        const SGEGBox box   = jxl_image.getBox();
+        const size_t width  = jxl_image.width();
+        const size_t height = jxl_image.height();
 
-    EXRSpectralImage exr_out(width, height);
+        EXRSpectralImage exr_out(width, height);
 
-    exr_out.setAttributesData(box.exr_attributes);
+        exr_out.setAttributesData(box.exr_attributes);
 
-    for (const SGEGSpectralGroup& sg: box.spectral_groups) {
-        std::string root_name = sg.root_name.data();
-        const size_t n_moments = sg.layer_indices.size();
+        for (const SGEGSpectralGroup& sg: box.spectral_groups) {
+            std::string root_name = sg.root_name.data();
+            const size_t n_moments = sg.layer_indices.size();
 
-        assert(sg.mins.size() == sg.maxs.size());
+            assert(sg.mins.size() == sg.maxs.size());
 
-        std::vector<std::vector<float>> moments(n_moments);
-        std::vector<float> spectral_framebuffer;
+            std::vector<std::vector<float>> moments(n_moments);
+            std::vector<float> spectral_framebuffer;
 
-        for (size_t m = 0; m < n_moments; m++) {
-            moments[m] = jxl_image.getFramebufferDataConst(sg.layer_indices[m]);
+            for (size_t m = 0; m < n_moments; m++) {
+                moments[m] = jxl_image.getFramebufferDataConst(sg.layer_indices[m]);
+            }
+
+            decompress_spectral_framebuffer(
+                sg,
+                moments,
+                spectral_framebuffer
+            );
+
+            const JXLFramebuffer* main_fb = jxl_image.getFramebuffer(sg.layer_indices[0]);
+            const size_t n_bits           = main_fb->getBitsPerSample();
+            const size_t n_exponent_bits  = main_fb->getExponentBitsPerSample();
+            const Imf::PixelType pixel_type = quantization_to_exr(n_bits, n_exponent_bits);
+
+            exr_out.appendSpectralFramebuffer(
+                sg.wavelengths,
+                spectral_framebuffer,
+                root_name,
+                pixel_type
+            );
         }
 
-        decompress_spectral_framebuffer(
-            sg,
-            moments,
-            spectral_framebuffer
-        );
+        for (const SGEGGrayGroup& gg: box.gray_groups) {
+            const JXLFramebuffer* main_fb = jxl_image.getFramebuffer(gg.layer_index);
+            const size_t n_bits           = main_fb->getBitsPerSample();
+            const size_t n_exponent_bits  = main_fb->getExponentBitsPerSample();
+            const Imf::PixelType pixel_type = quantization_to_exr(n_bits, n_exponent_bits);
 
-        const JXLFramebuffer* main_fb = jxl_image.getFramebuffer(sg.layer_indices[0]);
-        const size_t n_bits           = main_fb->getBitsPerSample();
-        const size_t n_exponent_bits  = main_fb->getExponentBitsPerSample();
-        const Imf::PixelType pixel_type = quantization_to_exr(n_bits, n_exponent_bits);
+            exr_out.appendExtraFramebuffer(
+                jxl_image.getFramebufferDataConst(gg.layer_index),
+                gg.layer_name.data(),
+                pixel_type
+            );
+        }
 
-        exr_out.appendSpectralFramebuffer(
-            sg.wavelengths,
-            spectral_framebuffer,
-            root_name,
-            pixel_type
-        );
+        exr_out.write(filename_out);
+
+        auto clock_end = std::chrono::steady_clock::now();
+
+        if (save_timing) {
+            auto diff = clock_end - clock_start;
+
+            std::ofstream logfile(filename_timing);
+            logfile << "Total duration: " << std::chrono::duration<double, std::milli>(diff).count() << " ms" << std::endl;
+        }
+    } catch (std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return 1;
     }
-
-    for (const SGEGGrayGroup& gg: box.gray_groups) {
-        const JXLFramebuffer* main_fb = jxl_image.getFramebuffer(gg.layer_index);
-        const size_t n_bits           = main_fb->getBitsPerSample();
-        const size_t n_exponent_bits  = main_fb->getExponentBitsPerSample();
-        const Imf::PixelType pixel_type = quantization_to_exr(n_bits, n_exponent_bits);
-
-        exr_out.appendExtraFramebuffer(
-            jxl_image.getFramebufferDataConst(gg.layer_index),
-            gg.layer_name.data(),
-            pixel_type
-        );
-    }
-
-    exr_out.write(filename_out);
 
     return 0;
 }
