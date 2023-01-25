@@ -77,7 +77,7 @@ def run_compressor(
     subprocess.run(args)
 
 
-def run_decompressor(input_file: str, output_file: str, technique: str):
+def run_decompressor(input_file: str, output_file: str, technique: str, log_file: str):
     if os.path.exists(output_file):
         return
 
@@ -89,9 +89,22 @@ def run_decompressor(input_file: str, output_file: str, technique: str):
     else:
         exec_path = os.path.join(path_bin, 'decompress')
 
-    args = [exec_path, input_file, output_file]
+    args = [exec_path, input_file, output_file, '-l', log_file]
 
     subprocess.run(args)
+
+
+def run_sgeg_min_max(input_file: str, output_file: str):
+    if os.path.exists(output_file):
+        return
+
+    fp, fn = os.path.split(output_file)
+    os.makedirs(fp, exist_ok=True)
+
+    subprocess.run([
+        os.path.join(path_bin, 'sgeg-min-max'),
+        input_file, output_file
+    ])
 
 
 def run_converter_exr_png(input_file: str, output_file: str, exposure: float):
@@ -244,6 +257,19 @@ def get_five_percentile_from_diff_bin(path: str):
         return err[1]
 
 
+def get_min_max_from(path:str):
+    min_curve, max_curve = [], []
+
+    with open(path, 'r') as f:
+        lines = f.readlines()
+        for l in lines:
+            curr_min, curr_max = l.split()
+            min_curve.append(float(curr_min))
+            max_curve.append(float(curr_max))
+
+    return min_curve, max_curve
+
+
 # Get quantization curve saved in the text log
 def get_q_curve_from_txt_log(path: str):
     q_curve = []
@@ -281,6 +307,16 @@ def get_duration_from_txt_log(path: str, technique: str):
     with open(path, 'r') as f:
         lines = f.readlines()
         duration = lines[idx].split()[2]
+
+    return float(duration) / 1000
+
+
+def get_duration_decompression(path: str):
+    duration = 0
+
+    with open(path, 'r') as f:
+        lines = f.readlines()
+        duration = lines[0].split()[2]
 
     return float(duration) / 1000
 
@@ -388,13 +424,143 @@ def plot_mode_curve_ratio(output_filename:str, stats:dict, frame_distances_base:
    plot_mode_curves_param(output_filename, stats, frame_distances_base, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'ratio', 'Compression ratio')
 
 
-def plot_mode_curve_duration(output_filename:str, stats:dict, frame_distances_base: list, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
-   plot_mode_curves_param(output_filename, stats, frame_distances_base, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'duration', 'Computation time (s)')
+def plot_duration_compression(output_filename:str, stats:dict, frame_distances_base: list, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
+   plot_mode_curves_param(output_filename, stats, frame_distances_base, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'time_c', 'Compression time (s)')
 
 
-def plot_mode_curve_duration_per_pixel(output_filename:str, stats:dict, frame_distances_base: list, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
-   plot_mode_curves_param(output_filename, stats, frame_distances_base, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'duration', 'Computation time per pixel (ms)')
+def plot_duration_decompression(output_filename:str, stats:dict, frame_distances_base: list, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
+   plot_mode_curves_param(output_filename, stats, frame_distances_base, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'time_d', 'Decompression time (s)')
 
+
+def plot_duration_compression_per_pixel(output_filename:str, stats:dict, frame_distances_base: list, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
+   plot_mode_curves_param(output_filename, stats, frame_distances_base, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'time_c', 'Compression time per pixel (ms)')
+
+
+def plot_duration_decompression_per_pixel(output_filename:str, stats:dict, frame_distances_base: list, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
+   plot_mode_curves_param(output_filename, stats, frame_distances_base, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'time_d', 'Decompression time per pixel (ms)')
+
+
+def plot_min_max(
+    output_filename:str,
+    stats:dict,
+    frame_distances_base: list,
+    technique:str,
+    n_bits:int,
+    subsampling_ratios_ac:list,
+    frame_distances:list,
+    flat_compression: list):
+
+    fig, ax = plt.subplots(1, 1, figsize=(5, 4))
+
+    y_min = stats[1][technique][n_bits][0][1][True]['c_flat']['min_curve']
+    y_max = stats[1][technique][n_bits][0][1][True]['c_flat']['max_curve']
+    x_min = np.arange(len(y_min)) + 1
+    x_max = np.arange(len(y_max)) + 1
+
+    ax.bar(x_min, y_min, color='gray')
+    ax.bar(x_max, y_max, color='gray')
+
+    ax.set_ylabel('Value range')
+    ax.set_xlabel('Moment order')
+
+    fig.tight_layout()
+
+    if (save_tex):
+        plt.savefig(output_filename)
+        plt.close()
+    else:
+        plt.show()
+
+
+def plot_xy_ratio_error_curves(
+    output_filename: str,
+    stats: dict,
+    dataset: list, variants: list,
+    frame_distances_base: list,
+    technique: str,
+    n_bits: int,
+    subsampling_ratios_ac: list,
+    frame_distances: list,
+    point_size: float):
+    fig, ax = plt.subplots(1, 1, figsize=(5, 4))
+
+    # for ratio in subsampling_ratios_ac:
+    #     for (c_dc, c_ac) in framedistances:
+    #         x = [v for v in stats[ratio][technique][c_dc][c_ac][True]['c_dynamic']['ratio']]
+    #         y = [v for v in stats[ratio][technique][c_dc][c_ac][True]['c_dynamic']['rmse']]
+    default_cols = plt.rcParams['axes.prop_cycle'].by_key()['color']
+    idx = 0
+
+    for ratio in subsampling_ratios_ac:
+        for (c_dc, c_ac) in frame_distances:
+            x_flat, y_flat = [], []
+            x_det, y_det = [], []
+            x_dyn, y_dyn = [], []
+
+            if len(variants) == 0:
+                for d in dataset:
+                    x_flat.append(stats[d][ratio][technique][n_bits][c_dc][c_ac][True]['c_flat']['ratio'])
+                    y_flat.append(stats[d][ratio][technique][n_bits][c_dc][c_ac][True]['c_flat']['rmse'])
+
+                    x_det.append(stats[d][ratio][technique][n_bits][c_dc][c_ac][True]['c_deterministic']['ratio'])
+                    y_det.append(stats[d][ratio][technique][n_bits][c_dc][c_ac][True]['c_deterministic']['rmse'])
+
+                    x_dyn.append(stats[d][ratio][technique][n_bits][c_dc][c_ac][True]['c_dynamic']['ratio'])
+                    y_dyn.append(stats[d][ratio][technique][n_bits][c_dc][c_ac][True]['c_dynamic']['rmse'])
+            else:
+                for d in dataset:
+                    for v in variants:
+                        # TODO: remove, one material fails the conversion
+                        if v == 'diffuse' and d == 'Brokat_Sorbonne_pink_aniso_high_gloss_':
+                            continue
+                        x_flat.append(stats[d][v][ratio][technique][n_bits][c_dc][c_ac][True]['c_flat']['ratio'])
+                        y_flat.append(stats[d][v][ratio][technique][n_bits][c_dc][c_ac][True]['c_flat']['rmse'])
+
+                        x_det.append(stats[d][v][ratio][technique][n_bits][c_dc][c_ac][True]['c_deterministic']['ratio'])
+                        y_det.append(stats[d][v][ratio][technique][n_bits][c_dc][c_ac][True]['c_deterministic']['rmse'])
+
+                        x_dyn.append(stats[d][v][ratio][technique][n_bits][c_dc][c_ac][True]['c_dynamic']['ratio'])
+                        y_dyn.append(stats[d][v][ratio][technique][n_bits][c_dc][c_ac][True]['c_dynamic']['rmse'])
+            ax.scatter(x_flat, y_flat, marker='s', s=point_size, color=default_cols[idx])
+            ax.scatter(x_det, y_det, marker='^', s=point_size, color=default_cols[idx])
+            ax.scatter(x_dyn, y_dyn, marker='X', s=point_size, color=default_cols[idx])
+
+            idx += 1
+
+    for (f, _) in frame_distances_base:
+        x, y = [], []
+        if len(variants) == 0:
+            for d in dataset:
+                x.append(stats[d][1]['simple'][32][f][0][True]['c_flat']['ratio'])
+                y.append(stats[d][1]['simple'][32][f][0][True]['c_flat']['rmse'])
+        else:
+            for d in dataset:
+                for v in variants:
+                    # TODO: remove, one material fails the conversion
+                    if v == 'diffuse' and d == 'Brokat_Sorbonne_pink_aniso_high_gloss_':
+                        continue
+                    x.append(stats[d][v][1]['simple'][32][f][0][True]['c_flat']['ratio'])
+                    y.append(stats[d][v][1]['simple'][32][f][0][True]['c_flat']['rmse'])
+        ax.scatter(x, y, marker='o', s=point_size, color=default_cols[idx])
+
+        idx += 1
+
+    ax.scatter([], [], marker='s', color='black', label='flat')
+    ax.scatter([], [], marker='^', color='black', label='deterministic')
+    ax.scatter([], [], marker='X', color='black', label='dynamic')
+
+    ax.legend()
+
+    ax.set_xlabel('Compression ratio')
+    ax.set_ylabel('RMSE')
+
+    fig.tight_layout()
+
+    if (save_tex):
+        plt.savefig(output_filename)
+        plt.close()
+    else:
+        plt.show()
 
 # def plot_q_curves(output_filename, stats, techniques, n_bits):
 #     fig, ax = plt.subplots(1, 1, figsize=(5, 4))
@@ -446,6 +612,7 @@ def plot_c_curves(
     ax.plot([], [], color='black', label='dynamic')
     for (c_dc, c_ac), i in zip(framedistances, range(len(framedistances))):
         y_det = stats[1][technique][n_bits][c_dc][c_ac][True]['c_deterministic']['c_curve'][1:]
+        x = np.arange(len(y_det)) + 1
         ax.plot(x, y_det, color=default_cols[-i - 1], linestyle='dotted', label='deterministic ac = {}'.format(c_ac))
 
     ax.legend()
