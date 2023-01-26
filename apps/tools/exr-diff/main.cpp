@@ -158,6 +158,8 @@ int main(int argc, char* argv[])
     bool verbose = false;
     double percentile = 1.;
 
+    bool use_log_scale = true;
+
     // Parse arguments
     try {
         TCLAP::CmdLine cmd("Compares two Spectral OpenEXR images showing an heatmap of the RMSE per pixel");
@@ -329,16 +331,26 @@ int main(int argc, char* argv[])
                     std::vector<uint8_t> framebuffer_rgba;
                     float lower, upper;
 
-                    if (custom_lower_bound_is_set) {
-                        lower = custom_lower_bound;
-                    } else {
-                        lower = 0;
-                    }
+                    if (use_log_scale) {
+                        lower = std::log(1e-5);
+                        upper = 0;
 
-                    if (custom_upper_bound_is_set) {
-                        upper = custom_upper_bound;
+                        #pragma omp parallel for
+                        for (size_t i = 0; i < rmse_pixel_image.size(); i++) {
+                            rmse_pixel_image[i] = std::log(rmse_pixel_image[i]);
+                        }
                     } else {
-                        upper = max_rmse_pixel;
+                        if (custom_lower_bound_is_set) {
+                            lower = custom_lower_bound;
+                        } else {
+                            lower = 0;
+                        }
+
+                        if (custom_upper_bound_is_set) {
+                            upper = custom_upper_bound;
+                        } else {
+                            upper = max_rmse_pixel;
+                        }
                     }
 
                     diff_to_rgba(
