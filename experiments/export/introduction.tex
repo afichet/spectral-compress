@@ -1,92 +1,88 @@
 \section{Introduction}
 
-In this supplemental, we benchmark our compression technique with different parameters using two spectral image databases. Our compression pipeline uses spectral EXR files as the input and outputs a collection of JPEG-XL files.
-
-We also provide showcase how a simple compression scheme would compare. This scheme saves each band independently using the JPEG-XL compression without further processing.
+In this supplemental, we benchmark our compression technique using the two spectral image databases described in the paper.
+We convert from spectral OpenEXR to our spectral JPEG XL using a variety of parameters.
+We compare to a simple compression scheme, which saves each spectral band independently using JPEG-XL compression.
 
 
 \subsection{Spectral OpenEXR Conversion}
 
-We use spectral OpenEXR files as input of our compression pipeline to have a consistent pipeline across the two databases. All images are first converted from their respective format to spectral OpenEXR prior to the compression.
+Our compression pipeline uses spectral OpenEXR files holding 32-bit floats as input and outputs a collection of JPEG-XL files.
+For the CAVE database we get a set of grayscale PNGs with 16-bit unsigned integers for each spectral band.
+Using spectral OpenEXR with 32-bit floats, we avoid loss of precision in the conversion.
+The conversion is implemented in the supplemental program \verb?cave-exr? and orchestrated by the script \verb?experiment/cave_to_exr.py?.
 
-For the CAVE database we get a set of grayscale PNGs 16~bits unsigned integers for each spectral band. To keep the full possible range of 16~bits unsigned integers values, we use a 32~bits float frame buffer per band in our spectral EXR conversion. We use the program \verb?cave-exr? from with the script \verb?experiment/cave_to_exr.py? to execute this conversion.
+The Bonn database is originally provided in the \verb?.npz? Numpy format.
+We export the diffuse and specular maps as spectral OpenEXR using 32-bit floats per band.
+We use the script \verb?experiment/bonn_to_exr.py? to execute this conversion.
 
-For the Bonn database, the native format is in \verb?.npz? Numpy format. We export the diffuse and specular maps in spectral EXR using a 32~bits float frame buffer per band. We use the script \verb?experiment/bonn_to_exr.py? to execute this conversion.
-
-All OpenEXR files use ZIP compression. We also remove the ``\verb?R?'', ``\verb?G?'', ``\verb?B?'' layers to better compare the lossless compressed OpenEXR file with our proposed lossy compression scheme.
+All spectral OpenEXR files use ZIP compression.
+Our reported compression ratios are relative to the file sizes of these spectral OpenEXR files.
+For the sake of a fair comparison, the spectral OpenEXR files do not contain RGB layers.
 
 
 \subsection{Compression Parameters}
 
-In this document we mainly compare the following parameters:
+We vary the following parameters to explore their impact on quality, compression ratios and timings:
 
 \begin{description}
-    \item[Frame distance] It is a compression parameter of JPEG-XL. When set to 0, we use the JPEG-XL lossless compression mode. This parameter can be set from 0 to 15, with a higher number decreasing image quality in favor of file size. We use two frame distance parameters. One for the zeroth moment (DC) component and a second one for the first moment (AC) component. In this supplemental, we showcase two scenarios,
+    \item[Distance level] This parameter controls the image error metric used by JPEG XL and thus the compression ratio. When the value is 0, we use lossless compression. The admissible range is 0 to 15. Higher values decrease image quality and file size. For our spectral JPEG XL, the distance level for the DC component and the first AC component are controlled by the user. We use two parameter choices here:
     \begin{itemize}
-        \item DC with frame distance 0 (lossless) and first AC component with frame distance 1 (lossy).
-        \item DC with frame distance 0.1 (lossy) and first AC component starting with frame distance 1 (lossy).
+        \item A distance level of 0 for the DC component (lossless) and a distance level of 1 for the first AC component (lossy),
+        \item A distance level of 0.5 for the DC component (lossy) and a distance level of 2 for the first AC component (lossy).
     \end{itemize}
-    \item[Compression curve] We can generate a compression curve at runtime. The method for generating this curve is detailed in the article. When the compression curve is set to flat, all AC components use the same frame distance parameter. Otherwise, the frame distance is increased according to the error. In this supplemental, we showcase two scenarios,
+    \item[Compression curve] As described in the paper, we have three ways of defining a compression curve (i.e. the distance levels for higher-frequency AC components):
     \begin{itemize}
-        \item Flat curve: all AC components use the same frame distance parameter.
-        \item Dynamic curve: the curve is computed at runtime with the frame distance starting from the parameter set for the first AC component.
+        \item Flat curve: All AC components use the same distance level,
+        \item Deterministic curve: The distance level grows from the prescribed value to 15 according to a hard-coded sigmoid curve,
+        \item Dynamic curve: The distance levels are determined for each frequency in an automated fashion such that they all introduce similar error.
     \end{itemize}
-    \item[Chroma subsampling] We allow the subsampling of AC components while keeping the DC component at full resolution. Since most of the chroma information is held by AC components, we name this ``chroma subsampling''. In this supplemental, we showcase two scenarios,
+    \item[Chroma subsampling] We also support subsampling of AC components while keeping the DC component at full resolution. Since most of the chroma information is held by the normalized AC components, we name this ``chroma subsampling''. We use two settings:
         \begin{itemize}
-            \item No chroma subsampling (1:1), the DC component and all AC components are kept at full resolution.
-            \item Chroma subsampling (1:2), the DC component is kept at full resolution while AC components are stored at half of their native resolution.
+            \item No chroma subsampling (1:1), i.e. all frequencies are kept at full resolution,
+            \item Chroma subsampling (1:2), i.e. the DC component is kept at full resolution while the resolution of all AC components is halved (both horizontally and vertically).
         \end{itemize}
 \end{description}
 
-For each runs, the JPEG-XL effort parameter is set at 7, the default parameter of libjxl.
+For each run, the JPEG-XL effort parameter is set to 7, which is the default value in libjxl.
+
 
 \subsection{Metrics}
 
+For each test of a compression method, we report the following metrics.
+
 \paragraph{Error}
-We compare the accuracy of the reconstructed spectral image after our compression with RMSE per pixel and display a heatmap of the resulting values using the following formula:
 
-\begin{align}
-    \mathrm{RMSE}(x, y) = \sqrt{\frac{\sum_{\lambda = 0}^{N_\mathrm{bands} - 1} \left(I_\mathrm{ref}(x, y, \lambda) - I_\mathrm{cmp}(x, y, \lambda) \right)^2}{N_\mathrm{bands}}}
-\end{align}
-
-with:
-
-\begin{tabularx}{\linewidth}{lX}
-    $(x, y)$ & the pixel location on the heatmap, \\
-    $I_\mathrm{ref}$ & the OpenEXR image used as the input of our pipeline, \\
-    $I_\mathrm{cmd}$ & the OpenEXR image obtained after decompressing the image compressed with our pipeline. \\
-\end{tabularx}\\
-
-Then, we provide the RMSE over the whole image in the plots:
-
-\begin{align}
-    \mathrm{RMSE} =
-        \sqrt{
-            \frac{
-                    \sum_{x = 0}^{\mathrm{width} - 1} \sum_{y = 0}^{\mathrm{height} - 1} \sum_{\lambda = 0}^{N_\mathrm{bands} - 1}
-                        \left(
-                            I_\mathrm{ref}(x, y, \lambda) - I_\mathrm{cmp}(x, y, \lambda)
-                        \right)^2
-                }
-                {\mathrm{width} \cdot \mathrm{height} \cdot N_\mathrm{bands}}
-        }
-\end{align}
+For RGB images, perceptual metrics are preferable but for spectral images there are no established standards for such metrics.
+Therefore, we fall back to reporting simple root-mean-square errors (RMSEs) per pixel and per image.
+The RMSE for a single pixel $x,y$ is defined as
+\begin{equation}
+    \mathrm{RMSE}(g,g^{\prime},x,y):=\sqrt{\frac{\sum_{l=0}^{n-1}(g_{x,y,l}^{\prime}-g_{x,y,l})^{2}}{n}} \text{,}
+\end{equation}
+where $g_{x,y,l}$ is the ground truth image, $g^\prime_{x,y,l}$ is the decompressed image and the images have width $w$, height $h$ and $n$ spectral bands.
+We use a color map to display these RMSEs for each pixel.
+The RMSE across the whole images is
+\begin{equation}
+    \mathrm{RMSE}(g,g^{\prime}):=\sqrt{\frac{\sum_{x=0}^{w-1}\sum_{y=0}^{h-1}\sum_{l=0}^{n-1}(g_{x,y,l}^{\prime}-g_{x,y,l})^{2}}{whn}} \text{.}
+\end{equation}
 
 
 \paragraph{Compression Ratio}
 
-We compute the compression ratios as the division of the original spectral OpenEXR image without the ``\verb?R?'', ``\verb?G?'', ``\verb?B?'' layers with ZIP compression by the sum of the JPEG-XL files necessary to reconstruct a spectral OpenEXR image.
+A compression ratio is the file size of the spectral OpenEXR file (with ZIP compression and with RGB layers removed) divided by the size of the file collection for the spectral JPEG XL (or the collection of JPEG XL files for individual spectral bands in case of the simple method).
 
 
 \paragraph{Timings}
 
-All the computations were done on an Intel Core i9-10980XE CPU with 128~Gb of RAM (Dell Precision 5820 Tower X-Series). On each image, we provide the timings for the execution of the whole compression pipeline. For the summary section, we provide  instead the average timing per pixel since all images do not share the same resolution.
+All computations were done on an Intel Core i9-10980XE CPU with 128~GB of RAM (Dell Precision 5820 Tower X-Series).
+On each image, we provide the timings for the execution of the whole compression pipeline.
+For the summary section, we instead provide the average timing per pixel since the image resolution varies.
 
 
 \paragraph{Previews}
 
-We provide an sRGB version of the spectral OpenEXR images as preview. The exposure is set to 0 for the Bonn databse and set to -6.5 for the CAVE database.
-
-We also show an inset of the RGB versions and the diffs images of the 50x50~pixels center of the images to better compare the potential visible artifacts cause by the lossy compression steps.
+We provide an sRGB version of the spectral OpenEXR images as preview.
+The exposure is set to 0 for the Bonn database and to -6.5 for the CAVE database.
+We also show an inset of the RGB versions and the diff images of the $50\times50$~pixels in the middle of the image to illustrate compression artifacts of different lossy approaches.
 
 \clearpage
