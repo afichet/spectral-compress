@@ -2,25 +2,36 @@
 
 \vfill
 \begin{figure}[h]
-    \begin{subfigure}{.5\linewidth}
+    \begin{subfigure}{.33\linewidth}
         \resizebox*{\linewidth}{!}{\input{bonn/avg_rmse.pgf}}
     \end{subfigure}\hfill%
-    \begin{subfigure}{.5\linewidth}
+    \begin{subfigure}{.33\linewidth}
         \resizebox*{\linewidth}{!}{\input{bonn/avg_ratio.pgf}}
+    \end{subfigure}\hfill%
+    \begin{subfigure}{.33\linewidth}
+        \resizebox*{\linewidth}{!}{\input{bonn/avg_time_c.pgf}}
     \end{subfigure}
-% \end{figure}
-%
-% \begin{figure}[h]
+    %
+    \begin{subfigure}{.33\linewidth}
+        \resizebox*{\linewidth}{!}{\input{bonn/avg_xy_ratio_err_flat.pgf}}
+    \end{subfigure}\hfill%
+    \begin{subfigure}{.33\linewidth}
+        \resizebox*{\linewidth}{!}{\input{bonn/avg_xy_ratio_err_det.pgf}}
+    \end{subfigure}\hfill%
+    \begin{subfigure}{.33\linewidth}
+        \resizebox*{\linewidth}{!}{\input{bonn/avg_xy_ratio_err_dyn.pgf}}
+    \end{subfigure}
+    %
     \begin{subfigure}{.5\linewidth}
         \resizebox*{\linewidth}{!}{\input{bonn/avg_c_curve.pgf}}
-    \end{subfigure}\hfill%
+    \end{subfigure}\hfill\hfill%
     \begin{subfigure}{.5\linewidth}
-        \resizebox*{\linewidth}{!}{\input{bonn/avg_duration.pgf}}
+        \resizebox*{\linewidth}{!}{\input{bonn/avg_min_max.pgf}}
     \end{subfigure}
-%
+    %
     \begin{subfigure}{\linewidth}
         \centering
-        \resizebox*{.75\linewidth}{!}{\input{bonn/avg_legend.pgf}}
+        \resizebox*{.6\linewidth}{!}{\input{bonn/avg_legend.pgf}}
     \end{subfigure}
 \end{figure}
 \vfill

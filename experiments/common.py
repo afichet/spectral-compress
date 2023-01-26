@@ -335,6 +335,7 @@ def get_jxl_dir_size(path: str):
 # Plotting
 ###############################################################################
 
+
 def plot_mode_curves_param(
     output_filename: str,
     stats: dict,
@@ -345,9 +346,12 @@ def plot_mode_curves_param(
     frame_distances: list,
     flat_compression: list,
     key: str,
-    y_label: str):
+    y_label: str,
+    ratio: float,
+    plot_w: float=15,
+    plot_h: float=12):
     w = 0.9
-    fig, ax = plt.subplots(1, 1, figsize=(5, 4))
+    fig, ax = plt.subplots(1, 1, figsize=(ratio * plot_w, ratio * plot_h))
 
     x = np.arange(len(flat_compression) + 1)
 
@@ -401,8 +405,6 @@ def plot_mode_curves_param(
     # ax.set_xlabel('Distance level (compression parameter)')
     ax.set_ylabel(y_label)
 
-    # ax.legend()
-
     fig.tight_layout()
 
     if (save_tex):
@@ -412,32 +414,32 @@ def plot_mode_curves_param(
         plt.show()
 
 
-def plot_rmse(output_filename:str, stats:dict, frame_distances_base: list, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
-    plot_mode_curves_param(output_filename, stats, frame_distances_base, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'rmse', 'RMSE')
+def plot_rmse(output_filename:str, stats:dict, frame_distances_base: list, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list, ratio: float, plot_w: float, plot_h: float):
+    plot_mode_curves_param(output_filename, stats, frame_distances_base, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'rmse', 'RMSE', ratio, plot_w, plot_h)
 
 
-def plot_size(output_filename:str, stats:dict, frame_distances_base: list, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
-   plot_mode_curves_param(output_filename, stats, frame_distances_base, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'size', 'File size')
+def plot_size(output_filename:str, stats:dict, frame_distances_base: list, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list, ratio: float, plot_w: float, plot_h: float):
+   plot_mode_curves_param(output_filename, stats, frame_distances_base, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'size', 'File size', ratio, plot_w, plot_h)
 
 
-def plot_compression_ratio(output_filename:str, stats:dict, frame_distances_base: list, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
-   plot_mode_curves_param(output_filename, stats, frame_distances_base, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'ratio', 'Compression ratio')
+def plot_compression_ratio(output_filename:str, stats:dict, frame_distances_base: list, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list, ratio: float, plot_w: float, plot_h: float):
+   plot_mode_curves_param(output_filename, stats, frame_distances_base, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'ratio', 'Compression ratio', ratio, plot_w, plot_h)
 
 
-def plot_duration_compression(output_filename:str, stats:dict, frame_distances_base: list, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
-   plot_mode_curves_param(output_filename, stats, frame_distances_base, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'time_c', 'Compression time (s)')
+def plot_duration_compression(output_filename:str, stats:dict, frame_distances_base: list, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list, ratio: float, plot_w: float, plot_h: float):
+   plot_mode_curves_param(output_filename, stats, frame_distances_base, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'time_c', 'Compression time (s)', ratio, plot_w, plot_h)
 
 
-def plot_duration_decompression(output_filename:str, stats:dict, frame_distances_base: list, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
-   plot_mode_curves_param(output_filename, stats, frame_distances_base, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'time_d', 'Decompression time (s)')
+def plot_duration_decompression(output_filename:str, stats:dict, frame_distances_base: list, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list, ratio: float, plot_w: float, plot_h: float):
+   plot_mode_curves_param(output_filename, stats, frame_distances_base, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'time_d', 'Decompression time (s)', ratio, plot_w, plot_h)
 
 
-def plot_duration_compression_per_pixel(output_filename:str, stats:dict, frame_distances_base: list, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
-   plot_mode_curves_param(output_filename, stats, frame_distances_base, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'time_c', 'Compression time per pixel (ms)')
+def plot_duration_compression_per_pixel(output_filename:str, stats:dict, frame_distances_base: list, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list, ratio: float, plot_w: float, plot_h: float):
+   plot_mode_curves_param(output_filename, stats, frame_distances_base, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'time_c', 'Compression time per pixel (ms)', ratio, plot_w, plot_h)
 
 
-def plot_duration_decompression_per_pixel(output_filename:str, stats:dict, frame_distances_base: list, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list):
-   plot_mode_curves_param(output_filename, stats, frame_distances_base, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'time_d', 'Decompression time per pixel (ms)')
+def plot_duration_decompression_per_pixel(output_filename:str, stats:dict, frame_distances_base: list, technique:str, n_bits:int, subsampling_ratios_ac:list, frame_distances:list, flat_compression: list, ratio: float, plot_w: float, plot_h: float):
+   plot_mode_curves_param(output_filename, stats, frame_distances_base, technique, n_bits, subsampling_ratios_ac, frame_distances, flat_compression, 'time_d', 'Decompression time per pixel (ms)', ratio, plot_w, plot_h)
 
 
 def plot_min_max(
@@ -448,9 +450,11 @@ def plot_min_max(
     n_bits:int,
     subsampling_ratios_ac:list,
     frame_distances:list,
-    flat_compression: list):
-
-    fig, ax = plt.subplots(1, 1, figsize=(5, 4))
+    flat_compression: list,
+    ratio: float,
+    plot_w: float=15,
+    plot_h: float=12):
+    fig, ax = plt.subplots(1, 1, figsize=(ratio * plot_w, ratio * plot_h))
 
     y_min = stats[1][technique][n_bits][0][1][True]['c_flat']['min_curve']
     y_max = stats[1][technique][n_bits][0][1][True]['c_flat']['max_curve']
@@ -472,6 +476,68 @@ def plot_min_max(
         plt.show()
 
 
+def plot_xy_ratio_error_curves_key(
+    output_filename: str,
+    stats: dict,
+    dataset: list, variants: list,
+    frame_distances_base: list,
+    technique: str,
+    n_bits: int,
+    subsampling_ratios_ac: list,
+    frame_distances: list,
+    point_size: float,
+    key_compression: str,
+    title: str,
+    x_max: float, y_max: float,
+    ratio: float,
+    plot_w: float=15,
+    plot_h: float=12):
+    fig, ax = plt.subplots(1, 1, figsize=(ratio * plot_w, ratio * plot_h))
+
+    # for ratio in subsampling_ratios_ac:
+    #     for (c_dc, c_ac) in framedistances:
+    #         x = [v for v in stats[ratio][technique][c_dc][c_ac][True]['c_dynamic']['ratio']]
+    #         y = [v for v in stats[ratio][technique][c_dc][c_ac][True]['c_dynamic']['rmse']]
+    default_cols = plt.rcParams['axes.prop_cycle'].by_key()['color']
+    idx = 0
+
+    for ratio in subsampling_ratios_ac:
+        for (c_dc, c_ac) in frame_distances:
+            x, y = [], []
+
+            if len(variants) == 0:
+                for d in dataset:
+                    x.append(stats[d][ratio][technique][n_bits][c_dc][c_ac][True][key_compression]['ratio'])
+                    y.append(stats[d][ratio][technique][n_bits][c_dc][c_ac][True][key_compression]['rmse'])
+            else:
+                for d in dataset:
+                    for v in variants:
+                        # TODO: remove, one material fails the conversion
+                        if v == 'diffuse' and d == 'Brokat_Sorbonne_pink_aniso_high_gloss_':
+                            continue
+                        x.append(stats[d][v][ratio][technique][n_bits][c_dc][c_ac][True][key_compression]['ratio'])
+                        y.append(stats[d][v][ratio][technique][n_bits][c_dc][c_ac][True][key_compression]['rmse'])
+            ax.scatter(x, y, s=point_size, color=default_cols[idx])
+
+            idx += 1
+
+    ax.set_title(title)
+
+    ax.set_xlabel('Compression ratio')
+    ax.set_ylabel('RMSE')
+
+    ax.set_xbound((0, x_max))
+    ax.set_ybound((0, y_max))
+
+    fig.tight_layout()
+
+    if (save_tex):
+        plt.savefig(output_filename)
+        plt.close()
+    else:
+        plt.show()
+
+
 def plot_xy_ratio_error_curves(
     output_filename: str,
     stats: dict,
@@ -481,8 +547,11 @@ def plot_xy_ratio_error_curves(
     n_bits: int,
     subsampling_ratios_ac: list,
     frame_distances: list,
-    point_size: float):
-    fig, ax = plt.subplots(1, 1, figsize=(5, 4))
+    point_size: float,
+    ratio: float,
+    plot_w: float=15,
+    plot_h: float=12):
+    fig, ax = plt.subplots(1, 1, figsize=(ratio * plot_w, ratio * plot_h))
 
     # for ratio in subsampling_ratios_ac:
     #     for (c_dc, c_ac) in framedistances:
@@ -595,8 +664,11 @@ def plot_c_curves(
     technique: str,
     n_bits: int,
     subsampling_ratios_ac: list,
-    framedistances: list):
-    fig, ax = plt.subplots(1, 1, figsize=(5, 4))
+    framedistances: list,
+    ratio: float,
+    plot_w: float=15,
+    plot_h: float=12):
+    fig, ax = plt.subplots(1, 1, figsize=(ratio * plot_w, ratio * plot_h))
     default_cols = plt.rcParams['axes.prop_cycle'].by_key()['color']
     idx = 0
 
@@ -615,11 +687,12 @@ def plot_c_curves(
         x = np.arange(len(y_det)) + 1
         ax.plot(x, y_det, color=default_cols[-i - 1], linestyle='dotted', label='deterministic ac = {}'.format(c_ac))
 
-    ax.legend()
+    ax.legend(loc='lower right')
     ax.set_xlabel('Moment order')
     ax.set_ylabel('Distance level (compression parameter)')
 
     fig.tight_layout()
+    # plt.subplots_adjust(left=0.1, bottom=0.1, right=1, top=1, wspace=0, hspace=0)
 
     if (save_tex):
         plt.savefig(output_filename)
@@ -628,12 +701,60 @@ def plot_c_curves(
         plt.show()
 
 
-def plot_legend(
+def plot_legend_1(
     output_filename: str,
     frame_distances_base: list,
     subsampling_ratios_ac: list,
     frame_distances: list):
+    # This function is hardcoded in seval places to have a nicer layout...
+    default_cols = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
+    fig, ax = plt.subplots(1, 1)
+
+    idx = len(subsampling_ratios_ac) * len(frame_distances)
+
+    for (f, _) in frame_distances_base:
+        ax.plot(
+            [], [],
+            marker='s', ls='none', color=default_cols[idx],
+            label='simple - frame distance {}'.format(f))
+        idx += 1
+
+    # Dirty hack to align all other types on the same column
+    ax.plot([], [], label=' ', color='white')
+
+    idx = 0
+
+    for ratio in subsampling_ratios_ac:
+        for (c_dc, c_ac) in frame_distances:
+            ax.plot(
+                [], [],
+                marker='s', ls='none', color=default_cols[idx],
+                label='chroma subsampling = 1:{}, dc = {}, ac = {}'.format(ratio, c_dc, c_ac))
+            idx += 1
+
+    legend = ax.legend(ncol=1, bbox_to_anchor=(1.05, 1), loc='upper left', fancybox=False)
+
+    expand=[-5,-5,5,5]
+
+    fig = legend.figure
+    fig.canvas.draw()
+    bbox  = legend.get_window_extent()
+    bbox = bbox.from_extents(*(bbox.extents + np.array(expand)))
+    bbox = bbox.transformed(fig.dpi_scale_trans.inverted())
+
+    if (save_tex):
+        fig.savefig(output_filename, bbox_inches=bbox)
+        plt.close()
+    else:
+        plt.show()
+
+
+def plot_legend_2(
+    output_filename: str,
+    frame_distances_base: list,
+    subsampling_ratios_ac: list,
+    frame_distances: list):
     # This function is hardcoded in seval places to have a nicer layout...
     default_cols = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
@@ -664,7 +785,7 @@ def plot_legend(
     # Dirty hack to align all other types on the same column
     ax.plot([], [], label=' ', color='white')
 
-    legend = ax.legend(ncol=2, bbox_to_anchor=(1.05, 1), loc='upper left')
+    legend = ax.legend(ncol=2, bbox_to_anchor=(1.05, 1), loc='upper left', fancybox=False)
 
     expand=[-5,-5,5,5]
 

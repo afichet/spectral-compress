@@ -1,0 +1,51 @@
+\documentclass[tikz]{standalone}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usetikzlibrary{spy}
+\usetikzlibrary{calc}
+\usetikzlibrary{datavisualization}
+\usetikzlibrary{shapes.misc}
+\usetikzlibrary{math}
+
+\begin{document}
+\tikzset{cross/.style={cross out, draw=black, minimum size=2*(#1-\pgflinewidth), inner sep=0pt, outer sep=0pt},
+%default radius will be 1pt.
+cross/.default={1pt}}
+
+\begin{tikzpicture}[spy using outlines={magnification=5, size=1.5cm}]
+    \def \leftScale{0}
+    \def \rightScale{0.5}
+    \def \topScale{5}
+    \def \bottomScale{0}
+    \tikzmath{
+        \scaleWidth  = \rightScale - \leftScale;
+        \scaleHeight = \topScale - \bottomScale;
+    }
+
+    \def \scaleStart{-5}
+    \def \scaleEnd{0}
+
+    \foreach \y in {-4,...,-1} {
+        \tikzmath{
+            \uY = (\y - \scaleStart) / (\scaleEnd - \scaleStart);
+            \posY = \uY * (\topScale - \bottomScale) + \bottomScale;
+        }
+        \draw (-.1, \posY) -- (0, \posY);
+        \node[left, inner sep=0pt] at (-.15, \posY) {$10^{\y}$};
+    }
+
+    % Shift a bit top & bottom
+    \draw (-.1, \bottomScale) -- (0, \bottomScale);
+    \node[above left, inner sep=0pt] at (-.15, \bottomScale) {$10^{-5}$};
+
+    \draw (-.1, \topScale) -- (0, \topScale);
+    \node[below left, inner sep=0pt] at (-.15, \topScale) {$10^{0}$};
+
+    \draw (\leftScale, \topScale) -- (\rightScale, \topScale) -- (\rightScale, \bottomScale) -- (\leftScale, \bottomScale) -- cycle;
+
+    \node[anchor=north west, inner sep=0] at (\leftScale, \topScale)
+        {\includegraphics[width=\scaleWidth cm, height=\scaleHeight cm]{scale.png}};
+
+\end{tikzpicture}
+
+\end{document}

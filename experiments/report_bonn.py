@@ -177,12 +177,12 @@ def run_for(
     decompressed_png_file  = os.path.join(path_curr_out, dataset + '.png')
     timing_decompress_file = os.path.join(path_curr_out, dataset + '_decompress_time.txt')
     min_max_file           = os.path.join(path_curr_out, dataset + '_min_max.txt')
-    diff_png_file          = os.path.join(path_curr_out, dataset + '_null_diff.png')
+    diff_png_file          = os.path.join(path_curr_out, dataset + '_diff.png')
     diff_error_file        = os.path.join(path_curr_out, dataset + '_diff.bin')
     meta_file_size_file    = os.path.join(path_curr_out, dataset + '_size.txt')
 
     cropped_decompressed_png_file = os.path.join(path_curr_out, dataset + '_cropped.png')
-    cropped_diff_png_file         = os.path.join(path_curr_out, dataset + '_null_diff_cropped.png')
+    cropped_diff_png_file         = os.path.join(path_curr_out, dataset + '_diff_cropped.png')
 
     common.run_decompressor(compressed_file, decompressed_exr_file, technique, timing_decompress_file)
     common.run_sgeg_min_max(compressed_file, min_max_file)
@@ -271,6 +271,7 @@ def main():
                                     stats[d][v][subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat] = {}
 
     tex_stream = ''
+    x_max, y_max = 0, 0
 
     for d in db:
         print('dataset:', d)
@@ -352,41 +353,45 @@ def main():
                                         c_dc, c_ac,
                                         q_flat, c_flat,
                                         curr_max_err)
+
+                                    x_max = max(x_max, stats[d][v][subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['ratio'])
+                                    y_max = max(y_max, stats[d][v][subsampling][tech][bits][c_dc][c_ac][q_flat][c_flat]['rmse'])
+
                                     if not math.isnan(m) and not math.isinf(m) and m < 1:
                                         curr_max_err = m
                                     else:
                                         print("      Err max err - Ignoring this max value for heatmap scale")
 
-                    # Run diff a second time with the dynamically computed max bound value
-                    path_curr_out_partial = common.get_path_bonn_out_partial(path_report, subsampling, d, v, tech)
-                    meta_file_max_diff_file = os.path.join(path_curr_out_partial, d + '_max_err.txt')
+                    # # Run diff a second time with the dynamically computed max bound value
+                    # path_curr_out_partial = common.get_path_bonn_out_partial(path_report, subsampling, d, v, tech)
+                    # meta_file_max_diff_file = os.path.join(path_curr_out_partial, d + '_max_err.txt')
 
-                    with open(meta_file_max_diff_file, 'w') as f:
-                        a, b = '{:.1E}'.format(curr_max_err).split('E')
-                        string_err = '{}\\cdot 10^{{{}}}'.format(float(a), int(b))
-                        # string_err = string_err.replace('1.0\cdot', '')
-                        f.write(string_err)
+                    # with open(meta_file_max_diff_file, 'w') as f:
+                    #     a, b = '{:.1E}'.format(curr_max_err).split('E')
+                    #     string_err = '{}\\cdot 10^{{{}}}'.format(float(a), int(b))
+                    #     # string_err = string_err.replace('1.0\cdot', '')
+                    #     f.write(string_err)
 
-                    for bits in curr_start_bits:
-                        for c_dc, c_ac in curr_frame_distances:
-                            for q_flat in curr_flat_quantization:
-                                for c_flat in curr_flat_compression:
-                                    path_curr_out = common.get_path_bonn_out(
-                                        path_report, subsampling,
-                                        d,
-                                        v,
-                                        tech,
-                                        bits,
-                                        c_dc, c_ac,
-                                        q_flat, c_flat)
+                    # for bits in curr_start_bits:
+                    #     for c_dc, c_ac in curr_frame_distances:
+                    #         for q_flat in curr_flat_quantization:
+                    #             for c_flat in curr_flat_compression:
+                    #                 path_curr_out = common.get_path_bonn_out(
+                    #                     path_report, subsampling,
+                    #                     d,
+                    #                     v,
+                    #                     tech,
+                    #                     bits,
+                    #                     c_dc, c_ac,
+                    #                     q_flat, c_flat)
 
-                                    decompressed_exr_file   = os.path.join(path_curr_out, d + '.exr')
-                                    diff_png_file           = os.path.join(path_curr_out, d + '_diff.png')
-                                    diff_error_file         = os.path.join(path_curr_out, d + '_err.bin')
-                                    cropped_diff_png_file   = os.path.join(path_curr_out, d + '_diff_cropped.png')
+                    #                 decompressed_exr_file   = os.path.join(path_curr_out, d + '.exr')
+                    #                 diff_png_file           = os.path.join(path_curr_out, d + '_diff.png')
+                    #                 diff_error_file         = os.path.join(path_curr_out, d + '_err.bin')
+                    #                 cropped_diff_png_file   = os.path.join(path_curr_out, d + '_diff_cropped.png')
 
-                                    common.run_diff(org_exr_file, decompressed_exr_file, curr_max_err, diff_png_file, diff_error_file)
-                                    common.crop_png(diff_png_file, cropped_diff_png_file, crop_size)
+                    #                 common.run_diff(org_exr_file, decompressed_exr_file, curr_max_err, diff_png_file, diff_error_file)
+                    #                 common.crop_png(diff_png_file, cropped_diff_png_file, crop_size)
 
             plot_rmse_file           = os.path.join(path_report, d, v, d + '_rmse.pgf')
             plot_size_file           = os.path.join(path_report, d, v, d + '_size.pgf')
@@ -404,17 +409,16 @@ def main():
             meta_n_bands_file       = os.path.join(path_report, d, v, d + '_n_bands.txt')
             meta_spectrum_type_file = os.path.join(path_report, d, v, d + '_spectrum_type.txt')
 
-            common.plot_rmse(                  plot_rmse_file   , stats[d][v], frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
-            common.plot_size (                 plot_size_file   , stats[d][v], frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
-            common.plot_compression_ratio(     plot_ratio_file  , stats[d][v], frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
-            common.plot_duration_compression(  plot_time_c_file , stats[d][v], frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
-            common.plot_duration_decompression(plot_time_d_file , stats[d][v], frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
-            common.plot_min_max(               plot_min_max_file, stats[d][v], frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
+            common.plot_rmse(                  plot_rmse_file   , stats[d][v], frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression, .25, 15, 12)
+            common.plot_compression_ratio(     plot_ratio_file  , stats[d][v], frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression, .25, 15, 12)
+            common.plot_duration_compression(  plot_time_c_file , stats[d][v], frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression, .25, 15, 12)
+            common.plot_duration_decompression(plot_time_d_file , stats[d][v], frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression, .25, 15, 12)
+            common.plot_min_max(               plot_min_max_file, stats[d][v], frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression, .5, 15, 8)
 
-            common.plot_xy_ratio_error_curves(plot_xy_ratio_error_file, stats, [d], [v], frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, 30)
-            common.plot_c_curves(             plot_c_curve_file       , stats[d][v]                            , 'linavg', 16, subsampling_ratios_ac, frame_distances)
+            common.plot_xy_ratio_error_curves(plot_xy_ratio_error_file, stats, [d], [v], frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, 80, .65, 15, 12)
+            common.plot_c_curves(             plot_c_curve_file       , stats[d][v]                            , 'linavg', 16, subsampling_ratios_ac, frame_distances, .5, 15, 8)
 
-            common.plot_legend(plot_legend, frame_distances_simple, subsampling_ratios_ac, frame_distances)
+            common.plot_legend_1(plot_legend, frame_distances_simple, subsampling_ratios_ac, frame_distances)
 
             with open(meta_org_file_size_file, 'w') as f:
                 f.write('{:.2f} MiB'.format(org_file_size / (1000 * 1000)))
@@ -435,27 +439,58 @@ def main():
             tex_stream += get_tex_stream(subpath_report, d, v)
             tex_stream += '\n\\clearpage\n'
 
-    plot_avg_rmse_file           = os.path.join(path_report, 'avg_rmse.pgf')
-    plot_avg_ratio_file          = os.path.join(path_report, 'avg_ratio.pgf')
-    plot_avg_time_c_file         = os.path.join(path_report, 'avg_time_c.pgf')
-    plot_avg_time_d_file         = os.path.join(path_report, 'avg_time_d.pgf')
-    plot_avg_min_max_file        = os.path.join(path_report, 'min_max.pgf')
-    plot_avg_xy_ratio_error_file = os.path.join(path_report, 'avg_xy_ratio_err.pgf')
-    plot_avg_c_curve_file        = os.path.join(path_report, 'avg_c_curve.pgf')
-    plot_avg_legend              = os.path.join(path_report, 'avg_legend.pgf')
+    plot_avg_rmse_file                = os.path.join(path_report, 'avg_rmse.pgf')
+    plot_avg_ratio_file               = os.path.join(path_report, 'avg_ratio.pgf')
+    plot_avg_time_c_file              = os.path.join(path_report, 'avg_time_c.pgf')
+    plot_avg_time_d_file              = os.path.join(path_report, 'avg_time_d.pgf')
+    plot_avg_min_max_file             = os.path.join(path_report, 'avg_min_max.pgf')
+    # plot_avg_xy_ratio_error_file      = os.path.join(path_report, 'avg_xy_ratio_err.pgf')
+    plot_avg_xy_ratio_error_file_flat = os.path.join(path_report, 'avg_xy_ratio_err_flat.pgf')
+    plot_avg_xy_ratio_error_file_det  = os.path.join(path_report, 'avg_xy_ratio_err_det.pgf')
+    plot_avg_xy_ratio_error_file_dyn  = os.path.join(path_report, 'avg_xy_ratio_err_dyn.pgf')
+    plot_avg_c_curve_file             = os.path.join(path_report, 'avg_c_curve.pgf')
+    plot_avg_legend                   = os.path.join(path_report, 'avg_legend.pgf')
+
+    # For the paper, the figures does not have the same size, we regenerate those with the proper scaling
+    plot_paper_rmse_file                = os.path.join(path_report, 'rmse.pgf')
+    plot_paper_ratio_file               = os.path.join(path_report, 'ratio.pgf')
+    plot_paper_time_c_file              = os.path.join(path_report, 'time_c.pgf')
+    plot_paper_xy_ratio_error_flat_file = os.path.join(path_report, 'xy_ratio_err_flat.pgf')
+    plot_paper_xy_ratio_error_det_file  = os.path.join(path_report, 'xy_ratio_err_det.pgf')
+    plot_paper_xy_ratio_error_dyn_file  = os.path.join(path_report, 'xy_ratio_err_dyn.pgf')
+    plot_paper_c_curve_file             = os.path.join(path_report, 'c_curve.pgf')
+    plot_paper_legend                   = os.path.join(path_report, 'legend.pgf')
 
     avg_stats = get_avg_stats(stats, db, variants, techniques, start_bits, subsampling_ratios_ac, frame_distances, flat_quantization, flat_compression)
 
-    common.plot_rmse(                            plot_avg_rmse_file   , avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
-    common.plot_compression_ratio(               plot_avg_ratio_file  , avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
-    common.plot_duration_compression_per_pixel(  plot_avg_time_c_file , avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
-    common.plot_duration_decompression_per_pixel(plot_avg_time_d_file , avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
-    common.plot_min_max(                         plot_avg_min_max_file, avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression)
+    x_max += 5/100 * x_max
+    y_max += 5/100 * y_max
 
-    common.plot_xy_ratio_error_curves(plot_avg_xy_ratio_error_file, stats, db, variants, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, 15)
-    common.plot_c_curves(             plot_avg_c_curve_file       , avg_stats                                  , 'linavg', 16, subsampling_ratios_ac, frame_distances)
+    common.plot_rmse(                            plot_avg_rmse_file   , avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression, .33, 15, 12)
+    common.plot_compression_ratio(               plot_avg_ratio_file  , avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression, .33, 15, 12)
+    common.plot_duration_compression_per_pixel(  plot_avg_time_c_file , avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression, .33, 15, 12)
+    common.plot_duration_decompression_per_pixel(plot_avg_time_d_file , avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression, .33, 15, 12)
+    common.plot_min_max(                         plot_avg_min_max_file, avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression, .5, 15, 10)
 
-    common.plot_legend(plot_avg_legend, frame_distances_simple, subsampling_ratios_ac, frame_distances)
+    # common.plot_xy_ratio_error_curves(plot_avg_xy_ratio_error_file, stats, db, variants, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, 80, .65, 15, 12)
+    common.plot_xy_ratio_error_curves_key(plot_avg_xy_ratio_error_file_flat  , stats, db, variants, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, 15, 'c_flat', 'Flat curves', x_max, y_max, .33, 15, 12)
+    common.plot_xy_ratio_error_curves_key(plot_avg_xy_ratio_error_file_det   , stats, db, variants, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, 15, 'c_deterministic', 'Deterministic curves', x_max, y_max, .33, 15, 12)
+    common.plot_xy_ratio_error_curves_key(plot_avg_xy_ratio_error_file_dyn   , stats, db, variants, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, 15, 'c_dynamic', 'Dynamic curves', x_max, y_max, .33, 15, 12)
+    common.plot_c_curves(             plot_avg_c_curve_file       , avg_stats                                  , 'linavg', 16, subsampling_ratios_ac, frame_distances, .5, 15, 10)
+
+    common.plot_legend_2(plot_avg_legend, frame_distances_simple, subsampling_ratios_ac, frame_distances)
+
+    # Paper version
+    common.plot_rmse(                            plot_paper_rmse_file   , avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression, .5 * .5, 15, 9)
+    common.plot_compression_ratio(               plot_paper_ratio_file  , avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression, .5 * .5, 15, 9)
+    common.plot_duration_compression_per_pixel(  plot_paper_time_c_file , avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression, .5 * .5, 15, 12)
+
+    common.plot_xy_ratio_error_curves_key(plot_paper_xy_ratio_error_flat_file  , stats, db, variants, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, 2, 'c_flat', 'Flat curves', x_max, y_max, .33 * .5, 15, 13)
+    common.plot_xy_ratio_error_curves_key(plot_paper_xy_ratio_error_det_file   , stats, db, variants, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, 2, 'c_deterministic', 'Deterministic curves', x_max, y_max, .33 * .5, 15, 13)
+    common.plot_xy_ratio_error_curves_key(plot_paper_xy_ratio_error_dyn_file   , stats, db, variants, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, 2, 'c_dynamic', 'Dynamic curves', x_max, y_max, .33 * .5, 15, 13)
+    common.plot_c_curves(                 plot_paper_c_curve_file              , avg_stats                            , 'linavg', 16, subsampling_ratios_ac, frame_distances, .5 * .5, 15, 12)
+
+    common.plot_legend_2(plot_paper_legend, frame_distances_simple, subsampling_ratios_ac, frame_distances)
 
     with open(os.path.join(path_report + '.tex'), 'w') as f:
         f.write(tex_stream)
