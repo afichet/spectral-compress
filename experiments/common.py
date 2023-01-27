@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 
-path_bin  = '/home/afichet/Repositories/spectral-compress/build/bin/'
+path_bin  = os.path.join('..', 'build', 'bin')
 
 save_tex = True
 
@@ -137,6 +137,32 @@ def run_diff(file_a: str, file_b: str, max_err: float, output_file: str, diff_er
         # '-v',
         '-p', '0.005'
         ]
+
+    subprocess.run(args)
+
+
+def run_exr_change_compression(input_file: str, output_file: str, target_pixel_type: str, target_compression: str):
+    fp, fn = os.path.split(output_file)
+    os.makedirs(fp, exist_ok=True)
+
+    args = [
+        os.path.join(path_bin, 'exr-change-compression'),
+        input_file, output_file,
+        '-t', target_pixel_type,
+        '-m', target_compression
+    ]
+
+    subprocess.run(args)
+
+
+def run_strip_rgb(input_file: str, output_file: str):
+    fp, fn = os.path.split(output_file)
+    os.makedirs(fp, exist_ok=True)
+
+    args = [
+        os.path.join(path_bin, 'exr-strip-rgb'),
+        input_file, output_file
+    ]
 
     subprocess.run(args)
 
