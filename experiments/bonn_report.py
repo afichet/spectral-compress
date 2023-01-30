@@ -460,6 +460,7 @@ def main():
     plot_paper_xy_ratio_error_dyn_file  = os.path.join(path_report, 'xy_ratio_err_dyn.pgf')
     plot_paper_c_curve_file             = os.path.join(path_report, 'c_curve.pgf')
     plot_paper_legend                   = os.path.join(path_report, 'legend.pgf')
+    plot_paper_curves_figure            = os.path.join(path_report, 'curves_legend.pgf')
 
     avg_stats = get_avg_stats(stats, db, variants, techniques, start_bits, subsampling_ratios_ac, frame_distances, flat_quantization, flat_compression)
 
@@ -492,6 +493,9 @@ def main():
     common.plot_c_curves(                 plot_paper_c_curve_file              , avg_stats                            , 'linavg', 16, subsampling_ratios_ac, frame_distances, .5 * .5, 15, 12)
 
     common.plot_legend_2(plot_paper_legend, frame_distances_simple, subsampling_ratios_ac, frame_distances)
+
+    # Paper version: custom legend for compression curve plot
+    common.plot_legend_2_strip(plot_paper_curves_figure, frame_distances_simple, subsampling_ratios_ac, frame_distances)
 
     with open(os.path.join(path_report + '.tex'), 'w') as f:
         f.write(tex_stream)
