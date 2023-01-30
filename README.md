@@ -26,3 +26,17 @@ ninja
 All the executables are placed in `build/bin`.
 
 ## Compression
+
+The `compress` utility allows compressing a spectral OpenEXR to spectral JPEG-XL. It compress an input file `input.exr` to an output set of files with:
+
+```bash
+compress input.exr compressed.jxl
+```
+
+## Decompression
+
+To decompress the compressed file to spectral OpenEXR, you can run the decompress utility:
+
+```bash
+decompress compressed.jxl decompressed.exr
+```
