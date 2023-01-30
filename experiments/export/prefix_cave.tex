@@ -35,5 +35,119 @@
     \end{subfigure}
 \end{figure}
 \vfill
-
 \clearpage
+
+\begin{landscape}
+    \begin{table}
+    \begin{tabularx}{\linewidth}{r | rr | rrrrrr | rrrr}
+        \toprule
+        \multicolumn{1}{c|}{\multirow{4}{*}{\textbf{Name}}}
+        &\multicolumn{2}{c|}{\textbf{OpenEXR}}
+        &\multicolumn{6}{c|}{\textbf{Simple}}
+        &\multicolumn{4}{c}{\textbf{Ours (deterministic)}}
+        \\
+        &&
+        &&&&&&
+        & \multicolumn{2}{c}{\thead{No subsampling}} & \multicolumn{2}{c}{\thead{AC subsampling (1:2)}}
+        \\
+        & \thead{PXR24} & \thead{B44}
+        & \thead{0.1} & \thead{0.5} & \thead{1.0} & \thead{1.5} & \thead{2.0} & \thead{2.5}
+        & \thead{dc = 0 \\ ac = 1} & \thead{dc = 0.5 \\ ac = 2} & \thead{dc = 0 \\ ac = 1} & \thead{dc = 0.5 \\ ac = 2}
+        \\
+        \midrule
+        balloons  & \footnotesize{$1.5\mathrm{E}^{-6}$}& \footnotesize{$4.4\mathrm{E}^{-4}$}& \footnotesize{$3.1\mathrm{E}^{-4}$}& \footnotesize{$1.2\mathrm{E}^{-3}$}& \footnotesize{$1.6\mathrm{E}^{-3}$}& \footnotesize{$1.7\mathrm{E}^{-3}$}& \footnotesize{$1.9\mathrm{E}^{-3}$}& \footnotesize{$2.1\mathrm{E}^{-3}$}& \footnotesize{$2.7\mathrm{E}^{-3}$}& \footnotesize{$2.9\mathrm{E}^{-3}$}& \footnotesize{$3.7\mathrm{E}^{-3}$}& \footnotesize{$4.0\mathrm{E}^{-3}$}\\
+        beads  & \footnotesize{$1.5\mathrm{E}^{-6}$}& \footnotesize{$1.8\mathrm{E}^{-3}$}& \footnotesize{$7.4\mathrm{E}^{-4}$}& \footnotesize{$1.6\mathrm{E}^{-3}$}& \footnotesize{$2.5\mathrm{E}^{-3}$}& \footnotesize{$2.9\mathrm{E}^{-3}$}& \footnotesize{$3.6\mathrm{E}^{-3}$}& \footnotesize{$4.3\mathrm{E}^{-3}$}& \footnotesize{$5.7\mathrm{E}^{-3}$}& \footnotesize{$7.0\mathrm{E}^{-3}$}& \footnotesize{$1.5\mathrm{E}^{-2}$}& \footnotesize{$1.6\mathrm{E}^{-2}$}\\
+        cd  & \footnotesize{$8.1\mathrm{E}^{-7}$}& \footnotesize{$4.9\mathrm{E}^{-4}$}& \footnotesize{$4.0\mathrm{E}^{-4}$}& \footnotesize{$2.2\mathrm{E}^{-3}$}& \footnotesize{$3.2\mathrm{E}^{-3}$}& \footnotesize{$3.4\mathrm{E}^{-3}$}& \footnotesize{$3.8\mathrm{E}^{-3}$}& \footnotesize{$4.2\mathrm{E}^{-3}$}& \footnotesize{$4.5\mathrm{E}^{-3}$}& \footnotesize{$5.4\mathrm{E}^{-3}$}& \footnotesize{$8.4\mathrm{E}^{-3}$}& \footnotesize{$8.7\mathrm{E}^{-3}$}\\
+        chart and stuffed toy  & \footnotesize{$1.9\mathrm{E}^{-6}$}& \footnotesize{$1.2\mathrm{E}^{-3}$}& \footnotesize{$5.6\mathrm{E}^{-4}$}& \footnotesize{$1.2\mathrm{E}^{-3}$}& \footnotesize{$1.9\mathrm{E}^{-3}$}& \footnotesize{$2.2\mathrm{E}^{-3}$}& \footnotesize{$2.8\mathrm{E}^{-3}$}& \footnotesize{$3.2\mathrm{E}^{-3}$}& \footnotesize{$3.4\mathrm{E}^{-3}$}& \footnotesize{$4.3\mathrm{E}^{-3}$}& \footnotesize{$7.8\mathrm{E}^{-3}$}& \footnotesize{$8.6\mathrm{E}^{-3}$}\\
+        clay  & \footnotesize{$1.3\mathrm{E}^{-6}$}& \footnotesize{$5.6\mathrm{E}^{-4}$}& \footnotesize{$4.7\mathrm{E}^{-4}$}& \footnotesize{$1.4\mathrm{E}^{-3}$}& \footnotesize{$1.9\mathrm{E}^{-3}$}& \footnotesize{$2.1\mathrm{E}^{-3}$}& \footnotesize{$2.3\mathrm{E}^{-3}$}& \footnotesize{$2.4\mathrm{E}^{-3}$}& \footnotesize{$1.8\mathrm{E}^{-3}$}& \footnotesize{$2.5\mathrm{E}^{-3}$}& \footnotesize{$4.0\mathrm{E}^{-3}$}& \footnotesize{$4.3\mathrm{E}^{-3}$}\\
+        cloth  & \footnotesize{$1.4\mathrm{E}^{-6}$}& \footnotesize{$1.1\mathrm{E}^{-3}$}& \footnotesize{$5.5\mathrm{E}^{-4}$}& \footnotesize{$1.6\mathrm{E}^{-3}$}& \footnotesize{$3.3\mathrm{E}^{-3}$}& \footnotesize{$4.0\mathrm{E}^{-3}$}& \footnotesize{$5.1\mathrm{E}^{-3}$}& \footnotesize{$6.2\mathrm{E}^{-3}$}& \footnotesize{$4.7\mathrm{E}^{-3}$}& \footnotesize{$6.2\mathrm{E}^{-3}$}& \footnotesize{$1.1\mathrm{E}^{-2}$}& \footnotesize{$1.2\mathrm{E}^{-2}$}\\
+        egyptian statue  & \footnotesize{$8.2\mathrm{E}^{-7}$}& \footnotesize{$4.7\mathrm{E}^{-4}$}& \footnotesize{$3.3\mathrm{E}^{-4}$}& \footnotesize{$8.2\mathrm{E}^{-4}$}& \footnotesize{$1.3\mathrm{E}^{-3}$}& \footnotesize{$1.6\mathrm{E}^{-3}$}& \footnotesize{$2.0\mathrm{E}^{-3}$}& \footnotesize{$2.3\mathrm{E}^{-3}$}& \footnotesize{$1.4\mathrm{E}^{-3}$}& \footnotesize{$2.0\mathrm{E}^{-3}$}& \footnotesize{$3.3\mathrm{E}^{-3}$}& \footnotesize{$3.6\mathrm{E}^{-3}$}\\
+        face  & \footnotesize{$1.2\mathrm{E}^{-6}$}& \footnotesize{$5.1\mathrm{E}^{-4}$}& \footnotesize{$4.0\mathrm{E}^{-4}$}& \footnotesize{$1.0\mathrm{E}^{-3}$}& \footnotesize{$1.6\mathrm{E}^{-3}$}& \footnotesize{$1.9\mathrm{E}^{-3}$}& \footnotesize{$2.2\mathrm{E}^{-3}$}& \footnotesize{$2.5\mathrm{E}^{-3}$}& \footnotesize{$2.7\mathrm{E}^{-3}$}& \footnotesize{$3.0\mathrm{E}^{-3}$}& \footnotesize{$5.0\mathrm{E}^{-3}$}& \footnotesize{$5.3\mathrm{E}^{-3}$}\\
+        fake and real beers  & \footnotesize{$2.4\mathrm{E}^{-6}$}& \footnotesize{$4.1\mathrm{E}^{-4}$}& \footnotesize{$2.9\mathrm{E}^{-4}$}& \footnotesize{$1.3\mathrm{E}^{-3}$}& \footnotesize{$2.4\mathrm{E}^{-3}$}& \footnotesize{$2.6\mathrm{E}^{-3}$}& \footnotesize{$2.9\mathrm{E}^{-3}$}& \footnotesize{$3.1\mathrm{E}^{-3}$}& \footnotesize{$3.2\mathrm{E}^{-3}$}& \footnotesize{$3.6\mathrm{E}^{-3}$}& \footnotesize{$5.3\mathrm{E}^{-3}$}& \footnotesize{$5.6\mathrm{E}^{-3}$}\\
+        fake and real food  & \footnotesize{$1.2\mathrm{E}^{-6}$}& \footnotesize{$5.5\mathrm{E}^{-4}$}& \footnotesize{$4.2\mathrm{E}^{-4}$}& \footnotesize{$1.2\mathrm{E}^{-3}$}& \footnotesize{$1.8\mathrm{E}^{-3}$}& \footnotesize{$2.1\mathrm{E}^{-3}$}& \footnotesize{$2.6\mathrm{E}^{-3}$}& \footnotesize{$2.9\mathrm{E}^{-3}$}& \footnotesize{$2.6\mathrm{E}^{-3}$}& \footnotesize{$3.2\mathrm{E}^{-3}$}& \footnotesize{$5.7\mathrm{E}^{-3}$}& \footnotesize{$6.1\mathrm{E}^{-3}$}\\
+        fake and real lemon slices  & \footnotesize{$9.0\mathrm{E}^{-7}$}& \footnotesize{$6.9\mathrm{E}^{-4}$}& \footnotesize{$5.6\mathrm{E}^{-4}$}& \footnotesize{$1.9\mathrm{E}^{-3}$}& \footnotesize{$2.7\mathrm{E}^{-3}$}& \footnotesize{$3.0\mathrm{E}^{-3}$}& \footnotesize{$3.4\mathrm{E}^{-3}$}& \footnotesize{$3.8\mathrm{E}^{-3}$}& \footnotesize{$2.9\mathrm{E}^{-3}$}& \footnotesize{$4.0\mathrm{E}^{-3}$}& \footnotesize{$6.9\mathrm{E}^{-3}$}& \footnotesize{$7.4\mathrm{E}^{-3}$}\\
+        fake and real lemons  & \footnotesize{$1.4\mathrm{E}^{-6}$}& \footnotesize{$4.5\mathrm{E}^{-4}$}& \footnotesize{$4.6\mathrm{E}^{-4}$}& \footnotesize{$1.2\mathrm{E}^{-3}$}& \footnotesize{$1.7\mathrm{E}^{-3}$}& \footnotesize{$1.8\mathrm{E}^{-3}$}& \footnotesize{$2.1\mathrm{E}^{-3}$}& \footnotesize{$2.3\mathrm{E}^{-3}$}& \footnotesize{$1.8\mathrm{E}^{-3}$}& \footnotesize{$2.4\mathrm{E}^{-3}$}& \footnotesize{$3.9\mathrm{E}^{-3}$}& \footnotesize{$4.1\mathrm{E}^{-3}$}\\
+        fake and real peppers  & \footnotesize{$1.2\mathrm{E}^{-6}$}& \footnotesize{$4.7\mathrm{E}^{-4}$}& \footnotesize{$4.0\mathrm{E}^{-4}$}& \footnotesize{$1.0\mathrm{E}^{-3}$}& \footnotesize{$1.5\mathrm{E}^{-3}$}& \footnotesize{$1.6\mathrm{E}^{-3}$}& \footnotesize{$1.9\mathrm{E}^{-3}$}& \footnotesize{$2.1\mathrm{E}^{-3}$}& \footnotesize{$2.4\mathrm{E}^{-3}$}& \footnotesize{$2.8\mathrm{E}^{-3}$}& \footnotesize{$4.6\mathrm{E}^{-3}$}& \footnotesize{$4.9\mathrm{E}^{-3}$}\\
+        fake and real strawberries  & \footnotesize{$1.4\mathrm{E}^{-6}$}& \footnotesize{$5.2\mathrm{E}^{-4}$}& \footnotesize{$4.7\mathrm{E}^{-4}$}& \footnotesize{$1.4\mathrm{E}^{-3}$}& \footnotesize{$2.1\mathrm{E}^{-3}$}& \footnotesize{$2.3\mathrm{E}^{-3}$}& \footnotesize{$2.7\mathrm{E}^{-3}$}& \footnotesize{$3.1\mathrm{E}^{-3}$}& \footnotesize{$3.3\mathrm{E}^{-3}$}& \footnotesize{$3.7\mathrm{E}^{-3}$}& \footnotesize{$6.4\mathrm{E}^{-3}$}& \footnotesize{$6.7\mathrm{E}^{-3}$}\\
+        fake and real sushi  & \footnotesize{$6.8\mathrm{E}^{-7}$}& \footnotesize{$5.2\mathrm{E}^{-4}$}& \footnotesize{$5.2\mathrm{E}^{-4}$}& \footnotesize{$1.5\mathrm{E}^{-3}$}& \footnotesize{$1.9\mathrm{E}^{-3}$}& \footnotesize{$2.1\mathrm{E}^{-3}$}& \footnotesize{$2.3\mathrm{E}^{-3}$}& \footnotesize{$2.5\mathrm{E}^{-3}$}& \footnotesize{$2.3\mathrm{E}^{-3}$}& \footnotesize{$3.0\mathrm{E}^{-3}$}& \footnotesize{$6.3\mathrm{E}^{-3}$}& \footnotesize{$6.5\mathrm{E}^{-3}$}\\
+        fake and real tomatoes  & \footnotesize{$7.6\mathrm{E}^{-7}$}& \footnotesize{$5.4\mathrm{E}^{-4}$}& \footnotesize{$4.5\mathrm{E}^{-4}$}& \footnotesize{$1.2\mathrm{E}^{-3}$}& \footnotesize{$1.7\mathrm{E}^{-3}$}& \footnotesize{$1.9\mathrm{E}^{-3}$}& \footnotesize{$2.2\mathrm{E}^{-3}$}& \footnotesize{$2.5\mathrm{E}^{-3}$}& \footnotesize{$2.5\mathrm{E}^{-3}$}& \footnotesize{$3.3\mathrm{E}^{-3}$}& \footnotesize{$7.9\mathrm{E}^{-3}$}& \footnotesize{$8.1\mathrm{E}^{-3}$}\\
+        feathers  & \footnotesize{$1.6\mathrm{E}^{-6}$}& \footnotesize{$1.1\mathrm{E}^{-3}$}& \footnotesize{$4.9\mathrm{E}^{-4}$}& \footnotesize{$1.3\mathrm{E}^{-3}$}& \footnotesize{$2.0\mathrm{E}^{-3}$}& \footnotesize{$2.3\mathrm{E}^{-3}$}& \footnotesize{$2.9\mathrm{E}^{-3}$}& \footnotesize{$3.4\mathrm{E}^{-3}$}& \footnotesize{$4.7\mathrm{E}^{-3}$}& \footnotesize{$5.3\mathrm{E}^{-3}$}& \footnotesize{$8.6\mathrm{E}^{-3}$}& \footnotesize{$9.2\mathrm{E}^{-3}$}\\
+        flowers  & \footnotesize{$1.5\mathrm{E}^{-6}$}& \footnotesize{$6.3\mathrm{E}^{-4}$}& \footnotesize{$3.5\mathrm{E}^{-4}$}& \footnotesize{$1.0\mathrm{E}^{-3}$}& \footnotesize{$1.7\mathrm{E}^{-3}$}& \footnotesize{$2.1\mathrm{E}^{-3}$}& \footnotesize{$2.6\mathrm{E}^{-3}$}& \footnotesize{$3.0\mathrm{E}^{-3}$}& \footnotesize{$2.5\mathrm{E}^{-3}$}& \footnotesize{$3.0\mathrm{E}^{-3}$}& \footnotesize{$4.1\mathrm{E}^{-3}$}& \footnotesize{$4.7\mathrm{E}^{-3}$}\\
+        glass tiles  & \footnotesize{$1.4\mathrm{E}^{-6}$}& \footnotesize{$1.4\mathrm{E}^{-3}$}& \footnotesize{$6.6\mathrm{E}^{-4}$}& \footnotesize{$1.9\mathrm{E}^{-3}$}& \footnotesize{$2.9\mathrm{E}^{-3}$}& \footnotesize{$3.2\mathrm{E}^{-3}$}& \footnotesize{$3.8\mathrm{E}^{-3}$}& \footnotesize{$4.3\mathrm{E}^{-3}$}& \footnotesize{$4.0\mathrm{E}^{-3}$}& \footnotesize{$5.0\mathrm{E}^{-3}$}& \footnotesize{$1.1\mathrm{E}^{-2}$}& \footnotesize{$1.1\mathrm{E}^{-2}$}\\
+        hairs  & \footnotesize{$9.3\mathrm{E}^{-7}$}& \footnotesize{$4.4\mathrm{E}^{-4}$}& \footnotesize{$3.6\mathrm{E}^{-4}$}& \footnotesize{$1.7\mathrm{E}^{-3}$}& \footnotesize{$2.5\mathrm{E}^{-3}$}& \footnotesize{$2.8\mathrm{E}^{-3}$}& \footnotesize{$3.2\mathrm{E}^{-3}$}& \footnotesize{$3.6\mathrm{E}^{-3}$}& \footnotesize{$1.8\mathrm{E}^{-3}$}& \footnotesize{$2.6\mathrm{E}^{-3}$}& \footnotesize{$3.6\mathrm{E}^{-3}$}& \footnotesize{$4.1\mathrm{E}^{-3}$}\\
+        jelly beans  & \footnotesize{$1.6\mathrm{E}^{-6}$}& \footnotesize{$1.4\mathrm{E}^{-3}$}& \footnotesize{$6.0\mathrm{E}^{-4}$}& \footnotesize{$1.3\mathrm{E}^{-3}$}& \footnotesize{$2.2\mathrm{E}^{-3}$}& \footnotesize{$2.6\mathrm{E}^{-3}$}& \footnotesize{$3.2\mathrm{E}^{-3}$}& \footnotesize{$3.8\mathrm{E}^{-3}$}& \footnotesize{$5.6\mathrm{E}^{-3}$}& \footnotesize{$6.5\mathrm{E}^{-3}$}& \footnotesize{$1.1\mathrm{E}^{-2}$}& \footnotesize{$1.2\mathrm{E}^{-2}$}\\
+        oil painting  & \footnotesize{$1.2\mathrm{E}^{-6}$}& \footnotesize{$9.2\mathrm{E}^{-4}$}& \footnotesize{$5.3\mathrm{E}^{-4}$}& \footnotesize{$2.1\mathrm{E}^{-3}$}& \footnotesize{$3.6\mathrm{E}^{-3}$}& \footnotesize{$4.2\mathrm{E}^{-3}$}& \footnotesize{$5.1\mathrm{E}^{-3}$}& \footnotesize{$6.0\mathrm{E}^{-3}$}& \footnotesize{$3.5\mathrm{E}^{-3}$}& \footnotesize{$5.0\mathrm{E}^{-3}$}& \footnotesize{$1.0\mathrm{E}^{-2}$}& \footnotesize{$1.1\mathrm{E}^{-2}$}\\
+        paints  & \footnotesize{$2.4\mathrm{E}^{-6}$}& \footnotesize{$1.3\mathrm{E}^{-3}$}& \footnotesize{$5.5\mathrm{E}^{-4}$}& \footnotesize{$1.5\mathrm{E}^{-3}$}& \footnotesize{$2.1\mathrm{E}^{-3}$}& \footnotesize{$2.4\mathrm{E}^{-3}$}& \footnotesize{$2.8\mathrm{E}^{-3}$}& \footnotesize{$3.1\mathrm{E}^{-3}$}& \footnotesize{$4.5\mathrm{E}^{-3}$}& \footnotesize{$5.1\mathrm{E}^{-3}$}& \footnotesize{$9.4\mathrm{E}^{-3}$}& \footnotesize{$1.0\mathrm{E}^{-2}$}\\
+        photo and face  & \footnotesize{$8.5\mathrm{E}^{-7}$}& \footnotesize{$6.4\mathrm{E}^{-4}$}& \footnotesize{$3.8\mathrm{E}^{-4}$}& \footnotesize{$9.3\mathrm{E}^{-4}$}& \footnotesize{$1.5\mathrm{E}^{-3}$}& \footnotesize{$1.7\mathrm{E}^{-3}$}& \footnotesize{$2.2\mathrm{E}^{-3}$}& \footnotesize{$2.5\mathrm{E}^{-3}$}& \footnotesize{$3.4\mathrm{E}^{-3}$}& \footnotesize{$3.7\mathrm{E}^{-3}$}& \footnotesize{$5.6\mathrm{E}^{-3}$}& \footnotesize{$6.0\mathrm{E}^{-3}$}\\
+        pompo   & \footnotesize{$1.8\mathrm{E}^{-6}$}& \footnotesize{$5.1\mathrm{E}^{-4}$}& \footnotesize{$3.5\mathrm{E}^{-4}$}& \footnotesize{$1.7\mathrm{E}^{-3}$}& \footnotesize{$3.1\mathrm{E}^{-3}$}& \footnotesize{$3.5\mathrm{E}^{-3}$}& \footnotesize{$4.3\mathrm{E}^{-3}$}& \footnotesize{$4.9\mathrm{E}^{-3}$}& \footnotesize{$3.6\mathrm{E}^{-3}$}& \footnotesize{$4.4\mathrm{E}^{-3}$}& \footnotesize{$6.1\mathrm{E}^{-3}$}& \footnotesize{$6.9\mathrm{E}^{-3}$}\\
+        real and fake apples  & \footnotesize{$1.0\mathrm{E}^{-6}$}& \footnotesize{$4.1\mathrm{E}^{-4}$}& \footnotesize{$4.3\mathrm{E}^{-4}$}& \footnotesize{$9.3\mathrm{E}^{-4}$}& \footnotesize{$1.3\mathrm{E}^{-3}$}& \footnotesize{$1.4\mathrm{E}^{-3}$}& \footnotesize{$1.6\mathrm{E}^{-3}$}& \footnotesize{$1.7\mathrm{E}^{-3}$}& \footnotesize{$1.4\mathrm{E}^{-3}$}& \footnotesize{$1.7\mathrm{E}^{-3}$}& \footnotesize{$3.0\mathrm{E}^{-3}$}& \footnotesize{$3.2\mathrm{E}^{-3}$}\\
+        real and fake peppers  & \footnotesize{$1.4\mathrm{E}^{-6}$}& \footnotesize{$4.7\mathrm{E}^{-4}$}& \footnotesize{$4.3\mathrm{E}^{-4}$}& \footnotesize{$1.2\mathrm{E}^{-3}$}& \footnotesize{$1.6\mathrm{E}^{-3}$}& \footnotesize{$1.7\mathrm{E}^{-3}$}& \footnotesize{$1.9\mathrm{E}^{-3}$}& \footnotesize{$2.1\mathrm{E}^{-3}$}& \footnotesize{$1.8\mathrm{E}^{-3}$}& \footnotesize{$2.2\mathrm{E}^{-3}$}& \footnotesize{$3.6\mathrm{E}^{-3}$}& \footnotesize{$3.9\mathrm{E}^{-3}$}\\
+        sponges  & \footnotesize{$2.3\mathrm{E}^{-6}$}& \footnotesize{$6.3\mathrm{E}^{-4}$}& \footnotesize{$3.8\mathrm{E}^{-4}$}& \footnotesize{$1.3\mathrm{E}^{-3}$}& \footnotesize{$2.2\mathrm{E}^{-3}$}& \footnotesize{$2.4\mathrm{E}^{-3}$}& \footnotesize{$2.6\mathrm{E}^{-3}$}& \footnotesize{$2.8\mathrm{E}^{-3}$}& \footnotesize{$3.5\mathrm{E}^{-3}$}& \footnotesize{$3.8\mathrm{E}^{-3}$}& \footnotesize{$8.5\mathrm{E}^{-3}$}& \footnotesize{$8.8\mathrm{E}^{-3}$}\\
+        stuffed toys  & \footnotesize{$1.6\mathrm{E}^{-6}$}& \footnotesize{$5.8\mathrm{E}^{-4}$}& \footnotesize{$3.8\mathrm{E}^{-4}$}& \footnotesize{$9.8\mathrm{E}^{-4}$}& \footnotesize{$1.7\mathrm{E}^{-3}$}& \footnotesize{$2.0\mathrm{E}^{-3}$}& \footnotesize{$2.4\mathrm{E}^{-3}$}& \footnotesize{$2.7\mathrm{E}^{-3}$}& \footnotesize{$3.0\mathrm{E}^{-3}$}& \footnotesize{$3.4\mathrm{E}^{-3}$}& \footnotesize{$4.1\mathrm{E}^{-3}$}& \footnotesize{$4.7\mathrm{E}^{-3}$}\\
+        superballs  & \footnotesize{$9.0\mathrm{E}^{-7}$}& \footnotesize{$5.1\mathrm{E}^{-4}$}& \footnotesize{$5.1\mathrm{E}^{-4}$}& \footnotesize{$2.1\mathrm{E}^{-3}$}& \footnotesize{$3.0\mathrm{E}^{-3}$}& \footnotesize{$3.2\mathrm{E}^{-3}$}& \footnotesize{$3.5\mathrm{E}^{-3}$}& \footnotesize{$3.7\mathrm{E}^{-3}$}& \footnotesize{$2.3\mathrm{E}^{-3}$}& \footnotesize{$3.5\mathrm{E}^{-3}$}& \footnotesize{$4.9\mathrm{E}^{-3}$}& \footnotesize{$5.3\mathrm{E}^{-3}$}\\
+        thread spools  & \footnotesize{$1.2\mathrm{E}^{-6}$}& \footnotesize{$8.7\mathrm{E}^{-4}$}& \footnotesize{$4.8\mathrm{E}^{-4}$}& \footnotesize{$1.7\mathrm{E}^{-3}$}& \footnotesize{$2.5\mathrm{E}^{-3}$}& \footnotesize{$2.8\mathrm{E}^{-3}$}& \footnotesize{$3.3\mathrm{E}^{-3}$}& \footnotesize{$3.7\mathrm{E}^{-3}$}& \footnotesize{$3.1\mathrm{E}^{-3}$}& \footnotesize{$3.9\mathrm{E}^{-3}$}& \footnotesize{$7.2\mathrm{E}^{-3}$}& \footnotesize{$7.5\mathrm{E}^{-3}$}\\
+        \midrule
+        Average& \footnotesize{$1.4\mathrm{E}^{-6}$}& \footnotesize{$7.2\mathrm{E}^{-4}$}& \footnotesize{$4.6\mathrm{E}^{-4}$}& \footnotesize{$1.4\mathrm{E}^{-3}$}& \footnotesize{$2.2\mathrm{E}^{-3}$}& \footnotesize{$2.4\mathrm{E}^{-3}$}& \footnotesize{$2.9\mathrm{E}^{-3}$}& \footnotesize{$3.3\mathrm{E}^{-3}$}& \footnotesize{$3.1\mathrm{E}^{-3}$}& \footnotesize{$3.8\mathrm{E}^{-3}$}& \footnotesize{$6.6\mathrm{E}^{-3}$}& \footnotesize{$7.1\mathrm{E}^{-3}$}\\
+        \bottomrule
+    \end{tabularx}
+    \caption{RMSE for different compression techniques. Reference: OpenEXR float framebuffers.}
+    \end{table}
+\end{landscape}
+
+
+\begin{landscape}
+    \begin{table}
+    \begin{tabularx}{\linewidth}{r | rr | rrrrrr | rrrr}
+        \toprule
+        \multicolumn{1}{c|}{\multirow{4}{*}{\textbf{Name}}}
+        &\multicolumn{2}{c|}{\textbf{OpenEXR}}
+        &\multicolumn{6}{c|}{\textbf{Simple}}
+        &\multicolumn{4}{c}{\textbf{Ours (deterministic)}}
+        \\
+        &&
+        &&&&&&
+        & \multicolumn{2}{c}{\thead{No subsampling}} & \multicolumn{2}{c}{\thead{AC subsampling (1:2)}}
+        \\
+        & \thead{PXR24} & \thead{B44}
+        & \thead{0.1} & \thead{0.5} & \thead{1.0} & \thead{1.5} & \thead{2.0} & \thead{2.5}
+        & \thead{dc = 0 \\ ac = 1} & \thead{dc = 0.5 \\ ac = 2} & \thead{dc = 0 \\ ac = 1} & \thead{dc = 0.5 \\ ac = 2}
+        \\
+        \midrule
+        balloons  & 1.23& 2.48& 4.17& 15.76& 28.39& 33.92& 40.52& 46.68& 18.88& 71.77& 22.65& 129.31\\
+        beads  & 1.34& 2.99& 3.25& 6.04& 8.23& 9.15& 10.61& 11.98& 12.29& 25.17& 18.80& 51.35\\
+        cd  & 1.24& 2.61& 3.71& 12.52& 22.32& 27.89& 35.55& 43.37& 12.32& 29.92& 18.18& 69.82\\
+        chart and stuffed toy  & 1.30& 2.65& 4.31& 9.43& 13.53& 15.46& 18.14& 20.68& 16.01& 47.95& 21.45& 92.87\\
+        clay  & 1.28& 2.43& 5.69& 19.12& 35.63& 43.85& 53.59& 63.61& 12.24& 32.15& 18.24& 79.84\\
+        cloth  & 1.35& 3.09& 3.03& 5.21& 7.33& 8.34& 9.90& 11.47& 14.93& 35.24& 21.47& 65.15\\
+        egyptian statue  & 1.27& 2.19& 7.00& 17.08& 26.06& 30.57& 36.61& 42.56& 13.22& 43.46& 19.40& 102.46\\
+        face  & 1.25& 2.47& 5.18& 13.91& 22.89& 27.48& 33.56& 39.45& 15.60& 55.66& 20.63& 114.56\\
+        fake and real beers  & 1.22& 2.55& 3.28& 8.07& 18.90& 23.56& 30.00& 35.92& 23.80& 107.00& 26.34& 160.93\\
+        fake and real food  & 1.26& 2.51& 4.68& 12.51& 19.33& 22.59& 26.91& 30.90& 13.80& 38.73& 19.14& 78.37\\
+        fake and real lemon slices  & 1.27& 2.67& 3.91& 9.97& 15.89& 18.68& 22.69& 26.56& 12.35& 30.80& 18.61& 72.52\\
+        fake and real lemons  & 1.25& 2.47& 5.02& 16.93& 29.60& 35.58& 42.66& 49.67& 14.72& 46.28& 19.95& 99.65\\
+        fake and real peppers  & 1.27& 2.49& 5.40& 17.05& 28.09& 33.30& 39.32& 44.98& 15.02& 47.82& 19.72& 92.93\\
+        fake and real strawberries  & 1.25& 2.49& 4.39& 12.96& 21.61& 25.53& 31.03& 36.52& 12.83& 35.30& 18.52& 81.22\\
+        fake and real sushi  & 1.21& 2.33& 5.15& 18.65& 31.94& 39.12& 47.18& 55.12& 13.20& 41.71& 18.65& 102.89\\
+        fake and real tomatoes  & 1.21& 2.16& 5.60& 16.47& 25.12& 29.70& 35.77& 41.33& 13.19& 42.43& 18.80& 100.90\\
+        feathers  & 1.29& 2.73& 4.04& 9.60& 14.46& 16.75& 20.00& 23.13& 15.11& 41.32& 20.59& 78.70\\
+        flowers  & 1.29& 2.47& 4.98& 11.41& 17.04& 19.85& 23.74& 27.65& 13.32& 36.67& 18.60& 72.81\\
+        glass tiles  & 1.29& 2.82& 3.52& 8.33& 13.18& 15.42& 18.56& 21.47& 13.71& 33.45& 19.95& 73.18\\
+        hairs  & 1.28& 2.64& 4.33& 13.74& 23.76& 29.22& 36.07& 43.15& 13.92& 41.38& 19.59& 89.34\\
+        jelly beans  & 1.34& 2.94& 3.43& 6.64& 9.30& 10.44& 12.21& 13.84& 13.19& 28.17& 19.03& 52.44\\
+        oil painting  & 1.35& 3.00& 3.49& 7.58& 11.66& 13.73& 17.00& 20.36& 14.95& 38.90& 21.51& 80.76\\
+        paints  & 1.28& 2.69& 3.74& 9.37& 15.17& 17.69& 21.10& 24.25& 16.90& 50.19& 22.03& 97.18\\
+        photo and face  & 1.26& 2.38& 5.66& 14.13& 21.60& 25.57& 30.76& 35.59& 14.44& 45.46& 20.08& 96.83\\
+        pompo   & 1.31& 2.95& 3.38& 7.19& 11.70& 14.02& 17.57& 21.28& 16.78& 44.26& 22.01& 75.11\\
+        real and fake apples  & 1.24& 2.26& 6.89& 25.27& 43.95& 53.02& 61.24& 69.98& 14.33& 47.39& 19.33& 104.67\\
+        real and fake peppers  & 1.25& 2.48& 5.01& 18.41& 32.63& 39.04& 46.19& 52.99& 15.17& 49.01& 20.08& 102.49\\
+        sponges  & 1.25& 2.62& 3.82& 10.72& 22.65& 28.52& 36.98& 45.27& 21.14& 83.86& 25.09& 147.37\\
+        stuffed toys  & 1.28& 2.51& 4.91& 11.53& 17.85& 20.95& 25.04& 29.04& 15.69& 50.67& 20.59& 98.69\\
+        superballs  & 1.27& 2.61& 4.24& 13.96& 25.51& 32.21& 40.54& 48.37& 11.97& 30.89& 17.73& 73.51\\
+        thread spools  & 1.31& 2.74& 4.18& 10.72& 17.53& 20.78& 25.63& 30.43& 13.36& 34.38& 19.34& 73.18\\
+        \midrule
+        Average& 1.27& 2.59& 4.50& 12.59& 21.06& 25.22& 30.54& 35.73& 14.79& 44.76& 20.20& 90.68\\
+        \bottomrule
+    \end{tabularx}
+    \caption{Compression ratio for different compression techniques. Reference: OpenEXR float framebuffers with ZIP compression.}
+    \end{table}
+\end{landscape}
