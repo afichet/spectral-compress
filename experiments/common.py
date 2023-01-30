@@ -123,6 +123,7 @@ def run_converter_exr_png(input_file: str, output_file: str, exposure: float):
 
 
 def run_diff(file_a: str, file_b: str, max_err: float, output_file: str, diff_error_file: str):
+    # print('Warning: this shall not be used in production!')
     # if os.path.exists(output_file):
     #     return
 
