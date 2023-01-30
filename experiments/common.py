@@ -829,6 +829,42 @@ def plot_legend_2(
         plt.show()
 
 
+def plot_legend_2_strip(
+    output_filename: str,
+    frame_distances_base: list,
+    subsampling_ratios_ac: list,
+    frame_distances: list):
+    # This function is hardcoded in seval places to have a nicer layout...
+    default_cols = plt.rcParams['axes.prop_cycle'].by_key()['color']
+
+    fig, ax = plt.subplots(1, 1)
+
+    idx = 0
+
+    for ratio in subsampling_ratios_ac:
+        for (c_dc, c_ac) in frame_distances:
+            ax.plot(
+                [], [],
+                marker='s', ls='none', color=default_cols[idx],
+                label='chroma subsampling = 1:{}, dc = {}, ac = {}'.format(ratio, c_dc, c_ac))
+            idx += 1
+
+    legend = ax.legend(ncol=2, bbox_to_anchor=(1.05, 1), loc='upper left', fancybox=False)
+
+    expand=[-5,-5,5,5]
+
+    fig = legend.figure
+    fig.canvas.draw()
+    bbox  = legend.get_window_extent()
+    bbox = bbox.from_extents(*(bbox.extents + np.array(expand)))
+    bbox = bbox.transformed(fig.dpi_scale_trans.inverted())
+
+    if (save_tex):
+        fig.savefig(output_filename, bbox_inches=bbox)
+        plt.close()
+    else:
+        plt.show()
+
 def crop_png(png_filename_in: str, png_filename_out: str, cropped_size: int):
     img = Image.open(png_filename_in)
 
