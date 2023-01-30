@@ -65,10 +65,6 @@ struct SGEGSpectralGroup
     std::vector<float> mins;
     std::vector<float> maxs;
 
-    // Used for upperbound compression method
-    float global_min;
-    float global_max;
-
     SpectralCompressionType method;
 
     /**

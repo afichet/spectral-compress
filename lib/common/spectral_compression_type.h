@@ -36,10 +36,5 @@
 enum SpectralCompressionType
 {
     LINEAR,
-    LINAVG,
-    BOUNDED,
-    UNBOUNDED,
-    UNBOUNDED_TO_BOUNDED,
-    UPPERBOUND,
-    TWOBOUNDS
+    LINAVG
 };

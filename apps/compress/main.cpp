@@ -92,7 +92,6 @@ void compress_spectral_framebuffer(
     std::vector<double> compressed_moments_d;
     std::vector<uint8_t> relative_scales;
     std::vector<double> mins_d, maxs_d;
-    double global_min_d, global_max_d;
 
     // TODO: this shall be revisited
     // TODO: this is invalid for polarization layers that can be negative
@@ -170,8 +169,6 @@ void compress_spectral_framebuffer(
         compressed_moments_d,
         mins_d, maxs_d,
         normalize_moments,
-        relative_scales,
-        global_min_d, global_max_d,
         compression_timing
     );
 
@@ -183,8 +180,7 @@ void compress_spectral_framebuffer(
         wavelengths, spectral_image,
         width, height, n_moments,
         quantization_curve,
-        compressed_moments_d, mins_d, maxs_d,
-        relative_scales, global_min_d, global_max_d
+        compressed_moments_d, mins_d, maxs_d
     );
 
     compression_error = stats_for_compression_curve(
@@ -195,7 +191,6 @@ void compress_spectral_framebuffer(
         subsampling_factor_curve,
         compression_curve,
         compressed_moments_d, mins_d, maxs_d,
-        relative_scales, global_min_d, global_max_d,
         effort
     );
 
@@ -221,26 +216,6 @@ void compress_spectral_framebuffer(
         sg.maxs[m] = (float)maxs_d[m];
     }
 
-    // Copy the local scaling
-    if (method == UPPERBOUND || method == TWOBOUNDS) {
-        assert(relative_scales.size() == n_pixels);
-
-        // Extend by 1 for the extra scaling framebuffer
-        quantization_curve.push_back(std::make_pair(8, 0));
-        compression_curve.push_back(compression_dc);
-        subsampling_factor_curve.push_back(1);
-
-        compressed_moments.resize(n_moments + 1);
-        compressed_moments[n_moments].resize(n_pixels);
-
-        for (size_t px = 0; px < n_pixels; px++) {
-            compressed_moments[n_moments][px] = (float)((double)relative_scales[px] / (double)std::numeric_limits<uint8_t>::max());
-        }
-
-        sg.global_min = global_min_d;
-        sg.global_max = global_max_d;
-    }
-
     if (log) {
         switch(sg.method) {
             case LINEAR:
@@ -249,22 +224,8 @@ void compress_spectral_framebuffer(
             case LINAVG:
                 log_stream << "Method: linavg" << std::endl;
                 break;
-            case BOUNDED:
-                log_stream << "Method: bounded" << std::endl;
-                break;
-            case UNBOUNDED:
-                log_stream << "Method: unbounded" << std::endl;
-                break;
-            case UNBOUNDED_TO_BOUNDED:
-                log_stream << "Method: unbounded_to_bounded" << std::endl;
-                break;
-            case UPPERBOUND:
-                log_stream << "Method: upperbound" << std::endl;
-                break;
-            case TWOBOUNDS:
-                log_stream << "Method: twobounds" << std::endl;
-                break;
         }
+
         log_stream << "Quantization curve:" << std::endl;
         for (const std::pair<int, int>& q : quantization_curve) {
             log_stream << q.first << " ";
@@ -345,7 +306,7 @@ int main(int argc, char *argv[])
 
     int subsampling_factor_ac1 = 1;
 
-    SpectralCompressionType method = TWOBOUNDS;
+    SpectralCompressionType method = LINAVG;
 
     std::chrono::time_point<std::chrono::steady_clock>  clock_start, clock_end;
 
@@ -404,11 +365,6 @@ int main(int argc, char *argv[])
         std::vector<std::string> allowedCompressionMethods;
         allowedCompressionMethods.push_back("linear");
         allowedCompressionMethods.push_back("linavg");
-        allowedCompressionMethods.push_back("bounded");
-        allowedCompressionMethods.push_back("unbounded");
-        allowedCompressionMethods.push_back("unbounded_to_bounded");
-        allowedCompressionMethods.push_back("upperbound");
-        allowedCompressionMethods.push_back("twobounds");
         TCLAP::ValuesConstraint<std::string> allowedCompressionMethodsVals(allowedCompressionMethods);
         TCLAP::ValueArg<std::string> momentCompressionMethodArg("m", "method", "Representation of moments to use.", false, "linavg", &allowedCompressionMethodsVals);
         cmd.add(momentCompressionMethodArg);
@@ -459,16 +415,6 @@ int main(int argc, char *argv[])
             method = LINEAR;
         } else if (momentCompressionMethodArg.getValue() == "linavg") {
             method = LINAVG;
-        } else if (momentCompressionMethodArg.getValue() == "bounded") {
-            method = BOUNDED;
-        } else if (momentCompressionMethodArg.getValue() == "unbounded") {
-            method = UNBOUNDED;
-        } else if (momentCompressionMethodArg.getValue() == "unbounded_to_bounded") {
-            method = UNBOUNDED_TO_BOUNDED;
-        } else if (momentCompressionMethodArg.getValue() == "upperbound") {
-            method = UPPERBOUND;
-        } else if (momentCompressionMethodArg.getValue() == "twobounds") {
-            method = TWOBOUNDS;
         }
     } catch (TCLAP::ArgException &e) {
         std::cerr << "Error: " << e.error() << " for argument " << e.argId() << std::endl;

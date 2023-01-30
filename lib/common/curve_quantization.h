@@ -94,57 +94,6 @@ double linavg_compute_quantization_curve(
     std::vector<std::pair<int, int>>& quantization_curve,
     bool normalize_moments);
 
-
-double unbounded_compute_quantization_curve(
-    const std::vector<double>& wavelengths,
-    const std::vector<double>& spectral_image,
-    size_t n_px, size_t n_moments,
-    std::pair<int, int> n_bits_dc,
-    std::pair<int, int> n_bits_ac1,
-    std::vector<std::pair<int, int>>& quantization_curve,
-    bool normalize_moments);
-
-
-double bounded_compute_quantization_curve(
-    const std::vector<double>& wavelengths,
-    const std::vector<double>& spectral_image,
-    size_t n_px, size_t n_moments,
-    std::pair<int, int> n_bits_dc,
-    std::pair<int, int> n_bits_ac1,
-    std::vector<std::pair<int, int>>& quantization_curve,
-    bool normalize_moments);
-
-
-double unbounded_to_bounded_compute_quantization_curve(
-    const std::vector<double>& wavelengths,
-    const std::vector<double>& spectral_image,
-    size_t n_px, size_t n_moments,
-    std::pair<int, int> n_bits_dc,
-    std::pair<int, int> n_bits_ac1,
-    std::vector<std::pair<int, int>>& quantization_curve,
-    bool normalize_moments);
-
-
-double upperbound_compute_quantization_curve(
-    const std::vector<double>& wavelengths,
-    const std::vector<double>& spectral_image,
-    size_t n_px, size_t n_moments,
-    std::pair<int, int> n_bits_dc,
-    std::pair<int, int> n_bits_ac1,
-    std::vector<std::pair<int, int>>& quantization_curve,
-    bool normalize_moments);
-
-
-double twobounds_compute_quantization_curve(
-    const std::vector<double>& wavelengths,
-    const std::vector<double>& spectral_image,
-    size_t n_px, size_t n_moments,
-    std::pair<int, int> n_bits_dc,
-    std::pair<int, int> n_bits_ac1,
-    std::vector<std::pair<int, int>>& quantization_curve,
-    bool normalize_moments);
-
-
 /*****************************************************************************/
 /* Error for a quantization curve                                            */
 /*****************************************************************************/
@@ -166,61 +115,4 @@ double linavg_error_for_quantization_curve(
     const std::vector<double>& normalized_moments,
     const std::vector<double>& mins,
     const std::vector<double>& maxs,
-    const std::vector<std::pair<int, int>>& quantization_curve);
-
-
-double unbounded_error_for_quantization_curve(
-    const std::vector<double>& wavelengths,
-    const std::vector<double>& spectral_image,
-    size_t n_px, size_t n_moments,
-    const std::vector<double>& normalized_moments,
-    const std::vector<double>& mins,
-    const std::vector<double>& maxs,
-    const std::vector<std::pair<int, int>>& quantization_curve);
-
-
-double bounded_error_for_quantization_curve(
-    const std::vector<double>& wavelengths,
-    const std::vector<double>& spectral_image,
-    size_t n_px, size_t n_moments,
-    const std::vector<double>& normalized_moments,
-    const std::vector<double>& mins,
-    const std::vector<double>& maxs,
-    const std::vector<std::pair<int, int>>& quantization_curve);
-
-
-double unbounded_to_bounded_error_for_quantization_curve(
-    const std::vector<double>& wavelengths,
-    const std::vector<double>& spectral_image,
-    size_t n_px, size_t n_moments,
-    const std::vector<double>& normalized_moments,
-    const std::vector<double>& mins,
-    const std::vector<double>& maxs,
-    const std::vector<std::pair<int, int>>& quantization_curve);
-
-
-// TODO: template?
-double upperbound_error_for_quantization_curve(
-    const std::vector<double>& wavelengths,
-    const std::vector<double>& spectral_image,
-    size_t n_px, size_t n_moments,
-    const std::vector<double>& normalized_moments,
-    const std::vector<double>& mins,
-    const std::vector<double>& maxs,
-    const std::vector<uint8_t>& relative_scales,
-    double global_max,
-    const std::vector<std::pair<int, int>>& quantization_curve);
-
-
-// TODO: template?
-double twobounds_error_for_quantization_curve(
-    const std::vector<double>& wavelengths,
-    const std::vector<double>& spectral_image,
-    size_t n_px, size_t n_moments,
-    const std::vector<double>& normalized_moments,
-    const std::vector<double>& mins,
-    const std::vector<double>& maxs,
-    const std::vector<uint8_t>& relative_scales,
-    double global_min,
-    double global_max,
     const std::vector<std::pair<int, int>>& quantization_curve);
