@@ -182,7 +182,7 @@ void EXRImage::write(const char* filename) const
     std::vector<std::vector<float>> rgb_images;
 
     for (const EXRFramebuffer* fb: _framebuffers) {
-        exr_channels.insert(fb->getName(), Imf::Channel(Imf::FLOAT));
+        exr_channels.insert(fb->getName(), Imf::Channel(fb->getPixelType()));
 
         size_t type_stride;
 
