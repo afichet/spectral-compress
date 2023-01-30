@@ -104,18 +104,18 @@ def main():
         print('------')
         print(sys.argv[0], '<material> <export_dir>')
         exit(0)
-        
+
     path       = sys.argv[1]
     export_dir = sys.argv[2]
 
     if not os.path.exists(export_dir):
         os.makedirs(export_dir)
-    
+
     material_name = os.path.basename(path)
     material_dir  = path[:len(path) - len(material_name)]
     base = os.path.abspath(os.path.dirname(__file__))
     cmf = CMF(os.path.join(base, '..', 'data', 'cmf', 'ciexyz06_2deg.csv'))
-    
+
     export_material(material_dir, material_name, cmf, export_dir)
 
 
