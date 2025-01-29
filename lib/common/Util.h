@@ -39,6 +39,7 @@
 #include <stdexcept>
 #include <cmath>
 #include <cstring>
+#include <cstdint>
 
 /**
  * @brief Collection of utility functions

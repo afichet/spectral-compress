@@ -6,6 +6,7 @@
 #include <cassert>
 #include <limits>
 #include <cmath>
+#include <cstdint>
 #include <sstream>
 
 ENVISpectralImage::ENVISpectralImage(
@@ -250,7 +251,7 @@ bool ENVISpectralImage::readHeader(std::istream &is)
 
                     while (std::getline(stream, str, ',')) {
                         str.erase(std::remove_if(str.begin(), str.end(), checkSpace), str.end());
-                        
+
                         if (str.size() > 0) {
                             float wavelength_f = std::round(stof(str));
                             _wavelengths.push_back(static_cast<int>(wavelength_f));
