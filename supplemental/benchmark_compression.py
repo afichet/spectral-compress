@@ -319,8 +319,6 @@ def main():
 
     for v in ['diffuse', 'specular']:
         for d, i in zip(db_bonn, range(len(db_bonn))):
-            if v == 'diffuse' and d == 'Brokat_Sorbonne_pink_aniso_high_gloss_':
-                continue
             filename_in = os.path.join(path_bonn, d, v + '.exr')
             element_name = d + v
 

@@ -99,9 +99,6 @@ def get_avg_stats(
 
     for d in dataset:
         for v in variants:
-            # TODO: remove, one material fails the compression
-            if v == 'diffuse' and d == 'Brokat_Sorbonne_pink_aniso_high_gloss_':
-                continue
             for subsampling in subsampling_ratios_ac:
                 for tech in techniques:
                     if tech != 'simple':
@@ -278,10 +275,6 @@ def main():
         tex_stream += '\n\\subsection{' + d.replace('_', ' ') + '}\n'
 
         for v in variants:
-            # TODO: remove, one material fails the conversion
-            if v == 'diffuse' and d == 'Brokat_Sorbonne_pink_aniso_high_gloss_':
-                continue
-
             print('  variant:', v)
 
             tex_stream += '\n\\subsubsection{' + v + '}\n'

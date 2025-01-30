@@ -539,9 +539,6 @@ def plot_xy_ratio_error_curves_key(
             else:
                 for d in dataset:
                     for v in variants:
-                        # TODO: remove, one material fails the conversion
-                        if v == 'diffuse' and d == 'Brokat_Sorbonne_pink_aniso_high_gloss_':
-                            continue
                         x.append(stats[d][v][ratio][technique][n_bits][c_dc][c_ac][True][key_compression]['ratio'])
                         y.append(stats[d][v][ratio][technique][n_bits][c_dc][c_ac][True][key_compression]['rmse'])
             ax.scatter(x, y, s=point_size, color=default_cols[idx])
@@ -606,9 +603,6 @@ def plot_xy_ratio_error_curves(
             else:
                 for d in dataset:
                     for v in variants:
-                        # TODO: remove, one material fails the conversion
-                        if v == 'diffuse' and d == 'Brokat_Sorbonne_pink_aniso_high_gloss_':
-                            continue
                         x_flat.append(stats[d][v][ratio][technique][n_bits][c_dc][c_ac][True]['c_flat']['ratio'])
                         y_flat.append(stats[d][v][ratio][technique][n_bits][c_dc][c_ac][True]['c_flat']['rmse'])
 
@@ -632,9 +626,6 @@ def plot_xy_ratio_error_curves(
         else:
             for d in dataset:
                 for v in variants:
-                    # TODO: remove, one material fails the conversion
-                    if v == 'diffuse' and d == 'Brokat_Sorbonne_pink_aniso_high_gloss_':
-                        continue
                     x.append(stats[d][v][1]['simple'][32][f][0][True]['c_flat']['ratio'])
                     y.append(stats[d][v][1]['simple'][32][f][0][True]['c_flat']['rmse'])
         ax.scatter(x, y, marker='o', s=point_size, color=default_cols[idx])
