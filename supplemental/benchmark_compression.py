@@ -10,7 +10,7 @@ def format_sci(val: float):
     a, b = '{:.1E}'.format(val).split('E')
     b = int(b)
 
-    return '\\footnotesize{$' + str(a) + '\mathrm{E}^{' + str(b) + '}$}'
+    return '\\footnotesize{$' + str(a) + '\\mathrm{E}^{' + str(b) + '}$}'
     # line += '& {:.2E}'.format(err)
 
 def main():
