@@ -7,6 +7,9 @@ import numpy as np
 from PIL import Image
 
 path_bin  = os.path.join('..', 'build', 'bin')
+path_data      = '/home/afichet/spectral_images/EXRs'
+path_data_cave = os.path.join(path_data, 'CAVE')
+path_data_bonn = os.path.join(path_data, 'Bonn')
 
 save_tex = True
 
@@ -78,8 +81,8 @@ def run_compressor(
 
 
 def run_decompressor(input_file: str, output_file: str, technique: str, log_file: str):
-    if os.path.exists(output_file):
-        return
+    # if os.path.exists(output_file):
+    #     return
 
     fp, fn = os.path.split(output_file)
     os.makedirs(fp, exist_ok=True)
@@ -95,8 +98,8 @@ def run_decompressor(input_file: str, output_file: str, technique: str, log_file
 
 
 def run_sgeg_min_max(input_file: str, output_file: str):
-    if os.path.exists(output_file):
-        return
+    # if os.path.exists(output_file):
+    #     return
 
     fp, fn = os.path.split(output_file)
     os.makedirs(fp, exist_ok=True)
@@ -108,8 +111,8 @@ def run_sgeg_min_max(input_file: str, output_file: str):
 
 
 def run_converter_exr_png(input_file: str, output_file: str, exposure: float):
-    if os.path.exists(output_file):
-        return
+    # if os.path.exists(output_file):
+    #     return
 
     fp, fn = os.path.split(output_file)
     os.makedirs(fp, exist_ok=True)
