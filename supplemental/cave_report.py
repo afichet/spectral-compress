@@ -13,11 +13,10 @@ frame_distances_simple = [(0.1, 0), (0.5, 0), (1, 0), (1.5, 0), (2, 0), (2.5, 0)
 subsampling_ratios_ac  = [1, 2]
 
 crop_size      = 50
-path_data      = '/home/afichet/spectral_images/EXRs/CAVE/'
 path_out       = 'cave'
 subpath_report = 'cave'
 path_report    = os.path.join('export', subpath_report)
-db             = [ d[:-4] for d in os.listdir(path_data) ]
+db             = [ d[:-4] for d in os.listdir(common.path_data_cave) ]
 db.sort()
 
 exposure_cave = -6.5
@@ -214,7 +213,7 @@ def run_for(
     stats[dataset][subsampling][technique][bits][c_dc][c_ac][q_flat][c_type]['max_curve'] = max_curve
 
     with open(meta_file_size_file, 'w') as f:
-        f.write('{:.2f} MiB'.format(size / (1000 * 1000)))
+        f.write('{:.2f} MiB'.format(size / (1024 * 1024)))
 
     return curr_max_err
 
@@ -264,7 +263,7 @@ def main():
 
         tex_stream += '\n\\subsection{' + d.replace('_', ' ') + '}\n'
 
-        org_exr_file = common.get_path_cave_in(path_data, d)
+        org_exr_file = common.get_path_cave_in(common.path_data_cave, d)
         org_png_file = os.path.join(path_report, d, d + '.png')
         org_file_size = os.path.getsize(org_exr_file)
 
@@ -398,7 +397,7 @@ def main():
         common.plot_legend_1(plot_legend, frame_distances_simple, subsampling_ratios_ac, frame_distances)
 
         with open(meta_org_file_size_file, 'w') as f:
-            f.write('{:.2f} MiB'.format(org_file_size / (1000 * 1000)))
+            f.write('{:.2f} MiB'.format(org_file_size / (1024 * 1024)))
 
         with open(meta_spectrum_type_file, 'w') as f:
             f.write(spectrum_type)
@@ -463,8 +462,8 @@ def main():
     # Paper version
     common.plot_rmse(                            plot_paper_rmse_file   , avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression, .5 * .5, 15, 10)
     common.plot_compression_ratio(               plot_paper_ratio_file  , avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression, .5 * .5, 15, 10)
-    common.plot_duration_compression_per_pixel(  plot_paper_time_c_file , avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression, .5 * .5, 15, 12)
-    common.plot_duration_decompression_per_pixel(plot_paper_time_d_file , avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression, .5 * .5, 15, 12)
+    common.plot_duration_compression_per_pixel(  plot_paper_time_c_file , avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression, .5 * .5, 15, 10)
+    common.plot_duration_decompression_per_pixel(plot_paper_time_d_file , avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression, .5 * .5, 15, 10)
 
     common.plot_xy_ratio_error_curves_key(plot_paper_xy_ratio_error_flat_file  , stats, db, [], frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, 2, 'c_flat', 'Flat curves', x_max, y_max, .33 * .5, 15, 13)
     common.plot_xy_ratio_error_curves_key(plot_paper_xy_ratio_error_det_file   , stats, db, [], frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, 2, 'c_deterministic', 'Deterministic curves', x_max, y_max, .33 * .5, 15, 13)

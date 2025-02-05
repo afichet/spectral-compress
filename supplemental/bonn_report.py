@@ -221,7 +221,7 @@ def run_for(
     stats[dataset][variant][subsampling][technique][bits][c_dc][c_ac][q_flat][c_type]['max_curve'] = max_curve
 
     with open(meta_file_size_file, 'w') as f:
-        f.write('{:.2f} MiB'.format(size / (1000 * 1000)))
+        f.write('{:.2f} MiB'.format(size / (1024 * 1024)))
 
     return curr_max_err
 
@@ -413,7 +413,7 @@ def main():
             common.plot_legend_1(plot_legend, frame_distances_simple, subsampling_ratios_ac, frame_distances)
 
             with open(meta_org_file_size_file, 'w') as f:
-                f.write('{:.2f} MiB'.format(org_file_size / (1000 * 1000)))
+                f.write('{:.2f} MiB'.format(org_file_size / (1024 * 1024)))
 
             with open(meta_spectrum_type_file, 'w') as f:
                 f.write(spectrum_type)
