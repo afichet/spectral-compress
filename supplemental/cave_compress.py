@@ -12,7 +12,6 @@ frame_distances        = [(0, 1), (0.5, 2)]
 frame_distances_simple = [(0.1, 0), (0.5, 0), (1, 0), (1.5, 0), (2, 0), (2.5, 0)]
 subsampling_ratio_ac   = [1, 2]
 
-path_data = '/home/afichet/spectral_images/EXRs/CAVE/'
 prefix_path_out  = 'cave'
 
 
@@ -50,9 +49,9 @@ def run_for(
 
 
 def main():
-    for filename in os.listdir(path_data):
+    for filename in os.listdir(common.path_data_cave):
         dataset_name = filename[:-4]
-        spectral_image = common.get_path_cave_in(path_data, dataset_name)
+        spectral_image = common.get_path_cave_in(common.path_data_cave, dataset_name)
 
         print(dataset_name)
 
