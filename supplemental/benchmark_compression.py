@@ -3,7 +3,6 @@
 import os
 import common
 
-path_data = '/home/afichet/spectral_images/EXRs/'
 path_out = 'exr'
 
 def format_sci(val: float):
@@ -12,6 +11,28 @@ def format_sci(val: float):
 
     return '\\footnotesize{$' + str(a) + '\\mathrm{E}^{' + str(b) + '}$}'
     # line += '& {:.2E}'.format(err)
+
+
+prefix = """
+\\begin{tabularx}{\\linewidth}{r | rr | rrrrrr | rrrr}
+\\toprule
+\\multicolumn{1}{c|}{\\multirow{4}{*}{\\textbf{Name}}}
+&\\multicolumn{2}{c|}{\\textbf{OpenEXR}}
+&\\multicolumn{6}{c|}{\\textbf{Simple}}
+&\\multicolumn{4}{c}{\\textbf{Ours (deterministic)}}
+\\\\
+&&
+&&&&&&
+& \\multicolumn{2}{c}{\\thead{No subsampling}} & \\multicolumn{2}{c}{\\thead{AC subsampling (1:2)}}
+\\\\
+& \\thead{PXR24} & \\thead{B44}
+& \\thead{0.1} & \\thead{0.5} & \\thead{1.0} & \\thead{1.5} & \\thead{2.0} & \\thead{2.5}
+& \\thead{dc = 0 \\\\ ac = 1} & \\thead{dc = 0.5 \\\\ ac = 2} & \\thead{dc = 0 \\\\ ac = 1} & \\thead{dc = 0.5 \\\\ ac = 2}
+\\\\
+\\midrule
+"""
+
+suffix = "\n\\end{tabularx}"
 
 def main():
 
@@ -22,8 +43,10 @@ def main():
     f_ratio = open(os.path.join('export', 'cave_ratio.tex'), 'w')
     f_error = open(os.path.join('export', 'cave_error.tex'), 'w')
 
-    path_cave = os.path.join(path_data, 'CAVE')
-    db_cave = [ d for d in os.listdir(path_cave) ]
+    f_ratio.write(prefix)
+    f_error.write(prefix)
+
+    db_cave = [ d for d in os.listdir(common.path_data_cave) ]
     db_cave.sort()
 
     avg_ratio_pxr24       = 0
@@ -54,7 +77,7 @@ def main():
     avg_rmse_dc05ac2_12 = 0
 
     for d, i in zip(db_cave, range(len(db_cave))):
-        filename_in  = os.path.join(path_cave, d)
+        filename_in  = os.path.join(common.path_data_cave, d)
         element_name = os.path.basename(filename_in)[:-4]
 
         # File Sizes
@@ -72,8 +95,8 @@ def main():
         path_dc00ac1_12 = common.get_path_cave_out('cave', 2, element_name, 'linavg', 16, 0  , 1, True, 'c_deterministic')
         path_dc05ac2_12 = common.get_path_cave_out('cave', 2, element_name, 'linavg', 16, 0.5, 2, True, 'c_deterministic')
 
-        # common.run_exr_change_compression(filename_in, path_pxr24, 'float', 'pxr24')
-        # common.run_exr_change_compression(filename_in, path_b44  , 'half' , 'b44')
+        common.run_exr_change_compression(filename_in, path_pxr24, 'float', 'pxr24')
+        common.run_exr_change_compression(filename_in, path_b44  , 'half' , 'b44')
 
         file_size_org        = os.path.getsize(filename_in)
         file_size_pxr24      = os.path.getsize(path_pxr24)
@@ -254,6 +277,7 @@ def main():
         line += '& {:.2f}'.format(ratio)
     f_ratio.write(line + '\\\\\n')
     f_ratio.write('\\bottomrule\n')
+    f_ratio.write(suffix)
     f_ratio.close()
 
     values_to_write = [
@@ -277,6 +301,7 @@ def main():
         line += '& ' + format_sci(err)
     f_error.write(line + '\\\\\n')
     f_error.write('\\bottomrule\n')
+    f_error.write(suffix)
     f_error.close()
 
     # -------------------------------------------------------------------------
@@ -286,8 +311,10 @@ def main():
     f_ratio = open(os.path.join('export', 'bonn_ratio.tex'), 'w')
     f_error = open(os.path.join('export', 'bonn_error.tex'), 'w')
 
-    path_bonn = os.path.join(path_data, 'Bonn')
-    db_bonn = [ d for d in os.listdir(path_bonn) ]
+    f_ratio.write(prefix)
+    f_error.write(prefix)
+
+    db_bonn = [ d for d in os.listdir(common.path_data_bonn) ]
     db_bonn.sort()
 
     avg_ratio_pxr24 = 0
@@ -318,9 +345,12 @@ def main():
     avg_rmse_dc05ac2_12 = 0
 
     for v in ['diffuse', 'specular']:
+        f_ratio.write(f'\\midrule\n\\multicolumn{{13}}{{c}}{{{v.capitalize()}}}\\\\\n\\midrule\n')
+        f_error.write(f'\\midrule\n\\multicolumn{{13}}{{c}}{{{v.capitalize()}}}\\\\\n\\midrule\n')
         for d, i in zip(db_bonn, range(len(db_bonn))):
-            filename_in = os.path.join(path_bonn, d, v + '.exr')
+            filename_in = os.path.join(common.path_data_bonn, d, v + '.exr')
             element_name = d + v
+            short_name = ' '.join(element_name.split('_')[:-4]).replace('Narrenkappe', '').replace('Notenschluessel', '').replace('Neuschwanstein', '').replace('Seite nach', '').replace('Print', '')
 
             # File Sizes
 
@@ -395,7 +425,7 @@ def main():
                 ratio_dc05ac2_12
             ]
 
-            line = element_name.replace('_', ' ')
+            line = short_name
             for ratio in values_to_write:
                 line += '& {:.2f}'.format(ratio)
             f_ratio.write(line + '\\\\\n')
@@ -462,7 +492,7 @@ def main():
                 rmse_dc05ac2_12
             ]
 
-            line = element_name.replace('_', ' ')
+            line = short_name
             for err in values_to_write:
                 line += '& ' + format_sci(err)
             f_error.write(line + '\\\\\n')
@@ -518,6 +548,7 @@ def main():
         line += '& {:.2f}'.format(ratio)
     f_ratio.write(line + '\\\\\n')
     f_ratio.write('\\bottomrule\n')
+    f_ratio.write(suffix)
     f_ratio.close()
 
     values_to_write = [
@@ -541,6 +572,7 @@ def main():
         line += '& ' + format_sci(err)
     f_error.write(line + '\\\\\n')
     f_error.write('\\bottomrule\n')
+    f_error.write(suffix)
     f_error.close()
 
 
