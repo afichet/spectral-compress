@@ -475,10 +475,10 @@ def main():
     common.plot_legend_2(plot_avg_legend, frame_distances_simple, subsampling_ratios_ac, frame_distances)
 
     # Paper version
-    common.plot_rmse(                            plot_paper_rmse_file   , avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression, .5 * .5, 15, 9)
-    common.plot_compression_ratio(               plot_paper_ratio_file  , avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression, .5 * .5, 15, 9)
-    common.plot_duration_compression_per_pixel(  plot_paper_time_c_file , avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression, .5 * .5, 15, 12)
-    common.plot_duration_decompression_per_pixel(plot_paper_time_d_file , avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression, .5 * .5, 15, 12)
+    common.plot_rmse(                            plot_paper_rmse_file   , avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression, .5 * .5, 15, 10)
+    common.plot_compression_ratio(               plot_paper_ratio_file  , avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression, .5 * .5, 15, 10)
+    common.plot_duration_compression_per_pixel(  plot_paper_time_c_file , avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression, .5 * .5, 15, 10)
+    common.plot_duration_decompression_per_pixel(plot_paper_time_d_file , avg_stats, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, flat_compression, .5 * .5, 15, 10)
 
     common.plot_xy_ratio_error_curves_key(plot_paper_xy_ratio_error_flat_file  , stats, db, variants, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, 2, 'c_flat', 'Flat curves', x_max, y_max, .33 * .5, 15, 13)
     common.plot_xy_ratio_error_curves_key(plot_paper_xy_ratio_error_det_file   , stats, db, variants, frame_distances_simple, 'linavg', 16, subsampling_ratios_ac, frame_distances, 2, 'c_deterministic', 'Deterministic curves', x_max, y_max, .33 * .5, 15, 13)
