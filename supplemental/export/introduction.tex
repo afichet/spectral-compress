@@ -63,7 +63,7 @@ where $g_{x,y,l}$ is the ground truth image, $g^\prime_{x,y,l}$ is the decompres
 We use a color map to display these RMSEs for each pixel.
 The RMSE across the whole images is
 \begin{equation}
-    \mathrm{RMSE}(g,g^{\prime}):=\sqrt{\frac{\sum_{x=0}^{w-1}\sum_{y=0}^{h-1}\sum_{l=0}^{n-1}(g_{x,y,l}^{\prime}-g_{x,y,l})^{2}}{whn}} \text{.}
+    \mathrm{RMSE}(g,g^{\prime}):=\sqrt{\frac{\sum_{x=0}^{w-1}\sum_{y=0}^{h-1}\sum_{l=0}^{n-1}(g_{x,y,l}^{\prime}-g_{x,y,l})^{2}}{w\cdot h \cdot n}} \text{.}
 \end{equation}
 
 
@@ -74,7 +74,7 @@ A compression ratio is the file size of the spectral OpenEXR file (with ZIP comp
 
 \paragraph{Timings}
 
-All computations were done on an Intel Core i9-10980XE CPU with 128~GB of RAM (Dell Precision 5820 Tower X-Series).
+All computations were done on an Intel Core i7 13700K CPU and 32~GB of RAM with a Samsung SSD 990 PRO 2TB NVMe SSD.
 On each image, we provide the timings for the execution of the whole compression pipeline.
 For the summary section, we instead provide the average timing per pixel since the image resolution varies.
 
