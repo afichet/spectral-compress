@@ -36,12 +36,12 @@
 #include <cstring>
 #include <cassert>
 
-#include <OpenEXR/ImfInputFile.h>
-#include <OpenEXR/ImfOutputFile.h>
-#include <OpenEXR/ImfChannelList.h>
-#include <OpenEXR/ImfStringAttribute.h>
-#include <OpenEXR/ImfFrameBuffer.h>
-#include <OpenEXR/ImfHeader.h>
+#include <ImfInputFile.h>
+#include <ImfOutputFile.h>
+#include <ImfChannelList.h>
+#include <ImfStringAttribute.h>
+#include <ImfFrameBuffer.h>
+#include <ImfHeader.h>
 
 #include "EXRArrayStream.h"
 #include "EXRUtils.h"

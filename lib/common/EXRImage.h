@@ -38,9 +38,9 @@
 #include <vector>
 #include <string>
 
-#include <OpenEXR/ImfIO.h>
-#include <OpenEXR/ImfCompression.h>
-#include <OpenEXR/ImfPixelType.h>
+#include <ImfIO.h>
+#include <ImfCompression.h>
+#include <ImfPixelType.h>
 
 class EXRFramebuffer
 {

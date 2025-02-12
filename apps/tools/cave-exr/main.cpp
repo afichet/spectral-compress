@@ -48,12 +48,12 @@
 
 #include <SpectrumConverter.h>
 
-#include <OpenEXR/ImfInputFile.h>
-#include <OpenEXR/ImfOutputFile.h>
-#include <OpenEXR/ImfChannelList.h>
-#include <OpenEXR/ImfStringAttribute.h>
-#include <OpenEXR/ImfFrameBuffer.h>
-#include <OpenEXR/ImfHeader.h>
+#include <ImfInputFile.h>
+#include <ImfOutputFile.h>
+#include <ImfChannelList.h>
+#include <ImfStringAttribute.h>
+#include <ImfFrameBuffer.h>
+#include <ImfHeader.h>
 
 // TODO: accept 8bit PNGs. One of the CAVE image is saved in 8bpp instead of 16bpp...
 
@@ -161,7 +161,7 @@ bool get_png_image_buffer(
 int main(int argc, char* argv[])
 {
     std::string path_first_image, path_output_image;
-    Imf::PixelType pixelType;
+    Imf::PixelType pixelType = Imf::PixelType::NUM_PIXELTYPES;
     bool write_rgb;
 
     // Parse arguments

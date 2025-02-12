@@ -38,8 +38,8 @@
 #include <vector>
 #include <string>
 
-#include <OpenEXR/ImfPixelType.h>
-#include <OpenEXR/ImfCompression.h>
+#include <ImfPixelType.h>
+#include <ImfCompression.h>
 
 
 struct SpectralFramebuffer

@@ -35,7 +35,7 @@
 
 #include <vector>
 
-#include <OpenEXR/ImfIO.h>
+#include <ImfIO.h>
 
 
 class EXRArrayStream : public Imf::OStream, public Imf::IStream

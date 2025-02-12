@@ -34,8 +34,8 @@
 #pragma once
 
 #include <vector>
-#include <OpenEXR/ImfPixelType.h>
-#include <Imath/half.h>
+#include <ImfPixelType.h>
+#include <half.h>
 
 
 void vec_float_to_half(
