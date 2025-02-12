@@ -20,7 +20,7 @@ if (ENABLE_TEST)
         set(CMAKE_C_FLAGS             ${CMAKE_C_FLAGS}             "-fprofile-arcs -ftest-coverage")
         set(CMAKE_EXE_LINKER_FLAGS    ${CMAKE_EXE_LINKER_FLAGS}    "-fprofile-arcs -ftest-coverage")
         set(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS} "-fprofile-arcs -ftest-coverage")
-    endif()  
+    endif()
 endif()
 
 add_subdirectory(lib)
@@ -28,13 +28,8 @@ add_subdirectory(apps)
 
 # Add Google Test package and test directory
 if (ENABLE_TEST)
-    message("-- Including Tests")
-    include(FetchContent)
-        FetchContent_Declare(
-        googletest
-        GIT_REPOSITORY https://github.com/google/googletest.git
-        GIT_TAG release-1.12.1
-        )
+    include(cmake/CPM.cmake)
+    CPMAddPackage("gh:google/googletest")
 
     # For Windows: Prevent overriding the parent project's compiler/linker settings
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
